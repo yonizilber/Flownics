@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Providers and models -->
+    <string name="ai_provider_gemini">Gemini</string>
+    <string name="ai_provider_claude">Claude</string>
+    <string name="ai_model_gemini_flash_lite">Gemini Flash-Lite</string>
+    <string name="ai_model_gemini_flash">Gemini Flash</string>
+    <string name="ai_model_gemini_pro">Gemini Pro (preview)</string>
+    <string name="ai_model_claude_haiku">Claude Haiku 5.5</string>
+    <string name="ai_model_claude_sonnet">Claude Sonnet 5.5</string>
+    <string name="ai_model_claude_opus">Claude Opus 5.5</string>
+    <string name="ai_model_price">$%1$s in / $%2$s out per million tokens</string>
+    <string name="ai_model_note_recommended_gemini">Recommended. Works on free keys.</string>
+    <string name="ai_model_note_preview">Preview model: free keys may not have access.</string>
+    <string name="ai_model_note_recommended_claude">Recommended: most accurate on anatomy and workout design.</string>
+    <string name="ai_model_note_cheap">Cheapest and fastest, less precise on details.</string>
+
+    <!-- Settings -->
+    <string name="settings_ai_section">AI assistant</string>
+    <string name="settings_ai">AI provider and key</string>
+    <string name="settings_ai_hint">Your own Gemini or Claude key, model, spending limit</string>
+    <string name="settings_ai_chat">The coach</string>
+    <string name="settings_ai_chat_hint">Talk with the coach about your training</string>
+    <string name="ai_settings_title">AI assistant</string>
+    <string name="ai_settings_intro">Flownics can use AI to fill in exercises, review workouts, suggest variations and answer questions. It uses your own key, and nothing is sent until you press an AI button.</string>
+    <string name="ai_settings_provider">Provider</string>
+    <string name="ai_terms_gemini">On Google\'s free tier, Google may use what you send to improve its products. On a paid (billing-enabled) key it does not. See Google\'s Gemini API terms.</string>
+    <string name="ai_terms_claude">Claude is paid per use. See Anthropic\'s terms for how API data is handled.</string>
+    <string name="ai_settings_key">%1$s key</string>
+    <string name="ai_key_saved">Key saved (%1$s)</string>
+    <string name="ai_key_none">No key yet</string>
+    <string name="ai_key_unreadable">A key was saved but can\'t be read on this device any more (for example after restoring onto a new phone). Enter it again.</string>
+    <string name="ai_key_storage">Stored encrypted on this phone only. It is never included in backups or exports.</string>
+    <string name="ai_key_add">Add key</string>
+    <string name="ai_key_replace">Replace key</string>
+    <string name="ai_key_remove">Remove</string>
+    <string name="ai_key_get">Get a %1$s key</string>
+    <string name="ai_key_limit_tip">Tip: also set a spending limit in your provider\'s console. The limit below is only an estimate kept by this app.</string>
+    <string name="ai_key_dialog_title">%1$s API key</string>
+    <string name="ai_key_field">API key</string>
+    <string name="ai_key_notice">When you press an AI button, what that feature needs (for example the exercise or workout on screen, or your recent training without notes) is sent to %1$s with your key, and billed to you. Nothing is sent in the background.</string>
+    <string name="ai_key_understood">I understand</string>
+    <string name="ai_key_test_save">Test and save</string>
+    <string name="ai_key_testing">Testing the key with a tiny request…</string>
+    <string name="ai_key_save_untested">Save without testing</string>
+    <string name="ai_settings_model">Model</string>
+    <string name="ai_settings_spend">This month</string>
+    <string name="ai_spend_month">%1$s spent</string>
+    <string name="ai_spend_of_cap">%1$s of %2$s</string>
+    <string name="ai_cap_switch">Monthly limit</string>
+    <string name="ai_cap_amount">Limit per month</string>
+    <string name="ai_spend_estimate_note">Estimated from list prices, as a safety net. Gemini search fees aren\'t included. Your provider\'s bill is what counts.</string>
+    <string name="ai_settings_privacy">What is sent</string>
+    <string name="ai_settings_privacy_body">Only what the feature you press needs: the exercise, the workout and its exercises, or a summary of your last 8 weeks (dates relative to today, sets, weights, no notes). Answers are shown for you to accept or ignore; the AI never changes your data by itself. AI answers can be wrong and are not medical advice.</string>
+    <string name="ai_feature_key_test">Key tests</string>
+    <string name="ai_feature_exercise_fill">Exercise details</string>
+    <string name="ai_feature_exercise_variations">Exercise variations</string>
+    <string name="ai_feature_workout_review">Workout reviews</string>
+    <string name="ai_feature_workout_variations">Workout variations</string>
+    <string name="ai_feature_workout_draft">New workouts</string>
+    <string name="ai_feature_chat">Questions</string>
+    <string name="ai_feature_coach">Coach</string>
+    <string name="ai_feature_exercise_videos">Video searches</string>
+    <string name="ai_feature_other">Other</string>
+    <string name="ai_activity_open">All AI calls and their cost</string>
+    <string name="ai_activity_title">AI activity</string>
+    <string name="ai_activity_intro">Every AI call made from this phone, newest first, with an estimate of its cost from list prices. What you asked and the answers aren\'t stored, only what each call was about.</string>
+    <string name="ai_activity_empty">No AI calls yet.</string>
+    <string name="ai_activity_cost_unknown">cost unknown</string>
+    <string name="ai_activity_details">%1$s · %2$s s · %3$d in / %4$d out tokens</string>
+    <string name="ai_activity_searches">%1$d searches</string>
+    <string name="ai_outcome_ok">Answered</string>
+    <string name="ai_outcome_failed">Failed: the answer couldn\'t be used, or the provider returned an error.</string>
+    <string name="ai_outcome_timed_out">Stopped at the time limit. The provider may still have billed the work it did; its cost isn\'t known.</string>
+    <string name="ai_outcome_cancelled">Cancelled by you. The provider may still have billed the work it did; its cost isn\'t known.</string>
+
+    <!-- Shared -->
+    <string name="ai_not_ready_title">Set up the AI first</string>
+    <string name="ai_not_ready_body">Add your own Gemini or Claude API key in Settings. It stays on this phone.</string>
+    <string name="ai_open_settings">Open AI settings</string>
+    <string name="ai_running">Asking %1$s…</string>
+    <string name="ai_running_search">Searching the web adds time. The app waits as long as the answer keeps coming, and stops if nothing arrives for a minute.</string>
+    <string name="ai_running_plain">The app waits as long as the answer keeps coming, and stops if nothing arrives for a minute.</string>
+    <string name="ai_retry">Try again</string>
+    <string name="ai_ask_again">Ask again</string>
+    <string name="ai_sources">Sources</string>
+    <string name="ai_footer">%1$s · about %2$s · AI can be wrong; check before relying on it</string>
+    <string name="ai_error_no_key">There is no %1$s key. Add one in AI settings.</string>
+    <string name="ai_error_invalid_key">%1$s rejected the key. Check it in AI settings.</string>
+    <string name="ai_error_no_access">This key can\'t use the chosen model: %1$s</string>
+    <string name="ai_error_rate_limited">Too many requests for this key right now. Wait a minute and try again.</string>
+    <string name="ai_error_overloaded">%1$s is overloaded at the moment. Try again shortly.</string>
+    <string name="ai_error_network">No connection. Check the internet and try again.</string>
+    <string name="ai_error_timeout">The answer was still coming after several minutes, so the app stopped waiting. Try again, or pick a faster model in the settings. The attempt is in the activity log.</string>
+    <string name="ai_error_refused">The model declined to answer this.</string>
+    <string name="ai_error_truncated">The answer was cut off before it finished. Try again, maybe with less to ask.</string>
+    <string name="ai_error_bad_response">The answer couldn\'t be used: %1$s</string>
+    <string name="ai_error_service">The provider returned an error (%1$d): %2$s</string>
+    <string name="ai_error_cap">This month\'s AI limit is reached (%1$s of %2$s). You can raise it in AI settings.</string>
+    <string name="ai_exercise_gone">This exercise no longer exists.</string>
+    <string name="ai_workout_gone">This workout no longer exists.</string>
+
+    <!-- Exercise: fill in -->
+    <string name="ai_fill_button">Fill in with AI</string>
+    <string name="ai_fill_title">AI details for “%1$s”</string>
+    <string name="ai_fill_intro">The AI suggests the category, the muscles it works, coaching cues and more, from the name and what you\'ve entered. You choose what to keep, and nothing is saved until you save the exercise.</string>
+    <string name="ai_fill_hint">Anything to add? (optional, e.g. “the cable version”)</string>
+    <string name="ai_fill_search">Search the web for sources</string>
+    <string name="ai_fill_search_hint">More reliable muscles, with links you can check. Slower and costs a little more.</string>
+    <string name="ai_fill_ask">Ask the AI</string>
+    <string name="ai_fill_confidence">Confidence about the muscles: %1$s</string>
+    <string name="ai_confidence_high">high</string>
+    <string name="ai_confidence_medium">medium</string>
+    <string name="ai_confidence_low">low, check the sources</string>
+    <string name="ai_fill_caveats">Note: %1$s</string>
+    <string name="ai_fill_unknown">Not used (not in the app\'s lists): %1$s</string>
+    <string name="ai_fill_nothing_new">The suggestion matches what you already have.</string>
+    <string name="ai_fill_change">%1$s: %2$s → %3$s</string>
+    <string name="ai_fill_unilateral_on">Mark as one side at a time</string>
+    <string name="ai_fill_unilateral_off">Mark as both sides together</string>
+    <string name="ai_fill_equipment">Equipment: %1$s</string>
+    <string name="ai_fill_muscles">Replace the muscles</string>
+    <string name="ai_fill_muscles_detail">Primary: %1$s\nSecondary: %2$s</string>
+    <plurals name="ai_fill_instructions">
+        <item quantity="one">Add the instructions (%1$d step)</item>
+        <item quantity="other">Add the instructions (%1$d steps)</item>
+    </plurals>
+    <plurals name="ai_fill_instructions_replace">
+        <item quantity="one">Replace your instructions (%1$d step)</item>
+        <item quantity="other">Replace your instructions (%1$d steps)</item>
+    </plurals>
+    <plurals name="ai_fill_cues">
+        <item quantity="one">Add %1$d cue</item>
+        <item quantity="other">Add %1$d cues</item>
+    </plurals>
+    <plurals name="ai_fill_stages">
+        <item quantity="one">Add %1$d stage</item>
+        <item quantity="other">Add %1$d stages</item>
+    </plurals>
+    <string name="ai_fill_summary">Add the description to the notes</string>
+    <string name="ai_fill_apply">Use the selected</string>
+    <string name="ai_fill_apply_hint">You can still edit everything before saving.</string>
+    <string name="ai_note_title">From the AI</string>
+    <string name="ai_note_body">%1$s suggested by %2$s on %3$s and accepted by you.</string>
+    <string name="ai_note_no_sources">Answered without a web search, so there are no sources.</string>
+
+    <!-- Exercise: variations -->
+    <string name="ai_menu_ask_exercise">Ask the coach about it</string>
+    <string name="ai_menu_variations">Variations (AI)</string>
+    <string name="ai_variations_title">Variations</string>
+    <string name="ai_variations_intro">Easier and harder versions of “%1$s”, and alternatives for the same muscles. They are kept here; add one to your library when you want it as an exercise of its own.</string>
+    <string name="ai_variations_ask">Suggest variations</string>
+    <string name="ai_variation_easier">Easier</string>
+    <string name="ai_variation_harder">Harder</string>
+    <string name="ai_variation_alternative">Alternative</string>
+    <string name="ai_variation_equipment">Equipment: %1$s</string>
+    <string name="ai_variation_add">Add to library</string>
+
+    <!-- Workout: review -->
+    <string name="ai_menu_review">Review with AI</string>
+    <string name="ai_menu_workout_variation">AI variation</string>
+    <string name="ai_menu_ask_workout">Ask the coach about it</string>
+    <string name="ai_review_title">Workout review</string>
+    <string name="ai_review_balance_title">Sets per muscle</string>
+    <string name="ai_review_balance_none">No sets with muscle tags in this workout.</string>
+    <string name="ai_review_balance_caption">Counted by the app from your exercises\' muscle tags, busiest first: 1 per set for primary muscles, ½ for secondary. Free, no AI involved.</string>
+    <string name="ai_review_untouched">Not worked in this workout</string>
+    <string name="ai_review_goal">Goal (optional)</string>
+    <string name="ai_review_goal_hint">e.g. leg strength, 3 times a week</string>
+    <string name="ai_review_ask">Review how it\'s built</string>
+    <string name="ai_rating_good">Well built</string>
+    <string name="ai_rating_ok">Reasonable, could be better</string>
+    <string name="ai_rating_needs_work">Needs work</string>
+    <string name="ai_review_balance">Division of work</string>
+    <string name="ai_review_issues">Issues</string>
+    <string name="ai_review_suggestions">Suggestions</string>
+    <string name="ai_severity_info">Note</string>
+    <string name="ai_severity_warn">Warning</string>
+    <string name="ai_severity_problem">Problem</string>
+
+    <!-- Workout: generate -->
+    <string name="ai_generate_variation_title">AI variation</string>
+    <string name="ai_generate_draft_title">New workout with AI</string>
+    <string name="ai_generate_variation_intro">A new version of “%1$s”. The original stays as it is.</string>
+    <string name="ai_generate_draft_intro">The AI builds a workout from the exercises in your library.</string>
+    <string name="ai_generate_needs_library">Add a few exercises to your library first: the AI only uses exercises you have.</string>
+    <string name="ai_preset_shorter">Shorter</string>
+    <string name="ai_preset_harder">Harder</string>
+    <string name="ai_preset_easier">Easier</string>
+    <string name="ai_preset_no_equipment">No equipment</string>
+    <string name="ai_preset_other_emphasis">Different emphasis</string>
+    <string name="ai_preset_full_body">Full body</string>
+    <string name="ai_preset_upper">Upper body</string>
+    <string name="ai_preset_lower">Lower body</string>
+    <string name="ai_preset_core">Core</string>
+    <string name="ai_preset_mobility">Mobility</string>
+    <string name="ai_preset_strength">Strength</string>
+    <string name="ai_preset_cardio">Cardio</string>
+    <string name="ai_generate_minutes">Minutes</string>
+    <string name="ai_generate_details">In your words</string>
+    <string name="ai_generate_variation_hint">e.g. keep it under 30 minutes, more back work</string>
+    <string name="ai_generate_draft_hint">e.g. legs and core, I have dumbbells</string>
+    <string name="ai_generate_ask">Build it</string>
+    <string name="ai_generate_library_note">Only exercises from your library are used. Ones it would have liked are listed separately.</string>
+    <string name="ai_generate_estimate">About %1$s</string>
+    <plurals name="ai_generate_skipped">
+        <item quantity="one">%1$d exercise the AI named isn\'t in your library and was left out.</item>
+        <item quantity="other">%1$d exercises the AI named aren\'t in your library and were left out.</item>
+    </plurals>
+    <string name="ai_generate_empty">Nothing usable came back. Try again or change the request.</string>
+    <string name="ai_generate_circuit">Circuit · %1$d rounds · %2$d s between rounds</string>
+    <string name="ai_generate_item">%1$s: %2$s, rest %3$d s</string>
+    <string name="ai_generate_why">Why this way</string>
+    <string name="ai_generate_missing">Would fit, not in your library</string>
+    <string name="ai_generate_save">Save as a new workout</string>
+    <string name="ai_generate_change">Change the request</string>
+    <string name="ai_generate_fallback_name">AI workout</string>
+
+    <!-- Chat -->
+    <string name="ai_starter_exercise_1">Which muscles does this really work?</string>
+    <string name="ai_starter_exercise_2">What are common mistakes?</string>
+    <string name="ai_starter_exercise_3">How do I progress on it?</string>
+    <string name="ai_starter_workout_1">Is the work divided well?</string>
+    <string name="ai_starter_workout_2">Is the order of exercises right?</string>
+    <string name="ai_starter_workout_3">What would you add or remove?</string>
+    <string name="ai_starter_history_1">How balanced has my training been?</string>
+    <string name="ai_starter_history_2">Where am I progressing, and where not?</string>
+    <string name="ai_starter_history_3">What should I focus on next week?</string>
+    <string name="ai_variation_preset_easier">Easier</string>
+    <string name="ai_variation_preset_harder">Harder</string>
+    <string name="ai_variation_preset_alternative">Same muscles, another way</string>
+    <string name="ai_variation_preset_home">At home</string>
+    <string name="ai_variations_request_hint">e.g. with a band, easier on the shoulders</string>
+    <string name="ai_variations_none_saved">No variations yet. Ask below; they are kept here.</string>
+    <string name="ai_variations_ask_more">Ask for variations</string>
+    <string name="ai_variations_ask_again">Ask for more</string>
+    <string name="ai_variations_nothing_new">Nothing new: everything suggested was already here.</string>
+    <plurals name="ai_variations_saved">
+        <item quantity="one">%1$d new variation kept above.</item>
+        <item quantity="other">%1$d new variations kept above.</item>
+    </plurals>
+    <string name="ai_variations_base_level">This one: %1$s.</string>
+    <string name="ai_variations_base_estimate">The AI rates this exercise %1$s.</string>
+    <string name="ai_variations_set_level">Use it</string>
+    <string name="ai_variation_delete">Remove the variation</string>
+    <string name="ai_variation_open">In the library: open</string>
+    <string name="ai_fill_level">Level: %1$s</string>
+    <string name="ai_running_stage">%1$d s · %2$s</string>
+    <string name="ai_stage_connecting">connecting…</string>
+    <string name="ai_stage_retrying">the service is busy, retrying (%1$d of 2)…</string>
+    <string name="ai_stage_thinking">thinking…</string>
+    <string name="ai_stage_searching">searching the web (%1$d)…</string>
+    <string name="ai_stage_writing">writing the answer (%1$d characters)…</string>
+    <string name="ai_error_stalled">The service stopped responding in the middle of the answer (nothing for a minute), so the app stopped waiting. This is on the provider\'s side; trying again usually works. The attempt is in the activity log.</string>
+    <string name="ai_activity_detail">Reason: %1$s</string>
+</resources>

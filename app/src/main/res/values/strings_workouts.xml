@@ -1,0 +1,97 @@
+<resources>
+    <!-- List -->
+    <string name="workouts_new">New workout</string>
+    <string name="workouts_empty_title">No workouts yet</string>
+    <string name="workouts_empty_body">Build a ready-made workout from your exercises: blocks, sets, rest times, and stretches to do while you rest.</string>
+    <string name="workouts_empty_need_exercises">Start by adding a few exercises in the Exercises tab.</string>
+    <string name="workout_summary">~%1$s · %2$d exercises</string>
+    <string name="workout_has_warnings">Needs attention</string>
+
+    <!-- Durations -->
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d h %2$s min</string>
+    <string name="duration_seconds">%1$d sec</string>
+
+    <!-- Overview -->
+    <string name="overview_start">Start workout</string>
+    <string name="overview_estimated">Estimated time</string>
+    <string name="overview_steps">Steps</string>
+    <string name="overview_exercises">Exercises</string>
+    <string name="overview_not_found">This workout no longer exists.</string>
+    <string name="overview_delete_title">Delete workout?</string>
+    <string name="overview_delete_body">\"%1$s\" will be deleted. Your exercises are not affected.</string>
+    <string name="step_set">Set %1$d/%2$d</string>
+    <string name="step_round">Round %1$d/%2$d</string>
+    <string name="step_rest">Rest %1$s</string>
+    <string name="step_active_rest">Active rest %1$s</string>
+    <string name="side_left">left</string>
+    <string name="side_right">right</string>
+    <string name="target_reps">%1$d reps</string>
+    <string name="target_reps_each_side">%1$d reps each side</string>
+    <string name="target_seconds">%1$s</string>
+    <string name="target_weight">%1$s kg</string>
+    <string name="target_distance">%1$d m</string>
+    <string name="target_open">until done</string>
+
+    <!-- Editor -->
+    <string name="wedit_title_new">New workout</string>
+    <string name="wedit_title_existing">Edit workout</string>
+    <string name="wedit_name">Workout name</string>
+    <string name="wedit_name_required">Give the workout a name</string>
+    <string name="wedit_description">Description (optional)</string>
+    <string name="wedit_block_untitled">Block %1$d</string>
+    <string name="wedit_block_title">Block name</string>
+    <string name="wedit_block_warmup">Warm-up</string>
+    <string name="wedit_block_main">Main</string>
+    <string name="wedit_block_cooldown">Cool-down</string>
+    <string name="wedit_add_block">Add block</string>
+    <string name="wedit_remove_block">Remove block</string>
+    <string name="wedit_structure_sets">Sets in a row</string>
+    <string name="wedit_structure_circuit">Circuit / superset</string>
+    <string name="wedit_rounds">Rounds</string>
+    <string name="wedit_round_rest">Rest between rounds</string>
+    <string name="wedit_add_exercises">Add exercises</string>
+    <string name="wedit_sets">Sets</string>
+    <string name="wedit_reps">Reps</string>
+    <string name="wedit_seconds">Seconds</string>
+    <string name="wedit_weight">Weight (kg)</string>
+    <string name="wedit_distance">Meters</string>
+    <string name="wedit_rest_after_set">Rest after each set</string>
+    <string name="wedit_rest_after_exercise">Rest after this exercise</string>
+    <string name="wedit_active_rest">During rest</string>
+    <string name="wedit_remove_item">Remove exercise</string>
+    <string name="wedit_deleted_exercise">Deleted exercise</string>
+    <string name="wedit_item_sets_summary">%1$d × %2$s</string>
+    <string name="wedit_rest_summary">rest %1$s</string>
+    <string name="wedit_no_blocks">Add a block to start. Most workouts have a warm-up, a main block and a cool-down.</string>
+    <string name="wedit_decrease">Decrease</string>
+    <string name="wedit_increase">Increase</string>
+    <string name="wedit_expand">Show settings</string>
+    <string name="wedit_collapse">Hide settings</string>
+
+    <!-- Active rest -->
+    <string name="active_rest_none">Just rest</string>
+    <string name="active_rest_specific">Specific exercise</string>
+    <string name="active_rest_pool">Rotate from library</string>
+    <string name="active_rest_pool_summary">Rotate: %1$s</string>
+    <string name="active_rest_pool_focus">Prefer the muscles just worked</string>
+    <string name="active_rest_dialog_title">What to do while resting</string>
+    <string name="active_rest_pick_types">Exercise types to rotate</string>
+    <string name="active_rest_needs_categories">Choose at least one type</string>
+    <string name="apply">Apply</string>
+
+    <!-- Picker -->
+    <string name="picker_title">Add exercises</string>
+    <string name="picker_add">Add (%1$d)</string>
+
+    <!-- Warnings -->
+    <string name="warn_empty_block">%1$s has no exercises.</string>
+    <string name="warn_missing_exercise">An exercise in %1$s was deleted from the library.</string>
+    <string name="warn_missing_active_rest">The active-rest exercise in %1$s was deleted from the library.</string>
+    <string name="warn_empty_pool">No library exercises of the chosen types for active rest in %1$s. The rest stays plain until you add some.</string>
+    <string name="warn_no_rest_time">Active rest is set in %1$s, but the rest time is 0.</string>
+    <string name="warn_active_rest_too_long">\"%1$s\" takes about %2$s, but the rest in %3$s is only %4$s.</string>
+
+    <!-- Exercise delete -->
+    <string name="delete_used_in_workouts">It is used in %1$d workouts; they will show a warning until you replace it.</string>
+</resources>

@@ -1,0 +1,69 @@
+<resources>
+    <!-- History tab -->
+    <string name="history_last_7_days">Last 7 days</string>
+    <string name="history_stat_workouts">Workouts</string>
+    <string name="history_stat_time">Time</string>
+    <string name="history_stat_sets">Sets</string>
+    <string name="history_stat_volume">Volume</string>
+    <string name="history_muscles_title">Muscles worked · last 7 days</string>
+    <string name="history_muscles_none">No sets in the last 7 days.</string>
+    <string name="history_muscles_caption">Sets per muscle in the last 7 days, busiest first. A set counts 1 for its exercise\'s primary muscles and ½ for its secondary ones.</string>
+    <plurals name="history_muscles_uncounted">
+        <item quantity="one">%1$d set isn\'t counted: its exercise was deleted or has no muscles tagged.</item>
+        <item quantity="other">%1$d sets aren\'t counted: their exercise was deleted or has no muscles tagged.</item>
+    </plurals>
+    <string name="history_muscles_untouched">Not worked this week</string>
+    <plurals name="history_sets">
+        <item quantity="one">%1$d set</item>
+        <item quantity="other">%1$d sets</item>
+    </plurals>
+    <string name="history_empty_title">No workouts yet</string>
+    <string name="history_empty_body">Finish a workout and save it. It will show up here with its sets, your records and your progress.</string>
+
+    <!-- One finished workout -->
+    <string name="session_not_found">This workout is no longer in your history.</string>
+    <string name="session_notes">Notes</string>
+    <string name="session_edit_notes">Edit notes</string>
+    <string name="session_notes_save">Save</string>
+    <string name="session_delete_title">Delete this workout from history?</string>
+    <string name="session_delete_body">Its sets will be deleted too, and records will be recalculated without it. This can\'t be undone.</string>
+    <string name="session_ended_early">Ended early: %1$d of %2$d planned sets were logged.</string>
+    <string name="session_open_workout">Open workout</string>
+    <string name="session_no_sets">No sets were logged in this workout.</string>
+    <string name="session_exercise_deleted">Deleted exercise</string>
+    <string name="session_exercise_removed_note">No longer in your library.</string>
+    <string name="session_set">Set %1$d</string>
+
+    <!-- Records and progress -->
+    <string name="record_new">New record: %1$s</string>
+    <string name="record_weight_reps">%1$s × %2$d</string>
+    <string name="metric_weight">Heaviest weight</string>
+    <string name="metric_volume">Most volume</string>
+    <string name="metric_reps">Most reps</string>
+    <string name="metric_seconds">Longest time</string>
+    <string name="metric_distance">Longest distance</string>
+    <string name="metric_desc_weight">The heaviest set</string>
+    <string name="metric_desc_volume">Total volume (reps × kg)</string>
+    <string name="metric_desc_reps">The most reps in one set</string>
+    <string name="metric_desc_seconds">The longest set</string>
+    <string name="metric_desc_distance">The longest distance in one set</string>
+    <string name="progress_title">Progress</string>
+    <string name="progress_none">Not done in a saved workout yet. Records and a progress chart will show up here.</string>
+    <string name="progress_no_numbers">Every set of this exercise was skipped or logged without numbers, so there is nothing to chart.</string>
+    <string name="progress_records">Personal records</string>
+    <string name="progress_chart_caption">%1$s in each workout. Each dot is one workout; time runs left to right, so the newest is on the right. Touch the chart to read a workout.</string>
+    <string name="progress_chart_a11y">Chart of %1$s per workout over %2$d workouts: %3$s on %4$s, latest %5$s on %6$s, best %7$s.</string>
+    <string name="progress_chart_needs_two">The chart appears after this exercise is in two saved workouts.</string>
+    <string name="progress_workouts">%1$s, by workout</string>
+    <string name="progress_show_all">Show all %1$d</string>
+    <string name="progress_show_less">Show fewer</string>
+
+    <!-- Calendar -->
+    <string name="calendar_add">Add to calendar</string>
+    <string name="calendar_no_app">No calendar app was found on this phone.</string>
+    <string name="calendar_footer">Added from Flownics</string>
+
+    <!-- Logged values -->
+    <string name="logged_skipped">Skipped</string>
+    <string name="logged_nothing">Done (no numbers)</string>
+</resources>

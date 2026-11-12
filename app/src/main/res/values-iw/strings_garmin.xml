@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="garmin_title">Garmin</string>
+    <string name="garmin_settings_hint">הבאת הריצות והפעילויות מ-Garmin Connect</string>
+    <string name="garmin_intro">עם מפתח API אישי שלך מגרמין, Flownics מביא כל פעילות שאתה מקליט (ההקלטה המלאה: כל לאפ, קצב, דופק, קדנס, אורך צעד) ליומן, ומשייך אותה לתוכנית. הוא רק קורא, ורק את החשבון שלך.</string>
+    <string name="garmin_steps_title">חיבור, פעם אחת</string>
+    <string name="garmin_steps">1. פתח את דף המפתחות ב-Garmin Connect (מחובר לחשבון שלך).\n2. Create Key, אשר את התנאים של גרמין, ובחר לכמה זמן (עד שנה).\n3. העתק את המפתח (גרמין מציגה אותו פעם אחת בלבד) והדבק כאן.</string>
+    <string name="garmin_open_key_page">פתיחת דף המפתחות</string>
+    <string name="garmin_key">מפתח API אישי</string>
+    <string name="garmin_save_key">שמירה ובדיקה</string>
+    <string name="garmin_key_ok">גרמין אישרה את המפתח.</string>
+    <string name="garmin_connected">מחובר לגרמין</string>
+    <string name="garmin_connect">חיבור לגרמין</string>
+    <string name="garmin_last_sync">סונכרן לאחרונה: %1$s</string>
+    <string name="garmin_sync_now">סנכרון מגרמין</string>
+    <string name="garmin_remove_key">הסרת המפתח</string>
+    <string name="garmin_how_sync">היומן מסתנכרן לבד כשפותחים אותו (כל כמה שעות), בפעם הראשונה 30 יום אחורה. כל פעילות יורדת פעם אחת; מה שכבר יובא מדולג. כשהמפתח פג, צור חדש והדבק כאן.</string>
+    <string name="garmin_privacy">המפתח שמור מוצפן בטלפון (Android Keystore), נשלח רק לגרמין, ולא נכלל בגיבויים. גרמין מייעדת את המפתח האישי לנתונים שלך, לא לאפליקציות שמשרתות אחרים.</string>
+    <string name="garmin_file_alternative">בלי מפתח: ב-Garmin Connect פותחים פעילות, ⋮, Export Original, ומייבאים את הקובץ ביומן (ייבוא קובץ FIT).</string>
+    <string name="garmin_some_failed">%1$d לא נקראו.</string>
+    <string name="garmin_error_no_key">עדיין אין מפתח גרמין.</string>
+    <string name="garmin_error_key">גרמין דחתה את המפתח. אולי פג תוקפו או שנמחק: צור חדש והדבק כאן.</string>
+    <string name="garmin_error_network">אין חיבור לגרמין. בדוק את החיבור ונסה שוב.</string>
+    <string name="garmin_error_other">הסנכרון מגרמין נכשל: %1$s</string>
+    <string name="fit_import">ייבוא קובץ FIT</string>
+    <string name="fit_imported">הפעילות יובאה.</string>
+    <string name="fit_already">ההקלטה הזו כבר ביומן.</string>
+    <string name="fit_unreadable">אי אפשר לפתוח את הקובץ.</string>
+    <string name="fit_error">אי אפשר לקרוא את הקובץ כהקלטה: %1$s</string>
+    <string name="fit_recorded_title">נמדד בשעון</string>
+    <string name="fit_cadence">קדנס: %1$d צעדים לדקה</string>
+    <string name="fit_cadence_rpm">קדנס: %1$d סל״ד</string>
+    <string name="fit_cadence_short">%1$d צעדים/דק׳</string>
+    <string name="fit_step_length">אורך צעד: %1$d ס״מ</string>
+    <string name="fit_step_length_derived">אורך צעד: כ-%1$d ס״מ (מחושב ממהירות וקדנס)</string>
+    <string name="fit_step_short">צעד %1$d ס״מ</string>
+    <string name="fit_vertical_oscillation">תנודה אנכית: %1$.1f ס״מ</string>
+    <string name="fit_ground_contact">זמן מגע בקרקע: %1$d מילישניות</string>
+    <string name="fit_power">הספק: %1$d וואט</string>
+    <string name="fit_decoupling">סחף דופק: %1$.1f%%</string>
+    <string name="fit_decoupling_hint" formatted="false">כמה הדופק עלה ביחס לקצב מהחצי הראשון לשני. פחות מ-5% בריצה קלה ורציפה מעיד על סבולת אירובית טובה; באינטרוולים או בריצה מתגברת זה לא אומר הרבה.</string>
+    <string name="fit_splits">כל קילומטר</string>
+    <string name="fit_split_km">ק״מ %1$d</string>
+    <plurals name="garmin_synced">
+        <item quantity="one">פעילות חדשה אחת מגרמין.</item>
+        <item quantity="two">%1$d פעילויות חדשות מגרמין.</item>
+        <item quantity="other">%1$d פעילויות חדשות מגרמין.</item>
+    </plurals>
+    <string name="watch_title">מהשעון</string>
+    <string name="watch_avg_hr">דופק ממוצע %1$d</string>
+    <string name="watch_max_hr">מקס׳ %1$d</string>
+    <string name="watch_set_hr">דופק %1$d, שיא %2$d</string>
+    <string name="watch_set_drop">ירד ב-%1$d בדקה שאחרי</string>
+    <string name="watch_chart_caption">הקו הוא הדופק שהשעון מדד; הרצועות הצבועות הן הסטים, כפי שהתחלת וסיימת אותם באפליקציה. הזמן רץ משמאל לימין.</string>
+    <string name="watch_chart_description">דופק לאורך האימון, מ-%1$d עד %2$d, עם %3$d סטים מסומנים.</string>
+    <string name="watch_open">ההקלטה</string>
+    <string name="watch_keep_apart">זה לא האימון הזה</string>
+</resources>

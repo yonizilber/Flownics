@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exposed read-only, and only to an app the user picks: exercise media (to open a video) and
+     files the user shares from the app (cache/share). -->
+<paths>
+    <files-path name="media" path="media/" />
+    <cache-path name="share" path="share/" />
+</paths>

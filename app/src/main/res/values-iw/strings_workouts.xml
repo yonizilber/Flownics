@@ -1,0 +1,89 @@
+<resources>
+    <string name="workouts_new">אימון חדש</string>
+    <string name="workouts_empty_title">עדיין אין אימונים</string>
+    <string name="workouts_empty_body">בנה אימון מדף מהתרגילים שלך: בלוקים, סטים, זמני מנוחה ומתיחות לעשות בזמן המנוחה.</string>
+    <string name="workouts_empty_need_exercises">התחל בהוספת כמה תרגילים בלשונית תרגילים.</string>
+    <string name="workout_summary">~%1$s · %2$d תרגילים</string>
+    <string name="workout_has_warnings">דורש תשומת לב</string>
+
+    <string name="duration_minutes">%1$d דק\'</string>
+    <string name="duration_hours">%1$d ש\' %2$s דק\'</string>
+    <string name="duration_seconds">%1$d שנ\'</string>
+
+    <string name="overview_start">התחל אימון</string>
+    <string name="overview_estimated">זמן משוער</string>
+    <string name="overview_steps">שלבים</string>
+    <string name="overview_exercises">תרגילים</string>
+    <string name="overview_not_found">האימון הזה כבר לא קיים.</string>
+    <string name="overview_delete_title">למחוק את האימון?</string>
+    <string name="overview_delete_body">\"%1$s\" יימחק. התרגילים שלך לא יושפעו.</string>
+    <string name="step_set">סט %1$d/%2$d</string>
+    <string name="step_round">סבב %1$d/%2$d</string>
+    <string name="step_rest">מנוחה %1$s</string>
+    <string name="step_active_rest">מנוחה אקטיבית %1$s</string>
+    <string name="side_left">שמאל</string>
+    <string name="side_right">ימין</string>
+    <string name="target_reps">%1$d חזרות</string>
+    <string name="target_reps_each_side">%1$d חזרות לכל צד</string>
+    <string name="target_seconds">%1$s</string>
+    <string name="target_weight">%1$s ק\"ג</string>
+    <string name="target_distance">%1$d מ\'</string>
+    <string name="target_open">עד הסיום</string>
+
+    <string name="wedit_title_new">אימון חדש</string>
+    <string name="wedit_title_existing">עריכת אימון</string>
+    <string name="wedit_name">שם האימון</string>
+    <string name="wedit_name_required">צריך לתת לאימון שם</string>
+    <string name="wedit_description">תיאור (לא חובה)</string>
+    <string name="wedit_block_untitled">בלוק %1$d</string>
+    <string name="wedit_block_title">שם הבלוק</string>
+    <string name="wedit_block_warmup">חימום</string>
+    <string name="wedit_block_main">עיקרי</string>
+    <string name="wedit_block_cooldown">שחרור</string>
+    <string name="wedit_add_block">הוסף בלוק</string>
+    <string name="wedit_remove_block">הסר בלוק</string>
+    <string name="wedit_structure_sets">סטים ברצף</string>
+    <string name="wedit_structure_circuit">סבב / סופרסט</string>
+    <string name="wedit_rounds">סבבים</string>
+    <string name="wedit_round_rest">מנוחה בין סבבים</string>
+    <string name="wedit_add_exercises">הוסף תרגילים</string>
+    <string name="wedit_sets">סטים</string>
+    <string name="wedit_reps">חזרות</string>
+    <string name="wedit_seconds">שניות</string>
+    <string name="wedit_weight">משקל (ק\"ג)</string>
+    <string name="wedit_distance">מטרים</string>
+    <string name="wedit_rest_after_set">מנוחה אחרי כל סט</string>
+    <string name="wedit_rest_after_exercise">מנוחה אחרי התרגיל</string>
+    <string name="wedit_active_rest">בזמן המנוחה</string>
+    <string name="wedit_remove_item">הסר תרגיל</string>
+    <string name="wedit_deleted_exercise">תרגיל שנמחק</string>
+    <string name="wedit_item_sets_summary">%1$d × %2$s</string>
+    <string name="wedit_rest_summary">מנוחה %1$s</string>
+    <string name="wedit_no_blocks">הוסף בלוק כדי להתחיל. ברוב האימונים יש חימום, בלוק עיקרי ושחרור.</string>
+    <string name="wedit_decrease">הפחת</string>
+    <string name="wedit_increase">הוסף</string>
+    <string name="wedit_expand">הצג הגדרות</string>
+    <string name="wedit_collapse">הסתר הגדרות</string>
+
+    <string name="active_rest_none">רק מנוחה</string>
+    <string name="active_rest_specific">תרגיל מסוים</string>
+    <string name="active_rest_pool">סבב מתוך הספרייה</string>
+    <string name="active_rest_pool_summary">סבב: %1$s</string>
+    <string name="active_rest_pool_focus">העדף את השרירים שעבדו עכשיו</string>
+    <string name="active_rest_dialog_title">מה עושים בזמן המנוחה</string>
+    <string name="active_rest_pick_types">סוגי תרגילים לסבב</string>
+    <string name="active_rest_needs_categories">בחר לפחות סוג אחד</string>
+    <string name="apply">החל</string>
+
+    <string name="picker_title">הוספת תרגילים</string>
+    <string name="picker_add">הוסף (%1$d)</string>
+
+    <string name="warn_empty_block">ב%1$s אין תרגילים.</string>
+    <string name="warn_missing_exercise">תרגיל ב%1$s נמחק מהספרייה.</string>
+    <string name="warn_missing_active_rest">תרגיל המנוחה האקטיבית ב%1$s נמחק מהספרייה.</string>
+    <string name="warn_empty_pool">אין בספרייה תרגילים מהסוגים שנבחרו למנוחה אקטיבית ב%1$s. המנוחה תישאר רגילה עד שתוסיף כאלה.</string>
+    <string name="warn_no_rest_time">ב%1$s מוגדרת מנוחה אקטיבית, אבל זמן המנוחה הוא 0.</string>
+    <string name="warn_active_rest_too_long">\"%1$s\" לוקח בערך %2$s, אבל המנוחה ב%3$s היא רק %4$s.</string>
+
+    <string name="delete_used_in_workouts">הוא משמש ב-%1$d אימונים; הם יציגו אזהרה עד שתחליף אותו.</string>
+</resources>

@@ -1,0 +1,65 @@
+package com.yonizilber.flownics.domain.model
+
+data class WorkoutTemplate(
+    val id: Long = 0,
+    val name: String,
+    val description: String = "",
+    val blocks: List<WorkoutBlock> = emptyList(),
+    val createdAtMillis: Long = 0,
+    val updatedAtMillis: Long = 0,
+)
+
+/**
+ * A section of a workout ("Warm-up", "Main", "Cool-down", or anything the user names it).
+ * STRAIGHT_SETS runs each item's sets back to back; CIRCUIT runs one set of every item per round
+ * (a 2-item circuit is a superset).
+ */
+data class WorkoutBlock(
+    val title: String = "",
+    val structure: BlockStructure = BlockStructure.STRAIGHT_SETS,
+    /** CIRCUIT only. */
+    val rounds: Int = 3,
+    /** CIRCUIT only: rest after each round except the last. */
+    val roundRestSeconds: Int = 60,
+    /** CIRCUIT only: what to do during the rest between rounds. */
+    val roundActiveRest: ActiveRest = ActiveRest.None,
+    val items: List<WorkoutItem> = emptyList(),
+)
+
+enum class BlockStructure { STRAIGHT_SETS, CIRCUIT }
+
+data class WorkoutItem(
+    val exerciseId: Long,
+    /** STRAIGHT_SETS only; a circuit's rounds decide how many times each item runs. */
+    val sets: Int = 3,
+    val target: SetTarget = SetTarget(),
+    /** STRAIGHT_SETS: rest after every set. CIRCUIT: rest after this exercise within a round. */
+    val restSeconds: Int = 60,
+    val activeRest: ActiveRest = ActiveRest.None,
+)
+
+/** Which fields apply depends on the exercise's [MeasureMode]; the rest stay null. */
+data class SetTarget(
+    val reps: Int? = null,
+    val seconds: Int? = null,
+    val weightKg: Double? = null,
+    val distanceMeters: Int? = null,
+)
+
+/** What fills a rest period: nothing, one chosen exercise, or a rotation drawn from the library. */
+sealed interface ActiveRest {
+    data object None : ActiveRest
+
+    data class Specific(val exerciseId: Long) : ActiveRest
+
+    data class Pool(
+        val categories: Set<ExerciseCategory> = setOf(ExerciseCategory.FLEXIBILITY, ExerciseCategory.MOBILITY),
+        val focus: PoolFocus = PoolFocus.WORKED_MUSCLES,
+    ) : ActiveRest
+}
+
+enum class PoolFocus {
+    /** Prefer exercises for the muscles just worked (e.g. stretch the quads after squats). */
+    WORKED_MUSCLES,
+    ANY,
+}

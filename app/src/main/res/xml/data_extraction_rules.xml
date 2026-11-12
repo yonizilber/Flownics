@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Holds the encrypted AI key — never let it leave the device via backup. -->
+        <exclude domain="sharedpref" path="ai_settings.xml" />
+        <!-- The automatic-backup folder: its access grant doesn't carry over to another device. -->
+        <exclude domain="sharedpref" path="backup_prefs.xml" />
+        <!-- Which calendar on this phone the plan goes to: meaningless on another device. -->
+        <exclude domain="sharedpref" path="calendar_prefs.xml" />
+        <!-- The Garmin key: encrypted with a Keystore key that never leaves this phone. -->
+        <exclude domain="sharedpref" path="garmin_settings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="ai_settings.xml" />
+        <exclude domain="sharedpref" path="backup_prefs.xml" />
+        <exclude domain="sharedpref" path="calendar_prefs.xml" />
+        <!-- The Garmin key: encrypted with a Keystore key that never leaves this phone. -->
+        <exclude domain="sharedpref" path="garmin_settings.xml" />
+    </device-transfer>
+</data-extraction-rules>

@@ -1,0 +1,92 @@
+<resources>
+    <!-- Player screen -->
+    <string name="player_close">יציאה מהנגן (האימון ממשיך לרוץ)</string>
+    <string name="player_end_workout">סיום אימון</string>
+    <string name="player_no_workout">אין אימון פעיל.</string>
+    <string name="player_get_ready">היכון</string>
+    <string name="player_paused">מושהה</string>
+    <string name="player_rest">מנוחה</string>
+    <string name="player_active_rest">מנוחה אקטיבית</string>
+    <string name="player_active_rest_missing">תרגיל המנוחה האקטיבית נמחק מהספרייה. פשוט לנוח.</string>
+    <string name="player_minus_seconds">−%1$d שנ\'</string>
+    <string name="player_plus_seconds">+%1$d שנ\'</string>
+    <string name="player_details">פרטי התרגיל</string>
+    <string name="player_elapsed">זמן בסט הזה: %1$s</string>
+    <string name="player_side_left">צד שמאל</string>
+    <string name="player_side_right">צד ימין</string>
+    <string name="player_last_time">בפעם הקודמת: %1$s</string>
+    <string name="player_next_up">הבא</string>
+    <string name="player_previous">הצעד הקודם</string>
+    <string name="player_resume">המשך</string>
+    <string name="player_pause">השהיה</string>
+    <string name="player_skip">דילוג על הסט</string>
+    <string name="player_done">בוצע</string>
+    <string name="player_skip_rest">דילוג על המנוחה</string>
+    <string name="player_restored">האפליקציה נסגרה באמצע האימון. האימון מושהה כאן, בתחילת הצעד הזה. לחץ על המשך כשתהיה מוכן.</string>
+    <string name="player_restored_ok">הבנתי</string>
+    <string name="player_notifications_off">ההתראות של Flownics כבויות. הטיימר עדיין רץ, אבל לא תראה אותו ולא תוכל לשלוט בו ממסך הנעילה.</string>
+    <string name="player_voice_unavailable">ההקראה הקולית פעילה, אבל במכשיר אין קול להקראה בשפת האפליקציה. אפשר להתקין קול בהגדרות Android › המרת טקסט לדיבור, או לכבות את ההקראה בהגדרות.</string>
+    <string name="player_sound_unavailable">לא ניתן להשמיע צפצופים במכשיר הזה. רטט והקראה עדיין עובדים, אם הם פעילים.</string>
+    <string name="player_end_title">לסיים את האימון עכשיו?</string>
+    <string name="player_end_body">הסטים שרשמת נשמרים. הצעדים שנשארו לא יבוצעו.</string>
+
+    <!-- End of workout -->
+    <string name="player_summary_complete">האימון הושלם</string>
+    <string name="player_summary_ended">האימון הסתיים</string>
+    <string name="player_summary_duration">משך</string>
+    <string name="player_summary_sets">סטים שבוצעו</string>
+    <string name="player_summary_skipped">דילוגים</string>
+    <string name="player_summary_volume">נפח (ק\"ג)</string>
+    <string name="player_notes">הערות (לא חובה)</string>
+    <string name="player_save">שמירת האימון</string>
+    <string name="player_back_to_workout">חזרה לאימון</string>
+    <string name="player_discard">מחיקה</string>
+    <string name="player_discard_title">למחוק את האימון הזה?</string>
+    <string name="player_discard_body">שום דבר מהאימון הזה לא יישמר.</string>
+
+    <!-- Notification -->
+    <string name="notif_channel_name">טיימר אימון</string>
+    <string name="notif_channel_description">הטיימר והשליטה במהלך אימון</string>
+    <string name="notif_finished">האימון הושלם</string>
+    <string name="notif_finished_body">הקש כדי לשמור</string>
+    <string name="notif_active_rest">מנוחה אקטיבית: %1$s</string>
+    <string name="notif_next">הבא: %1$s</string>
+    <string name="notif_paused">מושהה · %1$s</string>
+    <string name="notif_done">בוצע</string>
+
+    <!-- Spoken cues -->
+    <string name="say_get_ready">היכון.</string>
+    <string name="say_set">סט %1$d מתוך %2$d.</string>
+    <string name="say_round">סבב %1$d מתוך %2$d.</string>
+    <string name="say_rest">מנוחה, %1$d שניות.</string>
+    <string name="say_active_rest">מנוחה אקטיבית: %1$s.</string>
+    <string name="say_next">הבא: %1$s.</string>
+    <string name="say_left">צד שמאל</string>
+    <string name="say_right">צד ימין</string>
+    <string name="say_reps">%1$d חזרות</string>
+    <string name="say_weight">%1$s קילו</string>
+    <string name="say_seconds">%1$d שניות</string>
+    <string name="say_meters">%1$d מטר</string>
+    <string name="say_done">האימון הושלם. כל הכבוד!</string>
+
+    <!-- Starting -->
+    <string name="start_conflict_title">כבר יש אימון פעיל</string>
+    <string name="start_conflict_body">אפשר לחזור אליו, או למחוק אותו ולהתחיל את האימון הזה. מחיקה מוחקת גם את הסטים שנרשמו בו.</string>
+    <string name="start_conflict_resume">חזרה אליו</string>
+    <string name="start_conflict_replace">מחיקה והתחלה</string>
+    <string name="start_nothing_to_run">באימון הזה עדיין אין צעדים. קודם צריך להוסיף תרגילים לבלוקים.</string>
+
+    <!-- Workouts tab banner -->
+    <string name="workouts_in_progress">בתהליך</string>
+    <string name="workouts_progress">צעד %1$d מתוך %2$d</string>
+    <string name="workouts_resume">המשך</string>
+
+    <!-- Settings -->
+    <string name="settings_player_section">נגן האימון</string>
+    <string name="settings_cue_sound">צפצופים</string>
+    <string name="settings_cue_sound_hint">ספירה לאחור ב-3 השניות האחרונות, וצליל בתחילת כל צעד</string>
+    <string name="settings_cue_voice">הקראה קולית</string>
+    <string name="settings_cue_voice_hint">מכריזה על כל תרגיל ומנוחה, בשפת האפליקציה</string>
+    <string name="settings_cue_vibrate">רטט</string>
+    <string name="settings_cue_vibrate_hint">רטט בתחילת כל צעד</string>
+</resources>

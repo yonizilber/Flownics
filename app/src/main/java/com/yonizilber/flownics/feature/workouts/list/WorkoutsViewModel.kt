@@ -1,0 +1,62 @@
+package com.yonizilber.flownics.feature.workouts.list
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.yonizilber.flownics.domain.model.WorkoutTemplate
+import com.yonizilber.flownics.domain.repository.ExerciseRepository
+import com.yonizilber.flownics.domain.repository.WorkoutRepository
+import com.yonizilber.flownics.domain.workout.WorkoutCompiler
+import com.yonizilber.flownics.player.ActiveWorkout
+import com.yonizilber.flownics.player.PlayerController
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
+
+data class WorkoutSummary(
+    val template: WorkoutTemplate,
+    val estimatedSeconds: Int,
+    val exerciseCount: Int,
+    val hasWarnings: Boolean,
+)
+
+data class WorkoutsUiState(
+    val loading: Boolean = true,
+    val workouts: List<WorkoutSummary> = emptyList(),
+    val libraryIsEmpty: Boolean = false,
+)
+
+@HiltViewModel
+class WorkoutsViewModel @Inject constructor(
+    workoutRepository: WorkoutRepository,
+    exerciseRepository: ExerciseRepository,
+    player: PlayerController,
+) : ViewModel() {
+
+    init {
+        player.restoreIfNeeded()
+    }
+
+    /** The workout currently running (or left paused), for the resume banner. */
+    val activeWorkout: StateFlow<ActiveWorkout?> = player.state
+
+    val uiState: StateFlow<WorkoutsUiState> =
+        combine(workoutRepository.observeAll(), exerciseRepository.observeAll()) { templates, exercises ->
+            val library = exercises.associateBy { it.id }
+            WorkoutsUiState(
+                loading = false,
+                workouts = templates.map { template ->
+                    val compiled = WorkoutCompiler.compile(template, library)
+                    WorkoutSummary(
+                        template = template,
+                        estimatedSeconds = compiled.estimatedSeconds,
+                        exerciseCount = template.blocks.flatMap { it.items }.map { it.exerciseId }.distinct().size,
+                        hasWarnings = compiled.warnings.isNotEmpty(),
+                    )
+                },
+                libraryIsEmpty = exercises.isEmpty(),
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutsUiState())
+}

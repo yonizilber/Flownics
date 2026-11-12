@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used on Android 11 and older. See data_extraction_rules.xml for Android 12+. -->
+<full-backup-content>
+    <!-- Holds the encrypted AI key. The Keystore key that decrypts it never leaves the device, so
+         a restored copy could not be read anyway; excluding it keeps the key itself off backups. -->
+    <exclude domain="sharedpref" path="ai_settings.xml" />
+    <!-- The automatic-backup folder: its access grant doesn't carry over to another device. -->
+    <exclude domain="sharedpref" path="backup_prefs.xml" />
+    <!-- Which calendar on this phone the plan goes to: meaningless on another device. -->
+    <exclude domain="sharedpref" path="calendar_prefs.xml" />
+        <!-- The Garmin key: encrypted with a Keystore key that never leaves this phone. -->
+        <exclude domain="sharedpref" path="garmin_settings.xml" />
+</full-backup-content>

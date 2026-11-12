@@ -1,0 +1,92 @@
+<resources>
+    <!-- Player screen -->
+    <string name="player_close">Leave the player (the workout keeps running)</string>
+    <string name="player_end_workout">End workout</string>
+    <string name="player_no_workout">No workout in progress.</string>
+    <string name="player_get_ready">Get ready</string>
+    <string name="player_paused">Paused</string>
+    <string name="player_rest">Rest</string>
+    <string name="player_active_rest">Active rest</string>
+    <string name="player_active_rest_missing">The active-rest exercise was deleted from the library. Just rest.</string>
+    <string name="player_minus_seconds">−%1$d s</string>
+    <string name="player_plus_seconds">+%1$d s</string>
+    <string name="player_details">Exercise details</string>
+    <string name="player_elapsed">Time in this set: %1$s</string>
+    <string name="player_side_left">Left side</string>
+    <string name="player_side_right">Right side</string>
+    <string name="player_last_time">Last time: %1$s</string>
+    <string name="player_next_up">Next</string>
+    <string name="player_previous">Previous step</string>
+    <string name="player_resume">Resume</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_skip">Skip this set</string>
+    <string name="player_done">Done</string>
+    <string name="player_skip_rest">Skip rest</string>
+    <string name="player_restored">The app was closed during your workout. It is paused here, at the start of this step. Tap resume when you\'re ready.</string>
+    <string name="player_restored_ok">OK</string>
+    <string name="player_notifications_off">Notifications are off for Flownics. The timer still runs, but you won\'t see it or control it from the lock screen.</string>
+    <string name="player_voice_unavailable">Voice cues are on, but this device has no text-to-speech voice for the app\'s language. Install one in Android Settings › Text-to-speech, or turn voice off in Settings.</string>
+    <string name="player_sound_unavailable">Beeps couldn\'t start on this device. Vibration and voice still work if they are on.</string>
+    <string name="player_end_title">End the workout now?</string>
+    <string name="player_end_body">Sets you\'ve logged are kept. The remaining steps are left undone.</string>
+
+    <!-- End of workout -->
+    <string name="player_summary_complete">Workout complete</string>
+    <string name="player_summary_ended">Workout ended</string>
+    <string name="player_summary_duration">Duration</string>
+    <string name="player_summary_sets">Sets done</string>
+    <string name="player_summary_skipped">Skipped</string>
+    <string name="player_summary_volume">Volume (kg)</string>
+    <string name="player_notes">Notes (optional)</string>
+    <string name="player_save">Save workout</string>
+    <string name="player_back_to_workout">Back to the workout</string>
+    <string name="player_discard">Discard</string>
+    <string name="player_discard_title">Discard this workout?</string>
+    <string name="player_discard_body">Nothing from this session will be saved.</string>
+
+    <!-- Notification -->
+    <string name="notif_channel_name">Workout timer</string>
+    <string name="notif_channel_description">The running timer and controls during a workout</string>
+    <string name="notif_finished">Workout complete</string>
+    <string name="notif_finished_body">Tap to save it</string>
+    <string name="notif_active_rest">Active rest: %1$s</string>
+    <string name="notif_next">Next: %1$s</string>
+    <string name="notif_paused">Paused · %1$s</string>
+    <string name="notif_done">Done</string>
+
+    <!-- Spoken cues -->
+    <string name="say_get_ready">Get ready.</string>
+    <string name="say_set">Set %1$d of %2$d.</string>
+    <string name="say_round">Round %1$d of %2$d.</string>
+    <string name="say_rest">Rest, %1$d seconds.</string>
+    <string name="say_active_rest">Active rest: %1$s.</string>
+    <string name="say_next">Next: %1$s.</string>
+    <string name="say_left">left side</string>
+    <string name="say_right">right side</string>
+    <string name="say_reps">%1$d reps</string>
+    <string name="say_weight">%1$s kilos</string>
+    <string name="say_seconds">%1$d seconds</string>
+    <string name="say_meters">%1$d meters</string>
+    <string name="say_done">Workout complete. Well done!</string>
+
+    <!-- Starting -->
+    <string name="start_conflict_title">A workout is already in progress</string>
+    <string name="start_conflict_body">Go back to it, or discard it and start this one. Discarding deletes the sets logged in it.</string>
+    <string name="start_conflict_resume">Go to it</string>
+    <string name="start_conflict_replace">Discard and start</string>
+    <string name="start_nothing_to_run">This workout has no steps to run yet. Add exercises to its blocks first.</string>
+
+    <!-- Workouts tab banner -->
+    <string name="workouts_in_progress">In progress</string>
+    <string name="workouts_progress">Step %1$d of %2$d</string>
+    <string name="workouts_resume">Resume</string>
+
+    <!-- Settings -->
+    <string name="settings_player_section">Workout player</string>
+    <string name="settings_cue_sound">Beeps</string>
+    <string name="settings_cue_sound_hint">A countdown in the last 3 seconds and a tone when each step starts</string>
+    <string name="settings_cue_voice">Voice</string>
+    <string name="settings_cue_voice_hint">Announces each exercise and rest, in the app\'s language</string>
+    <string name="settings_cue_vibrate">Vibration</string>
+    <string name="settings_cue_vibrate_hint">Vibrates when each step starts</string>
+</resources>

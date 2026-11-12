@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Flownics</string>
+
+    <string name="nav_workouts">אימונים</string>
+    <string name="nav_library">תרגילים</string>
+    <string name="nav_settings">הגדרות</string>
+
+
+    <string name="disclaimer_title">לפני שמתחילים</string>
+    <string name="disclaimer_body">Flownics עוזרת לך לארגן ולתזמן את האימונים שלך. היא אינה ייעוץ רפואי ואינה מחליפה רופא, פיזיותרפיסט או מאמן מוסמך.\n\nהיוועץ ברופא לפני שאתה מתחיל תוכנית אימונים חדשה, במיוחד אם יש לך מצב רפואי, פציעה או הריון. הפסק להתאמן אם אתה מרגיש כאב, סחרחורת או קוצר נשימה.\n\nתשובות ה-AI באפליקציה עלולות להיות שגויות. התייחס אליהן כהצעות, לא כהוראות.\n\nהאימונים שלך נשמרים רק במכשיר הזה. שום דבר לא נשלח החוצה, אלא אם בחרת לשאול את ה-AI עם המפתח שלך.</string>
+    <string name="disclaimer_accept">הבנתי</string>
+
+    <string name="settings_about_section">אודות</string>
+    <string name="settings_show_disclaimer">הצהרת בריאות ו-AI</string>
+    <string name="settings_version">גרסה %1$s</string>
+    <string name="settings_language">שפה</string>
+    <string name="settings_language_hint">אפשר לשנות את שפת האפליקציה בהגדרות Android › אפליקציות › Flownics › שפה.</string>
+    <string name="close">סגור</string>
+</resources>

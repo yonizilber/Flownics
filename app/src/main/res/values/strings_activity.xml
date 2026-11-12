@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ok">OK</string>
+    <string name="activity_log">Log an activity</string>
+    <string name="ai_history_ask_short">Ask the coach</string>
+    <string name="activity_new">New activity</string>
+    <string name="activity_edit">Activity</string>
+    <string name="activity_type_run">Run</string>
+    <string name="activity_type_walk">Walk</string>
+    <string name="activity_type_hike">Hike</string>
+    <string name="activity_type_ride">Ride</string>
+    <string name="activity_type_swim">Swim</string>
+    <string name="activity_type_other">Other</string>
+    <string name="activity_title">Title (optional)</string>
+    <string name="activity_duration">Time</string>
+    <string name="activity_duration_error">Like 45:30 or 1:05:30. Or leave it empty and give every part a time.</string>
+    <string name="activity_distance">km</string>
+    <string name="activity_avg_hr">Avg HR</string>
+    <string name="activity_max_hr">Max HR</string>
+    <string name="activity_elevation">Climb m</string>
+    <string name="activity_rpe">How hard it felt (1–10)</string>
+    <string name="activity_rpe_hint">1 very easy · 5 steady, could talk · 8 hard · 10 all out</string>
+    <string name="activity_segments">The parts (optional)</string>
+    <string name="activity_segments_hint">Warm-up, each repeat, recovery, cool-down. With the parts, an interval session keeps its shape instead of becoming one average. Times as 4:30; an empty total time is added up from them.</string>
+    <string name="activity_segments_error">A part has a number that can\'t be read.</string>
+    <string name="activity_add_repeats">Add repeats</string>
+    <string name="activity_repeats_count">How many</string>
+    <string name="activity_repeats_hint">Give a time, a distance or both. Leave the recovery empty for none.</string>
+    <string name="activity_notes">Notes</string>
+    <string name="activity_save">Save</string>
+    <string name="activity_delete_title">Delete this activity?</string>
+    <string name="activity_km">%1$s km</string>
+    <string name="activity_pace">%1$s /km</string>
+    <string name="activity_pace_is">Pace %1$s /km</string>
+    <string name="activity_hr">HR %1$d</string>
+    <string name="history_stat_km">km</string>
+    <plurals name="activity_segments_count">
+        <item quantity="one">%1$d part</item>
+        <item quantity="other">%1$d parts</item>
+    </plurals>
+    <string name="segment_warmup">Warm-up</string>
+    <string name="segment_work">Work</string>
+    <string name="segment_recovery">Recovery</string>
+    <string name="segment_cooldown">Cool-down</string>
+    <string name="segment_steady">Steady</string>
+</resources>

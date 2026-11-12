@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ok">אישור</string>
+    <string name="activity_log">רישום פעילות</string>
+    <string name="ai_history_ask_short">לשאול את המאמן</string>
+    <string name="activity_new">פעילות חדשה</string>
+    <string name="activity_edit">פעילות</string>
+    <string name="activity_type_run">ריצה</string>
+    <string name="activity_type_walk">הליכה</string>
+    <string name="activity_type_hike">טיול</string>
+    <string name="activity_type_ride">רכיבה</string>
+    <string name="activity_type_swim">שחייה</string>
+    <string name="activity_type_other">אחר</string>
+    <string name="activity_title">כותרת (לא חובה)</string>
+    <string name="activity_duration">זמן</string>
+    <string name="activity_duration_error">למשל 45:30 או 1:05:30. או להשאיר ריק ולתת זמן לכל חלק.</string>
+    <string name="activity_distance">ק״מ</string>
+    <string name="activity_avg_hr">דופק ממוצע</string>
+    <string name="activity_max_hr">דופק מקס׳</string>
+    <string name="activity_elevation">טיפוס מ׳</string>
+    <string name="activity_rpe">כמה קשה זה הרגיש (1–10)</string>
+    <string name="activity_rpe_hint">1 קל מאוד · 5 נינוח, אפשר לדבר · 8 קשה · 10 מקסימום</string>
+    <string name="activity_segments">החלקים (לא חובה)</string>
+    <string name="activity_segments_hint">חימום, כל חזרה, התאוששות, שחרור. עם החלקים, אימון אינטרוולים שומר על המבנה שלו ולא הופך לממוצע אחד. זמנים בפורמט 4:30; זמן כולל ריק מחושב מהם.</string>
+    <string name="activity_segments_error">יש בחלק מספר שאי אפשר לקרוא.</string>
+    <string name="activity_add_repeats">הוספת חזרות</string>
+    <string name="activity_repeats_count">כמה</string>
+    <string name="activity_repeats_hint">זמן, מרחק או שניהם. התאוששות ריקה = בלי.</string>
+    <string name="activity_notes">הערות</string>
+    <string name="activity_save">שמירה</string>
+    <string name="activity_delete_title">למחוק את הפעילות?</string>
+    <string name="activity_km">%1$s ק״מ</string>
+    <string name="activity_pace">%1$s לק״מ</string>
+    <string name="activity_pace_is">קצב %1$s לק״מ</string>
+    <string name="activity_hr">דופק %1$d</string>
+    <string name="history_stat_km">ק״מ</string>
+    <plurals name="activity_segments_count">
+        <item quantity="one">חלק אחד</item>
+        <item quantity="two">%1$d חלקים</item>
+        <item quantity="other">%1$d חלקים</item>
+    </plurals>
+    <string name="segment_warmup">חימום</string>
+    <string name="segment_work">עבודה</string>
+    <string name="segment_recovery">התאוששות</string>
+    <string name="segment_cooldown">שחרור</string>
+    <string name="segment_steady">רציף</string>
+</resources>

@@ -1,0 +1,71 @@
+<resources>
+    <!-- History tab -->
+    <string name="history_last_7_days">7 הימים האחרונים</string>
+    <string name="history_stat_workouts">אימונים</string>
+    <string name="history_stat_time">זמן</string>
+    <string name="history_stat_sets">סטים</string>
+    <string name="history_stat_volume">נפח</string>
+    <string name="history_muscles_title">שרירים שעבדו · 7 הימים האחרונים</string>
+    <string name="history_muscles_none">אין סטים ב-7 הימים האחרונים.</string>
+    <string name="history_muscles_caption">סטים לכל שריר ב-7 הימים האחרונים, מהעמוס ביותר. סט נספר כ-1 לשרירים הראשיים של התרגיל וכ-½ לשרירים המשניים.</string>
+    <plurals name="history_muscles_uncounted">
+        <item quantity="one">סט אחד לא נספר: התרגיל שלו נמחק או שלא סומנו לו שרירים.</item>
+        <item quantity="two">%1$d סטים לא נספרו: התרגיל שלהם נמחק או שלא סומנו לו שרירים.</item>
+        <item quantity="other">%1$d סטים לא נספרו: התרגיל שלהם נמחק או שלא סומנו לו שרירים.</item>
+    </plurals>
+    <string name="history_muscles_untouched">לא עבדו השבוע</string>
+    <plurals name="history_sets">
+        <item quantity="one">סט אחד</item>
+        <item quantity="two">%1$d סטים</item>
+        <item quantity="other">%1$d סטים</item>
+    </plurals>
+    <string name="history_empty_title">עוד אין אימונים</string>
+    <string name="history_empty_body">סיים אימון ושמור אותו. הוא יופיע כאן עם הסטים, השיאים וההתקדמות שלך.</string>
+
+    <!-- One finished workout -->
+    <string name="session_not_found">האימון הזה כבר לא נמצא בהיסטוריה.</string>
+    <string name="session_notes">הערות</string>
+    <string name="session_edit_notes">עריכת הערות</string>
+    <string name="session_notes_save">שמירה</string>
+    <string name="session_delete_title">למחוק את האימון מההיסטוריה?</string>
+    <string name="session_delete_body">גם הסטים שלו יימחקו, והשיאים יחושבו מחדש בלעדיו. אי אפשר לבטל את זה.</string>
+    <string name="session_ended_early">הסתיים מוקדם: נרשמו %1$d מתוך %2$d סטים מתוכננים.</string>
+    <string name="session_open_workout">פתיחת האימון</string>
+    <string name="session_no_sets">לא נרשמו סטים באימון הזה.</string>
+    <string name="session_exercise_deleted">תרגיל שנמחק</string>
+    <string name="session_exercise_removed_note">כבר לא נמצא בספרייה שלך.</string>
+    <string name="session_set">סט %1$d</string>
+
+    <!-- Records and progress -->
+    <string name="record_new">שיא חדש: %1$s</string>
+    <string name="record_weight_reps">%1$s × %2$d</string>
+    <string name="metric_weight">המשקל הכבד ביותר</string>
+    <string name="metric_volume">הנפח הגדול ביותר</string>
+    <string name="metric_reps">הכי הרבה חזרות</string>
+    <string name="metric_seconds">הזמן הארוך ביותר</string>
+    <string name="metric_distance">המרחק הארוך ביותר</string>
+    <string name="metric_desc_weight">הסט הכבד ביותר</string>
+    <string name="metric_desc_volume">הנפח הכולל (חזרות × ק\"ג)</string>
+    <string name="metric_desc_reps">הכי הרבה חזרות בסט</string>
+    <string name="metric_desc_seconds">הסט הארוך ביותר</string>
+    <string name="metric_desc_distance">המרחק הארוך ביותר בסט</string>
+    <string name="progress_title">התקדמות</string>
+    <string name="progress_none">התרגיל עוד לא בוצע באימון שנשמר. השיאים וגרף ההתקדמות יופיעו כאן.</string>
+    <string name="progress_no_numbers">כל הסטים של התרגיל דולגו או נרשמו בלי מספרים, אז אין מה להציג בגרף.</string>
+    <string name="progress_records">שיאים אישיים</string>
+    <string name="progress_chart_caption">%1$s בכל אימון. כל נקודה היא אימון אחד. הזמן מתקדם משמאל לימין, כך שהאימון האחרון בצד ימין. גע בגרף כדי לראות אימון מסוים.</string>
+    <string name="progress_chart_a11y">גרף של %1$s לאורך %2$d אימונים: %3$s ב-%4$s, האחרון %5$s ב-%6$s, השיא %7$s.</string>
+    <string name="progress_chart_needs_two">הגרף יופיע אחרי שהתרגיל יהיה בשני אימונים שנשמרו.</string>
+    <string name="progress_workouts">%1$s, לפי אימון</string>
+    <string name="progress_show_all">הצגת כל ה-%1$d</string>
+    <string name="progress_show_less">הצגת פחות</string>
+
+    <!-- Calendar -->
+    <string name="calendar_add">הוספה ליומן</string>
+    <string name="calendar_no_app">לא נמצאה אפליקציית יומן בטלפון.</string>
+    <string name="calendar_footer">נוסף מ-Flownics</string>
+
+    <!-- Logged values -->
+    <string name="logged_skipped">דולג</string>
+    <string name="logged_nothing">בוצע (בלי מספרים)</string>
+</resources>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_data_section">הנתונים שלך</string>
+    <string name="settings_data">גיבוי ושיתוף</string>
+    <string name="settings_data_hint">שמירת גיבוי, שחזור, גיבוי אוטומטי ושיתוף אימונים עם חברים</string>
+
+    <string name="data_title">גיבוי ושיתוף</string>
+    <string name="data_backup_title">גיבוי</string>
+    <string name="data_backup_body">קובץ אחד עם כל מה שיש באפליקציה: תרגילים עם התמונות והסרטונים שלהם, אימונים, היסטוריה, וריאציות, הערות AI ויומן העלויות של ה-AI. מפתחות ה-AI אף פעם לא נכללים. אחרי שחזור בטלפון אחר צריך להזין אותם מחדש.</string>
+    <string name="data_backup_save">שמירת קובץ גיבוי</string>
+    <string name="data_backup_restore">שחזור מגיבוי</string>
+
+    <string name="data_auto_title">גיבוי אוטומטי</string>
+    <string name="data_auto_body">כשיוצאים מהאפליקציה ועבר יום מהגיבוי האחרון, נשמר גיבוי חדש בתיקייה שבחרת, למשל תיקייה שמסונכרנת לענן. נשמרים %1$d הגיבויים האחרונים, וגיבויים ישנים יותר שהאפליקציה יצרה נמחקים.</string>
+    <string name="data_auto_choose_folder">בחירת תיקייה</string>
+    <string name="data_auto_enabled">גיבוי אוטומטי</string>
+    <string name="data_auto_folder">תיקייה: %1$s</string>
+    <string name="data_auto_folder_unknown">(נבחרה)</string>
+    <string name="data_auto_change_folder">שינוי</string>
+    <string name="data_auto_running">מגבה…</string>
+    <string name="data_auto_problem_access">הגיבוי האחרון נכשל (%1$s): לאפליקציה כבר אין גישה לתיקייה. צריך לבחור אותה שוב.</string>
+    <string name="data_auto_problem_write">הגיבוי האחרון נכשל (%1$s): לא הצלחתי לכתוב את הקובץ. כדאי לבדוק שיש מקום פנוי.</string>
+    <string name="data_auto_last">גיבוי אחרון: %1$s</string>
+    <string name="data_auto_never">עדיין אין גיבוי.</string>
+    <string name="data_auto_now">גיבוי עכשיו</string>
+
+    <string name="data_share_title">שיתוף עם חברים</string>
+    <string name="data_share_body">שליחת אימונים ותרגילים, כולל התמונות והסרטונים, כקובץ. ההיסטוריה וההערות האישיות נשארות אצלך. החבר פותח את הקובץ כאן דרך \"ייבוא קובץ של חבר\".</string>
+    <string name="data_share_choose">בחירה מה לשתף</string>
+    <string name="data_share_import">ייבוא קובץ של חבר</string>
+
+    <string name="data_busy_saving">כותב את הקובץ…</string>
+    <string name="data_busy_reading">קורא ובודק את הקובץ…</string>
+    <string name="data_busy_importing">מייבא…</string>
+
+    <string name="data_saved">הקובץ נשמר.</string>
+    <plurals name="data_imported_exercises">
+        <item quantity="one">נוסף תרגיל אחד</item>
+        <item quantity="two">נוספו %1$d תרגילים</item>
+        <item quantity="other">נוספו %1$d תרגילים</item>
+    </plurals>
+    <plurals name="data_imported_workouts">
+        <item quantity="one">ואימון אחד.</item>
+        <item quantity="two">ו-%1$d אימונים.</item>
+        <item quantity="other">ו-%1$d אימונים.</item>
+    </plurals>
+    <plurals name="data_imported_reused">
+        <item quantity="one">תרגיל אחד שכבר היה לך שימש במקום להוסיף אותו שוב.</item>
+        <item quantity="two">%1$d תרגילים שכבר היו לך שימשו במקום להוסיף אותם שוב.</item>
+        <item quantity="other">%1$d תרגילים שכבר היו לך שימשו במקום להוסיף אותם שוב.</item>
+    </plurals>
+    <string name="data_restored">השחזור מהגיבוי הושלם.</string>
+    <string name="data_restored_keys">אם זה טלפון חדש, צריך להזין שוב את מפתחות ה-AI בהגדרות של עוזר ה-AI.</string>
+
+    <plurals name="data_count_exercises">
+        <item quantity="one">תרגיל אחד</item>
+        <item quantity="two">%1$d תרגילים</item>
+        <item quantity="other">%1$d תרגילים</item>
+    </plurals>
+    <plurals name="data_count_workouts">
+        <item quantity="one">אימון אחד</item>
+        <item quantity="two">%1$d אימונים</item>
+        <item quantity="other">%1$d אימונים</item>
+    </plurals>
+    <plurals name="data_count_sessions">
+        <item quantity="one">אימון אחד בהיסטוריה</item>
+        <item quantity="two">%1$d אימונים בהיסטוריה</item>
+        <item quantity="other">%1$d אימונים בהיסטוריה</item>
+    </plurals>
+    <plurals name="data_count_media">
+        <item quantity="one">תמונה או סרטון אחד</item>
+        <item quantity="two">%1$d תמונות וסרטונים</item>
+        <item quantity="other">%1$d תמונות וסרטונים</item>
+    </plurals>
+    <plurals name="data_missing_media">
+        <item quantity="one">תמונה או סרטון אחד חסרו בטלפון ולא נכללו.</item>
+        <item quantity="two">%1$d תמונות או סרטונים חסרו בטלפון ולא נכללו.</item>
+        <item quantity="other">%1$d תמונות או סרטונים חסרו בטלפון ולא נכללו.</item>
+    </plurals>
+
+    <string name="data_preview_made">נוצר ב-%1$s</string>
+    <string name="data_preview_share_title">לייבא מחבר?</string>
+    <string name="data_preview_share_adds">אלה יתווספו לספרייה שלך. שום דבר שכבר יש לך לא ישתנה.</string>
+    <plurals name="data_preview_clashes">
+        <item quantity="one">כבר יש לך תרגיל אחד באותו שם:</item>
+        <item quantity="two">כבר יש לך %1$d תרגילים באותם שמות:</item>
+        <item quantity="other">כבר יש לך %1$d תרגילים באותם שמות:</item>
+    </plurals>
+    <string name="data_preview_use_mine">להשתמש בשלי (האימונים שלו יפנו לתרגילים שלי)</string>
+    <string name="data_preview_add_copies">להוסיף גם את שלו, בשם ממוספר</string>
+    <string name="data_preview_import">ייבוא</string>
+    <string name="data_preview_restore_title">לשחזר את הגיבוי הזה?</string>
+    <string name="data_preview_restore_warning">השחזור מחליף את כל מה שיש עכשיו באפליקציה (%1$s, %2$s, %3$s). אי אפשר לבטל את זה.</string>
+    <string name="data_preview_save_first">קודם לשמור גיבוי של מה שיש עכשיו</string>
+    <string name="data_preview_replace">להחליף הכול</string>
+
+    <string name="data_error_not_bundle">זה לא קובץ של Flownics, או שהקובץ פגום. שום דבר לא השתנה.</string>
+    <string name="data_error_newer">הקובץ נוצר בגרסה חדשה יותר של Flownics. צריך לעדכן את האפליקציה ולנסות שוב. שום דבר לא השתנה.</string>
+    <string name="data_error_too_large">הקובץ גדול ממה שהאפליקציה מקבלת. שום דבר לא השתנה.</string>
+    <string name="data_error_bad_media">תמונה או סרטון בקובץ חסרים, או שהם לא מה שהם אמורים להיות (%1$s). שום דבר לא השתנה.</string>
+    <string name="data_error_invalid">התוכן של הקובץ לא מסתדר, אז שום דבר לא השתנה. פרטים: %1$s</string>
+    <string name="data_error_workout_running">יש אימון באמצע. צריך לסיים אותו או לבטל אותו קודם.</string>
+    <string name="data_error_io">לא הצלחתי לקרוא או לכתוב את הקובץ: %1$s</string>
+
+    <string name="share_menu">שיתוף</string>
+    <string name="share_title">שיתוף</string>
+    <string name="share_intro">מסמנים מה לשלוח. אימון מביא איתו את התרגילים שלו. היסטוריה והערות אישיות אף פעם לא נכללות.</string>
+    <string name="share_include_media">לכלול תמונות וסרטונים</string>
+    <string name="share_include_media_hint">בלעדיהם הקובץ קטן בהרבה. קישורי יוטיוב תמיד נכללים.</string>
+    <string name="share_workouts">אימונים</string>
+    <string name="share_exercises">תרגילים</string>
+    <string name="share_with_workout">נכלל עם אימון מסומן</string>
+    <string name="share_send">שיתוף…</string>
+    <string name="share_save">שמירה לקובץ</string>
+    <string name="share_sheet_title">שיתוף קובץ Flownics</string>
+    <string name="share_file_title">אימונים ותרגילים</string>
+</resources>

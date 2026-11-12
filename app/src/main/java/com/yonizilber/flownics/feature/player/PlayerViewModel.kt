@@ -1,0 +1,72 @@
+package com.yonizilber.flownics.feature.player
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.yonizilber.flownics.data.local.media.MediaStorage
+import com.yonizilber.flownics.domain.model.Exercise
+import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.player.ActiveWorkout
+import com.yonizilber.flownics.player.CueProblem
+import com.yonizilber.flownics.player.PlayerController
+import com.yonizilber.flownics.player.WorkoutCues
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.io.File
+import javax.inject.Inject
+
+@HiltViewModel
+class PlayerViewModel @Inject constructor(
+    private val controller: PlayerController,
+    cues: WorkoutCues,
+    private val mediaStorage: MediaStorage,
+) : ViewModel() {
+
+    init {
+        controller.restoreIfNeeded()
+    }
+
+    val workout: StateFlow<ActiveWorkout?> = controller.state
+    val library: StateFlow<Map<Long, Exercise>> = controller.library
+    val cueProblems: StateFlow<Set<CueProblem>> = cues.problems
+
+    // What the user has dialed in for a set, by step index, until it is logged. Kept here rather
+    // than in the screen so a rotation doesn't reset it.
+    private val _entries = MutableStateFlow<Map<Int, SetTarget>>(emptyMap())
+    val entries: StateFlow<Map<Int, SetTarget>> = _entries.asStateFlow()
+
+    fun setEntry(index: Int, value: SetTarget) = _entries.update { it + (index to value) }
+
+    fun done(actual: SetTarget?) = controller.done(actual)
+
+    fun skip() = controller.skip()
+
+    fun previous() = controller.previous()
+
+    fun pause() = controller.pause()
+
+    fun resume() = controller.resume()
+
+    fun adjust(deltaSeconds: Int) = controller.adjust(deltaSeconds)
+
+    fun end() = controller.end()
+
+    fun dismissRestoredNotice() = controller.dismissRestoredNotice()
+
+    /** [onDone] gets the saved session's id, or null if the workout was already gone. */
+    fun finish(notes: String, onDone: (Long?) -> Unit) {
+        viewModelScope.launch { onDone(controller.finish(notes)) }
+    }
+
+    fun discard(onDone: () -> Unit) {
+        viewModelScope.launch {
+            controller.discard()
+            onDone()
+        }
+    }
+
+    fun mediaFile(name: String): File = mediaStorage.file(name)
+}

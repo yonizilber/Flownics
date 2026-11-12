@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_data_section">Your data</string>
+    <string name="settings_data">Backup and sharing</string>
+    <string name="settings_data_hint">Save a backup, restore one, back up automatically, or share workouts with friends</string>
+
+    <string name="data_title">Backup and sharing</string>
+    <string name="data_backup_title">Backup</string>
+    <string name="data_backup_body">One file with everything in the app: exercises with their photos and videos, workouts, history, variations, AI notes and the AI spend log. AI keys are never included; after restoring on another phone, enter them again.</string>
+    <string name="data_backup_save">Save a backup file</string>
+    <string name="data_backup_restore">Restore from a backup</string>
+
+    <string name="data_auto_title">Automatic backup</string>
+    <string name="data_auto_body">When you leave the app and the last backup is a day old, a new one is saved to a folder you choose, for example one your cloud drive syncs. The newest %1$d are kept; older ones the app made are deleted.</string>
+    <string name="data_auto_choose_folder">Choose a folder</string>
+    <string name="data_auto_enabled">Back up automatically</string>
+    <string name="data_auto_folder">Folder: %1$s</string>
+    <string name="data_auto_folder_unknown">(chosen)</string>
+    <string name="data_auto_change_folder">Change</string>
+    <string name="data_auto_running">Backing up…</string>
+    <string name="data_auto_problem_access">The last backup failed (%1$s): the app can no longer reach the folder. Choose it again.</string>
+    <string name="data_auto_problem_write">The last backup failed (%1$s): the file couldn\'t be written. Check that there is free space.</string>
+    <string name="data_auto_last">Last backup: %1$s</string>
+    <string name="data_auto_never">No backup yet.</string>
+    <string name="data_auto_now">Back up now</string>
+
+    <string name="data_share_title">Share with friends</string>
+    <string name="data_share_body">Send workouts and exercises, with their photos and videos, as a file. Your history and personal notes stay with you. A friend opens it here with \"Import a friend\'s file\".</string>
+    <string name="data_share_choose">Choose what to share</string>
+    <string name="data_share_import">Import a friend\'s file</string>
+
+    <string name="data_busy_saving">Writing the file…</string>
+    <string name="data_busy_reading">Reading and checking the file…</string>
+    <string name="data_busy_importing">Importing…</string>
+
+    <string name="data_saved">File saved.</string>
+    <plurals name="data_imported_exercises">
+        <item quantity="one">Added %1$d exercise</item>
+        <item quantity="other">Added %1$d exercises</item>
+    </plurals>
+    <plurals name="data_imported_workouts">
+        <item quantity="one">and %1$d workout.</item>
+        <item quantity="other">and %1$d workouts.</item>
+    </plurals>
+    <plurals name="data_imported_reused">
+        <item quantity="one">%1$d exercise you already had was used instead of adding it again.</item>
+        <item quantity="other">%1$d exercises you already had were used instead of adding them again.</item>
+    </plurals>
+    <string name="data_restored">Restored from the backup.</string>
+    <string name="data_restored_keys">If this is a new phone, enter your AI keys again in the AI assistant settings.</string>
+
+    <plurals name="data_count_exercises">
+        <item quantity="one">%1$d exercise</item>
+        <item quantity="other">%1$d exercises</item>
+    </plurals>
+    <plurals name="data_count_workouts">
+        <item quantity="one">%1$d workout</item>
+        <item quantity="other">%1$d workouts</item>
+    </plurals>
+    <plurals name="data_count_sessions">
+        <item quantity="one">%1$d workout in history</item>
+        <item quantity="other">%1$d workouts in history</item>
+    </plurals>
+    <plurals name="data_count_media">
+        <item quantity="one">%1$d photo or video</item>
+        <item quantity="other">%1$d photos and videos</item>
+    </plurals>
+    <plurals name="data_missing_media">
+        <item quantity="one">%1$d photo or video was missing from the phone and was left out.</item>
+        <item quantity="other">%1$d photos or videos were missing from the phone and were left out.</item>
+    </plurals>
+
+    <string name="data_preview_made">Made %1$s</string>
+    <string name="data_preview_share_title">Import from a friend?</string>
+    <string name="data_preview_share_adds">These are added to your library. Nothing you already have is changed.</string>
+    <plurals name="data_preview_clashes">
+        <item quantity="one">You already have %1$d exercise with the same name:</item>
+        <item quantity="other">You already have %1$d exercises with the same names:</item>
+    </plurals>
+    <string name="data_preview_use_mine">Use mine (their workouts will point to my exercises)</string>
+    <string name="data_preview_add_copies">Add theirs as well, under a numbered name</string>
+    <string name="data_preview_import">Import</string>
+    <string name="data_preview_restore_title">Restore this backup?</string>
+    <string name="data_preview_restore_warning">Restoring replaces everything now in the app (%1$s, %2$s, %3$s). This can\'t be undone.</string>
+    <string name="data_preview_save_first">Save a backup of what\'s here first</string>
+    <string name="data_preview_replace">Replace everything</string>
+
+    <string name="data_error_not_bundle">This isn\'t a Flownics file, or it is damaged. Nothing was changed.</string>
+    <string name="data_error_newer">This file was made by a newer version of Flownics. Update the app and try again. Nothing was changed.</string>
+    <string name="data_error_too_large">The file is larger than the app accepts. Nothing was changed.</string>
+    <string name="data_error_bad_media">A photo or video in the file is missing or isn\'t what it claims to be (%1$s). Nothing was changed.</string>
+    <string name="data_error_invalid">The file\'s contents don\'t add up, so nothing was changed. Details: %1$s</string>
+    <string name="data_error_workout_running">A workout is in progress. Finish or discard it first.</string>
+    <string name="data_error_io">The file couldn\'t be read or written: %1$s</string>
+
+    <string name="share_menu">Share</string>
+    <string name="share_title">Share</string>
+    <string name="share_intro">Tick what to send. A workout brings the exercises it uses. History and personal notes are never included.</string>
+    <string name="share_include_media">Include photos and videos</string>
+    <string name="share_include_media_hint">Without them the file is much smaller; YouTube links are always included.</string>
+    <string name="share_workouts">Workouts</string>
+    <string name="share_exercises">Exercises</string>
+    <string name="share_with_workout">Comes with a ticked workout</string>
+    <string name="share_send">Share…</string>
+    <string name="share_save">Save to a file</string>
+    <string name="share_sheet_title">Share Flownics file</string>
+    <string name="share_file_title">Workouts and exercises</string>
+</resources>

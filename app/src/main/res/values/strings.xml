@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Flownics</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_workouts">Workouts</string>
+    <string name="nav_library">Exercises</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Placeholders for screens built in later phases -->
+
+    <!-- Health disclaimer (first launch + settings) -->
+    <string name="disclaimer_title">Before you start</string>
+    <string name="disclaimer_body">Flownics helps you organize and time your own workouts. It is not medical advice and does not replace a doctor, physiotherapist or certified trainer.\n\nConsult a doctor before starting a new exercise program, especially if you have a medical condition, an injury, or are pregnant. Stop exercising if you feel pain, dizziness or shortness of breath.\n\nAI answers in the app can be wrong. Treat them as suggestions, not instructions.\n\nYour workouts are stored only on this device. Nothing is sent anywhere unless you choose to ask the AI, using your own key.</string>
+    <string name="disclaimer_accept">I understand</string>
+
+    <!-- Settings -->
+    <string name="settings_about_section">About</string>
+    <string name="settings_show_disclaimer">Health and AI disclaimer</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_hint">Change the app language in Android Settings › Apps › Flownics › Language.</string>
+    <string name="close">Close</string>
+</resources>

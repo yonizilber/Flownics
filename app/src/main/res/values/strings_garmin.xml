@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="garmin_title">Garmin</string>
+    <string name="garmin_settings_hint">Bring in your runs and other activities from Garmin Connect</string>
+    <string name="garmin_intro">With your own personal API key from Garmin, Flownics brings in each activity you record (the full recording: every lap, pace, heart rate, cadence, step length) into your journal, and matches it to your plan. It only reads, and only your own account.</string>
+    <string name="garmin_steps_title">Connecting, once</string>
+    <string name="garmin_steps">1. Open the key page in Garmin Connect (signed in to your account).\n2. Create Key, accept Garmin\'s terms, and choose how long it lasts (up to a year).\n3. Copy the key (Garmin shows it only once) and paste it here.</string>
+    <string name="garmin_open_key_page">Open the key page</string>
+    <string name="garmin_key">Personal API key</string>
+    <string name="garmin_save_key">Save and check</string>
+    <string name="garmin_key_ok">Garmin accepted the key.</string>
+    <string name="garmin_connected">Connected to Garmin</string>
+    <string name="garmin_connect">Connect Garmin</string>
+    <string name="garmin_last_sync">Last synced %1$s</string>
+    <string name="garmin_sync_now">Sync from Garmin</string>
+    <string name="garmin_remove_key">Remove the key</string>
+    <string name="garmin_how_sync">The journal syncs by itself when you open it (every few hours), from 30 days back the first time. Each activity is downloaded once; already imported ones are skipped. When the key expires, make a new one and paste it here.</string>
+    <string name="garmin_privacy">The key is kept encrypted on this phone (Android Keystore), is sent only to Garmin, and isn\'t in backups. Garmin intends the personal key for your own data, not for apps serving others.</string>
+    <string name="garmin_file_alternative">Without a key: in Garmin Connect, open an activity, ⋮, Export Original, and import the file in the journal (Import a FIT file).</string>
+    <string name="garmin_some_failed">%1$d couldn\'t be read.</string>
+    <string name="garmin_error_no_key">There is no Garmin key yet.</string>
+    <string name="garmin_error_key">Garmin refused the key. It may have expired or been deleted: make a new one and paste it here.</string>
+    <string name="garmin_error_network">Garmin couldn\'t be reached. Check the connection and try again.</string>
+    <string name="garmin_error_other">Garmin sync failed: %1$s</string>
+    <string name="fit_import">Import a FIT file</string>
+    <string name="fit_imported">Activity imported.</string>
+    <string name="fit_already">This recording is already in your journal.</string>
+    <string name="fit_unreadable">The file couldn\'t be opened.</string>
+    <string name="fit_error">The file couldn\'t be read as a recording: %1$s</string>
+    <string name="fit_recorded_title">Recorded by the watch</string>
+    <string name="fit_cadence">Cadence: %1$d steps/min</string>
+    <string name="fit_cadence_rpm">Cadence: %1$d rpm</string>
+    <string name="fit_cadence_short">%1$d spm</string>
+    <string name="fit_step_length">Step length: %1$d cm</string>
+    <string name="fit_step_length_derived">Step length: about %1$d cm (from speed and cadence)</string>
+    <string name="fit_step_short">step %1$d cm</string>
+    <string name="fit_vertical_oscillation">Vertical oscillation: %1$.1f cm</string>
+    <string name="fit_ground_contact">Ground contact: %1$d ms</string>
+    <string name="fit_power">Power: %1$d W</string>
+    <string name="fit_decoupling">Heart-rate drift: %1$.1f%%</string>
+    <string name="fit_decoupling_hint" formatted="false">How much the heart rate rose against the pace from the first half to the second. Under about 5% on a steady easy run is good aerobic endurance; on intervals or a progression run it means little.</string>
+    <string name="fit_splits">Each kilometre</string>
+    <string name="fit_split_km">km %1$d</string>
+    <plurals name="garmin_synced">
+        <item quantity="one">%1$d new activity from Garmin.</item>
+        <item quantity="other">%1$d new activities from Garmin.</item>
+    </plurals>
+    <string name="watch_title">From your watch</string>
+    <string name="watch_avg_hr">Avg HR %1$d</string>
+    <string name="watch_max_hr">max %1$d</string>
+    <string name="watch_set_hr">HR %1$d, peak %2$d</string>
+    <string name="watch_set_drop">−%1$d in the next minute</string>
+    <string name="watch_chart_caption">The line is the heart rate the watch measured; the shaded bands are your sets, as you started and finished them in the app. Time runs left to right.</string>
+    <string name="watch_chart_description">Heart rate over the workout, from %1$d to %2$d, with %3$d sets marked.</string>
+    <string name="watch_open">The recording</string>
+    <string name="watch_keep_apart">Not this workout</string>
+</resources>
