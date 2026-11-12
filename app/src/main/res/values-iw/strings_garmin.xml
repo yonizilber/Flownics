@@ -55,4 +55,15 @@
     <string name="watch_chart_description">דופק לאורך האימון, מ-%1$d עד %2$d, עם %3$d סטים מסומנים.</string>
     <string name="watch_open">ההקלטה</string>
     <string name="watch_keep_apart">זה לא האימון הזה</string>
+    <string name="zones_title">זמן באזורי דופק</string>
+    <string name="zones_caption">אזורים לפי הדופק המקסימלי שלך %2$d (ודופק מנוחה, אם הוזן): %1$s. מגדירים ב"מה המאמן זוכר".</string>
+    <string name="zones_caption_estimated">אזורים לפי הדופק הגבוה ביותר שההקלטות מדדו, %2$d (אפשר להזין את המקסימום האמיתי ב"מה המאמן זוכר"): %1$s.</string>
+    <string name="load_title">עומס אימונים</string>
+    <string name="load_line">7 הימים האחרונים %1$d · ממוצע שבועי ב-4 שבועות %2$d</string>
+    <string name="load_ratio">יחס %1$s</string>
+    <string name="load_caption">העומס הוא דקות בכל אזור דופק כפול מספר האזור (1–5), מ-%1$d הקלטות עם דופק; %2$d בלי דופק לא נספרות. כל עמודה היא יום, הישן משמאל. יחס מעל 1.3 הוא קפיצה חדה; מתחת ל-0.8, תקופה קלה.</string>
+    <string name="load_caption_max_estimated">דופק מקסימלי נלקח כ-%1$d מההקלטות.</string>
+    <string name="coach_profile_max_hr">דופק מקסימלי</string>
+    <string name="coach_profile_rest_hr">דופק מנוחה</string>
+    <string name="coach_profile_hr_hint">לאזורי דופק ולעומס אימונים. בלי מקסימום, נלקח הגבוה ביותר שההקלטות מדדו.</string>
 </resources>

@@ -4,6 +4,7 @@ import com.yonizilber.flownics.domain.ai.FitnessPrompts
 import com.yonizilber.flownics.domain.history.ExerciseProgress
 import com.yonizilber.flownics.domain.history.MuscleLoad
 import com.yonizilber.flownics.domain.history.ProgressMetric
+import com.yonizilber.flownics.domain.fit.HeartZones
 import com.yonizilber.flownics.domain.model.Activity
 import com.yonizilber.flownics.domain.model.ActivityFormat
 import com.yonizilber.flownics.domain.model.Exercise
@@ -50,6 +51,8 @@ object CoachFormat {
         estimatedMinutes: (WorkoutTemplate) -> Int,
         activities: List<Activity> = emptyList(),
         plans: List<PlannedWorkout> = emptyList(),
+        /** Training load in words, when there is heart rate to work it out from. */
+        load: String? = null,
     ): String = buildString {
         val now = Instant.ofEpochMilli(nowMillis).atZone(zone)
         appendLine("Now: ${now.toLocalDate()} (${now.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH)}) ${now.format(time)}, time zone ${zone.id}.")
@@ -93,6 +96,7 @@ object CoachFormat {
         val ahead = plans.filter { it.date >= today && it.date <= today.plusDays(14) }
         appendLine("Planned for the next 14 days (today included): ${ahead.size}${if (ahead.isEmpty()) "." else ":"}")
         ahead.forEach { appendLine("- " + planLine(it, matched[it.id], names)) }
+        load?.let { appendLine(it) }
         val weekIds = sessions.filter { it.startedAtMillis >= nowMillis - 7 * DAY_MILLIS }.map { it.id }.toSet()
         appendLine("Sets per muscle, last 7 days: " + loadLine(MuscleLoad.of(logs.filter { it.sessionId in weekIds }, library)))
         if (workouts.isEmpty()) {
@@ -121,6 +125,7 @@ object CoachFormat {
         activities: List<Activity> = emptyList(),
         /** Watch recordings made during workouts, by session id. */
         watch: Map<Long, Activity> = emptyMap(),
+        zones: HeartZones? = null,
     ): String = buildString {
         val start = from.atStartOfDay(zone).toInstant().toEpochMilli()
         val end = to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -145,7 +150,7 @@ object CoachFormat {
         shownActivities.forEach { a ->
             appendLine()
             // Kilometre splits only when few activities are shown: a long range stays readable.
-            append(activityDetail(a, zone, withSplits = shownActivities.size <= SPLITS_UP_TO))
+            append(activityDetail(a, zone, withSplits = shownActivities.size <= SPLITS_UP_TO, zones = zones))
             appendLine()
         }
         shownSessions.forEach { s ->
@@ -156,6 +161,7 @@ object CoachFormat {
             val heart = recording?.metrics?.sets.orEmpty().associateBy { it.stepIndex }
             recording?.let { r ->
                 appendLine("  Watch: " + listOfNotNull(r.avgHeartRate?.let { "avg HR $it" }, r.maxHeartRate?.let { "max HR $it" }).joinToString(", ").ifEmpty { "recorded, no heart rate" })
+                zonesLine(r, zones)?.let { appendLine("  $it") }
             }
             sets.groupBy { it.exerciseId }.forEach { (id, exerciseSets) ->
                 val name = library[id]?.name ?: exerciseSets.first().exerciseName
@@ -221,6 +227,14 @@ object CoachFormat {
         if (p.notes.isNotBlank()) append("; aim: ${p.notes.replace('\n', ' ')}")
     }
 
+    /** "Time in zones: Z1 5 min, Z2 30 min…; load 85" for a recording with heart rate. */
+    private fun zonesLine(a: Activity, zones: HeartZones?): String? {
+        val h = a.metrics?.hrHistogram.orEmpty()
+        if (zones == null || h.sum() == 0) return null
+        val minutes = zones.secondsInZones(h).map { (it + 30) / 60 }
+        return "Time in zones: " + minutes.mapIndexed { i, m -> "Z${i + 1} $m min" }.joinToString(", ") + "; load ${zones.trimp(h)}"
+    }
+
     /** One line: when, what, how far, how long, how fast, how hard. */
     fun activityHeadline(a: Activity, zone: ZoneId): String = buildString {
         append("${day(a.startedAtMillis, zone)} ${Instant.ofEpochMilli(a.startedAtMillis).atZone(zone).format(time)}: ")
@@ -236,7 +250,7 @@ object CoachFormat {
     }
 
     /** The headline, then every part in order (so intervals keep their shape), then the notes. */
-    fun activityDetail(a: Activity, zone: ZoneId, withSplits: Boolean = true): String = buildString {
+    fun activityDetail(a: Activity, zone: ZoneId, withSplits: Boolean = true, zones: HeartZones? = null): String = buildString {
         append(activityHeadline(a, zone))
         a.segments.forEachIndexed { i, s ->
             appendLine()
@@ -265,6 +279,10 @@ object CoachFormat {
             if (form.isNotEmpty()) {
                 appendLine()
                 append("  Recorded: " + form.joinToString(", "))
+            }
+            zonesLine(a, zones)?.let {
+                appendLine()
+                append("  $it")
             }
             if (m.cadenceIsSteps && m.splits.isNotEmpty() && withSplits) {
                 appendLine()

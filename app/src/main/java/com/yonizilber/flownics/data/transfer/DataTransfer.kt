@@ -94,7 +94,7 @@ class DataTransfer @Inject constructor(
                 }
             },
             coachNotes = dao.coachNotes().map { CoachNoteDto(it.id, it.text, it.createdAtMillis) },
-            coachProfile = coach.profile.value.let { CoachProfileDto(it.goals, it.limitations, it.equipment, it.schedule) },
+            coachProfile = coach.profile.value.let { CoachProfileDto(it.goals, it.limitations, it.equipment, it.schedule, it.maxHeartRate, it.restingHeartRate) },
             plans = dao.plans().map { it.toDto(json) },
         )
         write(out, BundleKind.BACKUP, data, includeMedia = true)
@@ -309,7 +309,7 @@ class DataTransfer @Inject constructor(
                 dao.insertPlans(data.plans.map { it.toEntity(json) })
             }
             // A backup from before the coach existed has no profile: the current one stays.
-            data.coachProfile?.let { coach.saveProfile(CoachProfile(it.goals, it.limitations, it.equipment, it.schedule)) }
+            data.coachProfile?.let { coach.saveProfile(CoachProfile(it.goals, it.limitations, it.equipment, it.schedule, it.maxHeartRate, it.restingHeartRate)) }
         } catch (e: Exception) {
             media.delete(created)
             throw e

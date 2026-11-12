@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.history.detail
 
+import com.yonizilber.flownics.data.garmin.ZonesInfo
+import com.yonizilber.flownics.ui.component.ZonesBar
 import com.yonizilber.flownics.domain.model.SetHeart
 import com.yonizilber.flownics.domain.fit.HeartPoint
 import androidx.compose.ui.semantics.semantics
@@ -95,6 +97,7 @@ fun SessionDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val watch by viewModel.watch.collectAsStateWithLifecycle()
+    val zonesInfo by viewModel.zonesInfo.collectAsStateWithLifecycle()
     val loaded = state as? SessionDetailUiState.Loaded
     var menuOpen by remember { mutableStateOf(false) }
     var editingNotes by remember { mutableStateOf(false) }
@@ -154,7 +157,7 @@ fun SessionDetailScreen(
                     stringResource(R.string.session_not_found),
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                 )
-                is SessionDetailUiState.Loaded -> SessionContent(s, onOpenExercise, onOpenWorkout, watch, viewModel::keepApart, onOpenActivity)
+                is SessionDetailUiState.Loaded -> SessionContent(s, onOpenExercise, onOpenWorkout, watch, viewModel::keepApart, onOpenActivity, zonesInfo)
             }
         }
     }
@@ -194,6 +197,7 @@ private fun SessionContent(
     watch: WatchData?,
     onKeepApart: () -> Unit,
     onOpenActivity: (Long) -> Unit,
+    zonesInfo: ZonesInfo?,
 ) {
     val session = state.session
     val dates = rememberDateTexts()
@@ -227,7 +231,7 @@ private fun SessionContent(
             }
         }
         watch?.let { w ->
-            item(key = "watch") { WatchCard(w, state.logs, session, onKeepApart, onOpenActivity) }
+            item(key = "watch") { WatchCard(w, state.logs, session, onKeepApart, onOpenActivity, zonesInfo) }
         }
         if (state.logs.size < state.plannedSets) {
             item(key = "early") {
@@ -334,7 +338,7 @@ private fun ExerciseCard(exercise: ExerciseSets, session: WorkoutSession, heart:
  * set and falls in the rest. Totals above; "keep apart" if the recording wasn't of this workout.
  */
 @Composable
-private fun WatchCard(watch: WatchData, logs: List<SetLog>, session: WorkoutSession, onKeepApart: () -> Unit, onOpenActivity: (Long) -> Unit) {
+private fun WatchCard(watch: WatchData, logs: List<SetLog>, session: WorkoutSession, onKeepApart: () -> Unit, onOpenActivity: (Long) -> Unit, zonesInfo: ZonesInfo?) {
     val a = watch.activity
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -358,6 +362,7 @@ private fun WatchCard(watch: WatchData, logs: List<SetLog>, session: WorkoutSess
                 HeartChart(watch.heart, bands, start, end)
                 Text(stringResource(R.string.watch_chart_caption), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            zonesInfo?.let { z -> a.metrics?.let { m -> ZonesBar(m.hrHistogram, z.zones, z.maxFromRecordings) } }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { onOpenActivity(a.id) }) { Text(stringResource(R.string.watch_open)) }
                 TextButton(onClick = onKeepApart) { Text(stringResource(R.string.watch_keep_apart)) }

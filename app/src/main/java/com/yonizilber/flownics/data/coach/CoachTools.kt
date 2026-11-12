@@ -74,6 +74,7 @@ class CoachTools @Inject constructor(
     private val activities: ActivityRepository,
     private val plans: PlanRepository,
     private val store: CoachStore,
+    private val zones: com.yonizilber.flownics.data.garmin.Zones,
 ) {
     val specs: List<AiToolSpec> = listOf(
         AiToolSpec(
@@ -187,6 +188,7 @@ class CoachTools @Inject constructor(
                         sessions.observeCompleted().first(), sessions.observeCompletedLogs().first(), library(), zone,
                         activities = activities.observeAll().first(),
                         watch = activities.observeAttached().first(),
+                        zones = zones.info.value?.zones,
                     ),
                 )
             }

@@ -47,6 +47,8 @@ data class ActivityMetrics(
     val samples: Int = 0,
     /** For a recording attached to a workout: heart rate in each set, by the set's step. */
     val sets: List<SetHeart> = emptyList(),
+    /** Seconds at each heart rate (see HeartZones.histogram); zones and load are worked out from it. */
+    val hrHistogram: List<Int> = emptyList(),
 )
 
 /** Heart rate during one set of a workout, and how far it fell in the minute after. */

@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.history.detail
 
+import com.yonizilber.flownics.data.garmin.Zones
+import com.yonizilber.flownics.data.garmin.ZonesInfo
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -70,7 +72,11 @@ class SessionDetailViewModel @Inject constructor(
     workoutRepository: WorkoutRepository,
     activities: ActivityRepository,
     private val linker: RecordingLinker,
+    zones: Zones,
 ) : ViewModel() {
+
+    val zonesInfo: StateFlow<ZonesInfo?> = zones.info
+
 
     private val sessionId: Long = checkNotNull(savedStateHandle.get<Long>(Destination.ARG_SESSION_ID))
 

@@ -56,6 +56,9 @@ data class CoachProfile(
     val limitations: String = "",
     val equipment: String = "",
     val schedule: String = "",
+    /** For heart-rate zones; when unknown, the highest a recording measured is used (and said so). */
+    val maxHeartRate: Int? = null,
+    val restingHeartRate: Int? = null,
 ) {
     val isBlank: Boolean get() = goals.isBlank() && limitations.isBlank() && equipment.isBlank() && schedule.isBlank()
 }

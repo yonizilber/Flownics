@@ -10,6 +10,8 @@ import com.yonizilber.flownics.domain.coach.CoachFormat
 import com.yonizilber.flownics.domain.coach.CoachTopic
 import com.yonizilber.flownics.data.repository.ActivityRepository
 import com.yonizilber.flownics.data.repository.PlanRepository
+import com.yonizilber.flownics.data.garmin.Zones
+import com.yonizilber.flownics.domain.fit.TrainingLoad
 import com.yonizilber.flownics.domain.coach.ProposalKind
 import com.yonizilber.flownics.domain.coach.ProposalState
 import com.yonizilber.flownics.domain.repository.ExerciseRepository
@@ -39,6 +41,7 @@ class CoachAgent @Inject constructor(
     private val sessions: SessionRepository,
     private val activities: ActivityRepository,
     private val plans: PlanRepository,
+    private val zones: Zones,
 ) {
     /** Answers the conversation's last message, which must be the user's. */
     suspend fun reply(conversationId: Long, topic: CoachTopic?, language: String) {
@@ -98,6 +101,14 @@ class CoachAgent @Inject constructor(
             estimatedMinutes = { (WorkoutCompiler.compile(it, library).estimatedSeconds + 59) / 60 },
             activities = activities.observeAll().first(),
             plans = plans.observeAll().first(),
+            load = zones.info.value?.let { z ->
+                val l = TrainingLoad.summary(z.recordings, z.zones, java.time.LocalDate.now(zone), zone)
+                "Training load (Edwards TRIMP: minutes per heart-rate zone × zone number): last 7 days ${l.last7}, weekly average over 28 days ${l.weeklyAverage28}" +
+                    (l.ratio?.let { ", ratio ${"%.2f".format(java.util.Locale.ROOT, it)}" } ?: "") +
+                    " (${l.counted} recordings with HR, ${l.withoutHeartRate} without). Zones: " +
+                    (1..5).joinToString(", ") { "Z$it ${z.zones.bounds[it - 1]}-${z.zones.bounds[it]}" } +
+                    if (z.maxFromRecordings) " (max HR ${z.zones.max} is the highest recorded, not one the user gave)" else " (from the user's max HR ${z.zones.max})"
+            },
         )
     }
 

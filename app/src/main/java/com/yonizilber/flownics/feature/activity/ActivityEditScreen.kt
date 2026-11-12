@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.feature.activity
 
+import com.yonizilber.flownics.ui.component.ZonesBar
 import com.yonizilber.flownics.domain.model.ActivityMetrics
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Card
@@ -109,7 +110,11 @@ fun ActivityEditScreen(onClose: () -> Unit, onSaved: () -> Unit, viewModel: Acti
             Modifier.padding(innerPadding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            viewModel.saved?.metrics?.let { m -> RecordingCard(m) }
+            val zonesInfo by viewModel.zonesInfo.collectAsStateWithLifecycle()
+            viewModel.saved?.metrics?.let { m ->
+                RecordingCard(m)
+                zonesInfo?.let { z -> ZonesBar(m.hrHistogram, z.zones, z.maxFromRecordings) }
+            }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ActivityType.entries.forEach { type ->
                     FilterChip(

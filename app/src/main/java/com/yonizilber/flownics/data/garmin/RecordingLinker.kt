@@ -42,7 +42,9 @@ class RecordingLinker @Inject constructor(
         withContext(Dispatchers.IO) {
             val done = sessions.observeCompleted().first().map { it.toDomain() }
             val ids = done.map { it.id }.toSet()
-            activities.all().map { it.toDomain(json) }.forEach { a ->
+            activities.all().map { it.toDomain(json) }.forEach { a0 ->
+                // Recordings imported before heart-rate zones existed get their histogram now.
+                val a = backfill(a0)
                 when {
                     // Its workout was deleted: it stands on its own again.
                     a.attachedSessionId != null && a.attachedSessionId !in ids ->
@@ -60,6 +62,16 @@ class RecordingLinker @Inject constructor(
                 }
             }
         }
+    }
+
+    private suspend fun backfill(a: com.yonizilber.flownics.domain.model.Activity): com.yonizilber.flownics.domain.model.Activity {
+        if (a.source != ActivitySource.FIT || a.metrics == null || a.metrics.hrHistogram.isNotEmpty()) return a
+        val f = file(a.id)
+        if (!f.exists()) return a
+        val histogram = runCatching { com.yonizilber.flownics.domain.fit.HeartZones.histogram(FitActivity.heart(f.readBytes())) }.getOrNull() ?: return a
+        val updated = a.copy(metrics = a.metrics.copy(hrHistogram = histogram))
+        activities.update(updated.toEntity(json))
+        return updated
     }
 
     /** Keeps a recording apart from the workout it overlaps (the user's choice; it isn't joined again). */

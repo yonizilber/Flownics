@@ -1,5 +1,10 @@
 package com.yonizilber.flownics.feature.journal
 
+import kotlinx.coroutines.flow.map
+import com.yonizilber.flownics.domain.fit.TrainingLoad
+import com.yonizilber.flownics.domain.fit.LoadSummary
+import com.yonizilber.flownics.data.garmin.ZonesInfo
+import com.yonizilber.flownics.data.garmin.Zones
 import java.time.DayOfWeek
 import java.time.YearMonth
 import androidx.lifecycle.ViewModel
@@ -56,7 +61,14 @@ class WeekViewModel @Inject constructor(
     activities: ActivityRepository,
     workouts: WorkoutRepository,
     calendar: CalendarSync,
+    zones: Zones,
 ) : ViewModel() {
+
+    /** Training load from heart rate, for the last 28 days; null until there is a heart rate to go by. */
+    val load: StateFlow<Pair<LoadSummary, ZonesInfo>?> = zones.info.map { info ->
+        info?.let { TrainingLoad.summary(it.recordings, it.zones, LocalDate.now(zone), zone) to it }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
 
     private val zone = ZoneId.systemDefault()
     private val firstDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek

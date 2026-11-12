@@ -107,7 +107,14 @@ data class CoachMessageDto(val atMillis: Long, val kind: String, val text: Strin
 data class CoachNoteDto(val id: Long, val text: String, val createdAtMillis: Long)
 
 @Serializable
-data class CoachProfileDto(val goals: String = "", val limitations: String = "", val equipment: String = "", val schedule: String = "")
+data class CoachProfileDto(
+    val goals: String = "",
+    val limitations: String = "",
+    val equipment: String = "",
+    val schedule: String = "",
+    val maxHeartRate: Int? = null,
+    val restingHeartRate: Int? = null,
+)
 
 /** Ids are the sender's; an import gives everything new ids and rewires the references. */
 @Serializable

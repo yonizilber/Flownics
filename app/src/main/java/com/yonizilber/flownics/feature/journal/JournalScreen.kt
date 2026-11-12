@@ -1,5 +1,11 @@
 package com.yonizilber.flownics.feature.journal
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import com.yonizilber.flownics.domain.fit.LoadSummary
+import com.yonizilber.flownics.data.garmin.ZonesInfo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.aspectRatio
@@ -151,6 +157,7 @@ private fun WeekView(
     viewModel: WeekViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val load by viewModel.load.collectAsStateWithLifecycle()
     val week = state ?: run {
         Box(Modifier.fillMaxSize()) { CircularProgressIndicator(Modifier.align(Alignment.Center)) }
         return
@@ -181,6 +188,9 @@ private fun WeekView(
                     Text(stringResource(R.string.journal_synced), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+        }
+        load?.let { (l, z) ->
+            if (l.counted > 0) item(key = "load") { LoadCard(l, z) }
         }
         items(week.days, key = { it.date.toString() }) { day ->
             DayRow(day, isToday = day.date == today, isPast = day.date < today, workoutNames = week.workoutNames, onPlan = { onPlan(day.date) }, onOpenPlan = onOpenPlan, onOpenSession = onOpenSession, onOpenActivity = onOpenActivity)
@@ -391,6 +401,42 @@ private fun DayDots(day: DayEntry, isPast: Boolean) {
                     .size(7.dp)
                     .clip(CircleShape)
                     .then(if (filled) Modifier.background(color) else Modifier.border(1.5.dp, color, CircleShape)),
+            )
+        }
+    }
+}
+
+/**
+ * Training load from heart rate: the last 7 days against the weekly average of the last 28, and a
+ * bar per day. Said in words, with what it is based on.
+ */
+@Composable
+private fun LoadCard(l: LoadSummary, z: ZonesInfo) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.load_title), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.load_line, l.last7, l.weeklyAverage28) +
+                    (l.ratio?.let { " · " + stringResource(R.string.load_ratio, String.format(Locale.getDefault(), "%.2f", it)) } ?: ""),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            val peak = l.daily.maxOf { it.second }.coerceAtLeast(1)
+            val bar = MaterialTheme.colorScheme.primary
+            Row(
+                Modifier.fillMaxWidth().height(48.dp).semantics { contentDescription = l.daily.joinToString { "${it.first.dayOfMonth}: ${it.second}" } },
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                // Oldest left, today right: time runs left to right.
+                l.daily.forEach { (_, v) ->
+                    Box(Modifier.weight(1f).fillMaxHeight(fraction = (v.toFloat() / peak).coerceAtLeast(0.02f)).clip(RoundedCornerShape(2.dp)).background(if (v > 0) bar else bar.copy(alpha = 0.15f)))
+                }
+            }
+            Text(
+                stringResource(R.string.load_caption, l.counted, l.withoutHeartRate) +
+                    if (z.maxFromRecordings) " " + stringResource(R.string.load_caption_max_estimated, z.zones.max) else "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

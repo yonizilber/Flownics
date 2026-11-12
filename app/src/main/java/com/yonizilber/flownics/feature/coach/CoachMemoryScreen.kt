@@ -72,7 +72,13 @@ fun CoachMemoryScreen(onBack: () -> Unit, viewModel: CoachMemoryViewModel = hilt
     var limitations by rememberSaveable(profile) { mutableStateOf(profile.limitations) }
     var equipment by rememberSaveable(profile) { mutableStateOf(profile.equipment) }
     var schedule by rememberSaveable(profile) { mutableStateOf(profile.schedule) }
-    val edited = CoachProfile(goals, limitations, equipment, schedule)
+    var maxHr by rememberSaveable(profile) { mutableStateOf(profile.maxHeartRate?.toString().orEmpty()) }
+    var restHr by rememberSaveable(profile) { mutableStateOf(profile.restingHeartRate?.toString().orEmpty()) }
+    val edited = CoachProfile(
+        goals, limitations, equipment, schedule,
+        maxHeartRate = maxHr.trim().toIntOrNull()?.takeIf { it in 120..230 },
+        restingHeartRate = restHr.trim().toIntOrNull()?.takeIf { it in 30..110 },
+    )
     var editing by remember { mutableStateOf<CoachNote?>(null) }
 
     Scaffold(
@@ -100,6 +106,27 @@ fun CoachMemoryScreen(onBack: () -> Unit, viewModel: CoachMemoryViewModel = hilt
             item { ProfileField(R.string.coach_profile_limitations, R.string.coach_profile_limitations_hint, limitations) { limitations = it } }
             item { ProfileField(R.string.coach_profile_equipment, R.string.coach_profile_equipment_hint, equipment) { equipment = it } }
             item { ProfileField(R.string.coach_profile_schedule, R.string.coach_profile_schedule_hint, schedule) { schedule = it } }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = maxHr,
+                        onValueChange = { maxHr = it.filter(Char::isDigit).take(3) },
+                        label = { Text(stringResource(R.string.coach_profile_max_hr)) },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = restHr,
+                        onValueChange = { restHr = it.filter(Char::isDigit).take(3) },
+                        label = { Text(stringResource(R.string.coach_profile_rest_hr)) },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Text(stringResource(R.string.coach_profile_hr_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             item {
                 Button(onClick = { viewModel.saveProfile(edited) }, enabled = edited != profile) { Text(stringResource(R.string.coach_profile_save)) }
             }

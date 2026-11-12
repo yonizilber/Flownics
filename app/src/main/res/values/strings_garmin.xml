@@ -54,4 +54,15 @@
     <string name="watch_chart_description">Heart rate over the workout, from %1$d to %2$d, with %3$d sets marked.</string>
     <string name="watch_open">The recording</string>
     <string name="watch_keep_apart">Not this workout</string>
+    <string name="zones_title">Time in heart-rate zones</string>
+    <string name="zones_caption">Zones from your max heart rate %2$d (and resting, if given): %1$s. Set them in What the coach remembers.</string>
+    <string name="zones_caption_estimated">Zones from the highest heart rate your recordings measured, %2$d (give your real max in What the coach remembers): %1$s.</string>
+    <string name="load_title">Training load</string>
+    <string name="load_line">Last 7 days %1$d · weekly average over 4 weeks %2$d</string>
+    <string name="load_ratio">ratio %1$s</string>
+    <string name="load_caption">Load is minutes in each heart-rate zone times the zone (1–5), from %1$d recordings with heart rate; %2$d without it aren\'t counted. Each bar is a day, oldest left. A ratio well above 1.3 is a sharp jump; below 0.8, a lighter stretch.</string>
+    <string name="load_caption_max_estimated">Max heart rate taken as %1$d from your recordings.</string>
+    <string name="coach_profile_max_hr">Max heart rate</string>
+    <string name="coach_profile_rest_hr">Resting heart rate</string>
+    <string name="coach_profile_hr_hint">For heart-rate zones and training load. Without a max, the highest your recordings measured is used.</string>
 </resources>

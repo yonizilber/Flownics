@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.activity
 
+import com.yonizilber.flownics.data.garmin.Zones
+import com.yonizilber.flownics.data.garmin.ZonesInfo
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -62,7 +64,11 @@ enum class ActivityField { DURATION, DISTANCE, AVG_HR, MAX_HR, ELEVATION, SEGMEN
 class ActivityEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: ActivityRepository,
+    zones: Zones,
 ) : ViewModel() {
+
+    val zonesInfo: StateFlow<ZonesInfo?> = zones.info
+
 
     private val activityId = savedStateHandle.get<Long>(Destination.ARG_ACTIVITY_ID) ?: 0L
     private val zone = ZoneId.systemDefault()

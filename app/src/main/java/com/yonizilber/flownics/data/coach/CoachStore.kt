@@ -38,6 +38,8 @@ class CoachStore @Inject constructor(
             limitations = prefs.getString(KEY_LIMITATIONS, "").orEmpty(),
             equipment = prefs.getString(KEY_EQUIPMENT, "").orEmpty(),
             schedule = prefs.getString(KEY_SCHEDULE, "").orEmpty(),
+            maxHeartRate = prefs.getInt(KEY_MAX_HR, -1).takeIf { it > 0 },
+            restingHeartRate = prefs.getInt(KEY_REST_HR, -1).takeIf { it > 0 },
         ),
     )
     val profile: StateFlow<CoachProfile> = _profile.asStateFlow()
@@ -48,6 +50,8 @@ class CoachStore @Inject constructor(
             .putString(KEY_LIMITATIONS, profile.limitations.trim())
             .putString(KEY_EQUIPMENT, profile.equipment.trim())
             .putString(KEY_SCHEDULE, profile.schedule.trim())
+            .putInt(KEY_MAX_HR, profile.maxHeartRate ?: -1)
+            .putInt(KEY_REST_HR, profile.restingHeartRate ?: -1)
             .apply()
         _profile.value = profile
     }
@@ -187,6 +191,8 @@ class CoachStore @Inject constructor(
         const val KEY_LIMITATIONS = "limitations"
         const val KEY_EQUIPMENT = "equipment"
         const val KEY_SCHEDULE = "schedule"
+        const val KEY_MAX_HR = "max_hr"
+        const val KEY_REST_HR = "resting_hr"
         const val TITLE_MAX = 80
         const val NOTE_MAX = 300
     }

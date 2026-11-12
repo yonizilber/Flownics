@@ -96,6 +96,7 @@ object FitActivity {
             decouplingPercent = decoupling(moving),
             splits = splits(records, steps),
             samples = records.size,
+            hrHistogram = HeartZones.histogram(records.mapNotNull { s -> s.hr?.let { HeartPoint(s.time * 1000, it) } }),
         )
         val serial = fileId?.fields?.get(3)
         val created = fileId?.fields?.get(4)
