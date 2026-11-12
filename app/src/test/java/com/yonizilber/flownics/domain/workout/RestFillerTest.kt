@@ -85,10 +85,39 @@ class RestFillerTest {
     }
 
     @Test
-    fun aRestWithItsOwnActiveRestKeepsIt() {
-        val c = WorkoutCompiler.compile(strength(leftovers = false, ownActiveRest = ActiveRest.Specific(pigeon.id)), library, listOf(stretching).associateBy { it.id })
-        // Squat rests keep the pigeon; the row rest takes the first stretch.
-        assertEquals(listOf(12L, 12L, 10L), rests(c))
+    fun theOtherWorkoutReplacesTheRestsOwnActiveRest() {
+        val c = WorkoutCompiler.compile(strength(leftovers = false, ownActiveRest = ActiveRest.Pool()), library, listOf(stretching).associateBy { it.id })
+        // Combining is the choice that counts: the squat's pool doesn't keep the rests.
+        assertEquals(listOf(10L, 11L, 12L), rests(c))
+    }
+
+    @Test
+    fun theLastRoundOfASupersetRestsBeforeTheNextBlock() {
+        val superset = WorkoutBlock(
+            structure = com.yonizilber.flownics.domain.model.BlockStructure.CIRCUIT,
+            rounds = 2,
+            roundRestSeconds = 150,
+            items = listOf(WorkoutItem(squat.id, target = SetTarget(reps = 8), restSeconds = 45), WorkoutItem(row.id, target = SetTarget(reps = 8), restSeconds = 0)),
+        )
+        val next = WorkoutBlock(items = listOf(WorkoutItem(squat.id, sets = 1, target = SetTarget(reps = 5))))
+        val c = WorkoutCompiler.compile(WorkoutTemplate(name = "Two blocks", blocks = listOf(superset, next)), library)
+        assertEquals(listOf(45, 150, 45, 150), c.steps.filterIsInstance<RestStep>().map { it.durationSeconds })
+    }
+
+    @Test
+    fun aPoolWithOneMatchVaries() {
+        val chest = Exercise(id = 30, name = "Chest opener", category = ExerciseCategory.FLEXIBILITY, primaryMuscles = setOf(com.yonizilber.flownics.domain.model.Muscle.CHEST))
+        val press = Exercise(id = 31, name = "Press", category = ExerciseCategory.STRENGTH, primaryMuscles = setOf(com.yonizilber.flownics.domain.model.Muscle.CHEST))
+        val lib = library + mapOf(30L to chest, 31L to press)
+        val t = WorkoutTemplate(
+            name = "Press",
+            blocks = listOf(WorkoutBlock(items = listOf(WorkoutItem(press.id, sets = 5, target = SetTarget(reps = 5), restSeconds = 120, activeRest = ActiveRest.Pool())))),
+        )
+        val c = WorkoutCompiler.compile(t, lib)
+        // The chest opener (the only one for the chest) first, then others, not the same in every rest.
+        val picks = c.steps.filterIsInstance<RestStep>().map { it.activeExerciseId }
+        assertEquals(30L, picks.first())
+        assertTrue(picks.toSet().size > 1)
     }
 
     @Test

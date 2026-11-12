@@ -93,7 +93,7 @@ class WorkoutCompilerTest {
     }
 
     @Test
-    fun lastCircuitRoundHandsOverWithItemRestToNextBlock() {
+    fun lastCircuitRoundRestsWithTheRoundRestBeforeTheNextBlock() {
         val circuit = WorkoutBlock(
             structure = BlockStructure.CIRCUIT,
             rounds = 1,
@@ -102,7 +102,8 @@ class WorkoutCompilerTest {
         )
         val next = WorkoutBlock(items = listOf(WorkoutItem(squat.id, sets = 1)))
         val result = WorkoutCompiler.compile(template(circuit, next), library)
-        assertEquals(45, (result.steps[1] as RestStep).durationSeconds)
+        // A superset ends with its round rest before the next block, not its last item's short rest.
+        assertEquals(120, (result.steps[1] as RestStep).durationSeconds)
     }
 
     @Test
@@ -118,7 +119,9 @@ class WorkoutCompilerTest {
         val item = WorkoutItem(squat.id, sets = 3, restSeconds = 60, activeRest = ActiveRest.Pool())
         val result = WorkoutCompiler.compile(template(WorkoutBlock(items = listOf(item))), library)
         val active = result.steps.filterIsInstance<RestStep>().map { it.activeExerciseId }
-        assertEquals(listOf(quadStretch.id, quadStretch.id), active)
+        // The quad stretch first; it isn't repeated while other stretches haven't been used.
+        assertEquals(quadStretch.id, active.first())
+        assertTrue(active[1] != quadStretch.id)
     }
 
     @Test

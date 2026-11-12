@@ -121,7 +121,8 @@ object WorkoutCompiler {
     private class Compilation(private val library: Map<Long, Exercise>) {
         private val steps = mutableListOf<WorkoutStep>()
         private val warnings = linkedSetOf<CompileWarning>()
-        private var poolCursor = 0
+        /** How often each pool exercise was used so far, so the rotation varies. */
+        private val poolUses = mutableMapOf<Long, Int>()
 
         /** The rest-filler workout's sets still to come, each with the rest that followed it there. */
         private val filler = ArrayDeque<List<WorkoutStep>>()
@@ -174,9 +175,12 @@ object WorkoutCompiler {
                                         }
                                         addRest(blockIndex, itemIndex, item.restSeconds, ActiveRest.None, emptySet(), fill = false)
                                     }
-                                    // After the last round: the rest before the next block.
-                                    round == rounds -> addRest(blockIndex, itemIndex, item.restSeconds, item.activeRest, worked(item.exerciseId))
-                                    else -> addRest(blockIndex, null, block.roundRestSeconds, block.roundActiveRest, blockMuscles)
+                                    // After a round, the last one included: the round's rest (before the
+                                    // next round, or before the next block). Only if it has none, the
+                                    // last exercise's own rest and active rest.
+                                    block.roundRestSeconds > 0 ->
+                                        addRest(blockIndex, null, block.roundRestSeconds, block.roundActiveRest.takeIf { it != ActiveRest.None } ?: item.activeRest, blockMuscles)
+                                    else -> addRest(blockIndex, itemIndex, item.restSeconds, item.activeRest, worked(item.exerciseId))
                                 }
                             }
                         }
@@ -278,9 +282,10 @@ object WorkoutCompiler {
                 if (activeRest != ActiveRest.None) warnings += CompileWarning.NoRestTimeForActiveRest(blockIndex, itemIndex)
                 return
             }
-            // A rest with nothing of its own takes the next set of the rest-filler workout.
+            // With a rest-filler workout, its next exercise fills the rest, in place of any active
+            // rest set here: combining the workouts is the choice that counts.
             lastFillerUnit = null
-            val activeId = if (fill && activeRest == ActiveRest.None && filler.isNotEmpty()) {
+            val activeId = if (fill && filler.isNotEmpty()) {
                 filler.removeFirst().also { lastFillerUnit = it }.let { (it.first() as WorkStep).exerciseId }
             } else {
                 resolve(activeRest, blockIndex, itemIndex, workedMuscles)
@@ -313,14 +318,19 @@ object WorkoutCompiler {
                     } else {
                         emptyList()
                     }
-                    // No stretch matches the worked muscles: rotate through the whole pool rather
-                    // than leave the rest empty.
-                    val pool = focused.ifEmpty { candidates }
-                    if (pool.isEmpty()) {
+                    if (candidates.isEmpty()) {
                         warnings += CompileWarning.EmptyActiveRestPool(blockIndex, itemIndex)
                         null
                     } else {
-                        pool[poolCursor++ % pool.size].id
+                        // The least-used exercise for the worked muscles; once those have all been
+                        // used more than another of the pool, that other one, so a pool with a
+                        // single match doesn't repeat it in every rest.
+                        fun uses(e: Exercise) = poolUses[e.id] ?: 0
+                        val bestFocused = focused.minByOrNull(::uses)
+                        val bestAny = candidates.minBy(::uses)
+                        val pick = if (bestFocused != null && uses(bestFocused) <= uses(bestAny)) bestFocused else bestAny
+                        poolUses[pick.id] = uses(pick) + 1
+                        pick.id
                     }
                 }
             }
