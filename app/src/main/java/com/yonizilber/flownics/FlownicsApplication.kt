@@ -1,5 +1,6 @@
 package com.yonizilber.flownics
 
+import com.yonizilber.flownics.calendar.PlanReminders
 import com.yonizilber.flownics.data.garmin.GarminSync
 import com.yonizilber.flownics.data.garmin.GarminSyncWorker
 import com.yonizilber.flownics.data.di.ApplicationScope
@@ -23,6 +24,9 @@ class FlownicsApplication : Application() {
     lateinit var garmin: GarminSync
 
     @Inject
+    lateinit var reminders: PlanReminders
+
+    @Inject
     @ApplicationScope
     lateinit var scope: CoroutineScope
 
@@ -30,6 +34,7 @@ class FlownicsApplication : Application() {
         super.onCreate()
         // Keeps the chosen calendar in step with the plan; does nothing until the user turns it on.
         calendarSync.start()
+        reminders.start()
         // Recordings imported before workouts could be joined, or whose workout is gone, are sorted out.
         scope.launch { linker.link() }
         GarminSyncWorker.schedule(this, garmin.settings.value.hasKey)

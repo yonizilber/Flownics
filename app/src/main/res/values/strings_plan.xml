@@ -44,7 +44,7 @@
     <string name="plan_verdict_hr">heart rate above the ceiling</string>
     <string name="plan_verdict_missing">missing</string>
     <string name="plan_verdict_no_target">no target to compare</string>
-    <string name="calendar_settings_title">Calendar</string>
+    <string name="calendar_settings_title">Calendar and reminders</string>
     <string name="calendar_settings_hint">Show your plan in Google Calendar</string>
     <string name="calendar_settings_intro">Flownics can put your plan in a calendar: each planned workout as an event, marked ✓ once done. When you change the plan, the events follow. It only ever changes events it made itself.</string>
     <string name="calendar_settings_tip">Tip: first make a calendar called \"Flownics\" in Google Calendar (on the web: Other calendars, +, Create new calendar). Then choose it here, and your workouts stay together, in their own colour, easy to hide.</string>
@@ -70,4 +70,11 @@
     <string name="journal_previous_month">Previous month</string>
     <string name="journal_next_month">Next month</string>
     <string name="journal_month_legend">● done · ○ planned · red ○ planned and not done. Tap a day to see it.</string>
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_hint">A notification before each planned workout (one without a set time: at 8:00 that day). It follows the plan when you move or drop a workout.</string>
+    <string name="reminders_off">Off</string>
+    <string name="reminders_minutes">%1$d min before</string>
+    <string name="reminders_channel">Workout reminders</string>
+    <string name="reminder_title">Planned: %1$s</string>
+    <string name="reminder_at">at %1$s</string>
 </resources>

@@ -44,7 +44,7 @@
     <string name="plan_verdict_hr">דופק מעל התקרה</string>
     <string name="plan_verdict_missing">חסר</string>
     <string name="plan_verdict_no_target">אין יעד להשוואה</string>
-    <string name="calendar_settings_title">יומן</string>
+    <string name="calendar_settings_title">יומן ותזכורות</string>
     <string name="calendar_settings_hint">הצגת התוכנית ביומן Google</string>
     <string name="calendar_settings_intro">Flownics יכול להכניס את התוכנית ליומן: כל אימון מתוכנן כאירוע, שמסומן ✓ כשהוא בוצע. כשמשנים את התוכנית, האירועים מתעדכנים. הוא נוגע רק באירועים שהוא עצמו יצר.</string>
     <string name="calendar_settings_tip">טיפ: קודם צור ביומן Google יומן בשם \"Flownics\" (באתר: יומנים אחרים, +, יצירת יומן חדש). אחר כך בחר אותו כאן, וכל האימונים יהיו יחד, בצבע משלהם, וקל להסתיר אותם.</string>
@@ -70,4 +70,11 @@
     <string name="journal_previous_month">החודש הקודם</string>
     <string name="journal_next_month">החודש הבא</string>
     <string name="journal_month_legend">● בוצע · ○ מתוכנן · ○ אדום: תוכנן ולא בוצע. לחיצה על יום מציגה אותו.</string>
+    <string name="reminders_title">תזכורות</string>
+    <string name="reminders_hint">התראה לפני כל אימון מתוכנן (בלי שעה קבועה: ב-8:00 באותו יום). היא זזה עם התוכנית כשמזיזים או מורידים אימון.</string>
+    <string name="reminders_off">כבוי</string>
+    <string name="reminders_minutes">%1$d דק׳ לפני</string>
+    <string name="reminders_channel">תזכורות לאימונים</string>
+    <string name="reminder_title">מתוכנן: %1$s</string>
+    <string name="reminder_at">בשעה %1$s</string>
 </resources>

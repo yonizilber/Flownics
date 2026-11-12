@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.settings
 
+import com.yonizilber.flownics.calendar.ReminderSettings
+import com.yonizilber.flownics.calendar.PlanReminders
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,8 +61,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class CalendarSettingsViewModel @Inject constructor(private val sync: CalendarSync) : ViewModel() {
+class CalendarSettingsViewModel @Inject constructor(private val sync: CalendarSync, private val reminders: PlanReminders) : ViewModel() {
     val settings: StateFlow<CalendarSyncSettings> = sync.settings
+    val reminderSettings: StateFlow<ReminderSettings> = reminders.settings
+    fun setReminder(minutes: Int?) = reminders.set(minutes)
     fun hasPermission() = sync.hasPermission()
     suspend fun calendars() = sync.writableCalendars()
     fun enable(calendar: WritableCalendar) = sync.enable(calendar)
@@ -72,7 +76,7 @@ class CalendarSettingsViewModel @Inject constructor(private val sync: CalendarSy
  * Where the plan goes in the user's calendar. The calendar permission is asked only here, when
  * the user turns syncing on; nothing is read or written in the calendar before that.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun CalendarSettingsScreen(onBack: () -> Unit, viewModel: CalendarSettingsViewModel = hiltViewModel()) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -86,6 +90,23 @@ fun CalendarSettingsScreen(onBack: () -> Unit, viewModel: CalendarSettingsViewMo
         if (!denied) loadCalendars()
     }
     LaunchedEffect(Unit) { if (viewModel.hasPermission()) loadCalendars() }
+    val reminder by viewModel.reminderSettings.collectAsStateWithLifecycle()
+    var pendingMinutes by remember { mutableStateOf<Int?>(null) }
+    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) pendingMinutes?.let(viewModel::setReminder)
+        denied = !granted
+    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val chooseReminder: (Int?) -> Unit = { minutes ->
+        val needs = minutes != null && android.os.Build.VERSION.SDK_INT >= 33 &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (needs) {
+            pendingMinutes = minutes
+            notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            viewModel.setReminder(minutes)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -99,6 +120,18 @@ fun CalendarSettingsScreen(onBack: () -> Unit, viewModel: CalendarSettingsViewMo
             Modifier.padding(innerPadding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Text(stringResource(R.string.reminders_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.reminders_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(null, 15, 30, 60, 120).forEach { m ->
+                    androidx.compose.material3.FilterChip(
+                        selected = reminder.minutesBefore == m,
+                        onClick = { chooseReminder(m) },
+                        label = { Text(if (m == null) stringResource(R.string.reminders_off) else stringResource(R.string.reminders_minutes, m)) },
+                    )
+                }
+            }
+            androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text(stringResource(R.string.calendar_settings_intro), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.calendar_settings_tip), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             settings.lastError?.takeIf { settings.enabled }?.let { error ->
