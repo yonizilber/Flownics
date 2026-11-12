@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.journal
 
+import java.time.DayOfWeek
+import java.time.YearMonth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yonizilber.flownics.calendar.CalendarSync
@@ -35,6 +37,8 @@ data class DayEntry(
     val unplanned: List<DoneItem>,
 )
 
+data class MonthState(val month: YearMonth, val firstDay: DayOfWeek, val days: List<DayEntry>, val workoutNames: Map<Long, String>)
+
 data class WeekState(
     val start: LocalDate,
     val days: List<DayEntry>,
@@ -64,8 +68,23 @@ class WeekViewModel @Inject constructor(
         weekStart,
         calendar.settings,
     ) { (allPlans, allSessions, allActivities), allWorkouts, start, sync ->
-        build(start, allPlans, allSessions, allActivities, allWorkouts.associate { it.id to it.name }, sync.enabled)
+        build(start, 7, allPlans, allSessions, allActivities, allWorkouts.associate { it.id to it.name }, sync.enabled)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    private val month = MutableStateFlow(YearMonth.now(zone))
+
+    /** The month view: every day of [YearMonth], with what was planned and done. */
+    val monthState: StateFlow<MonthState?> = combine(
+        combine(plans.observeAll(), sessions.observeCompleted(), activities.observeAll(), ::Triple),
+        workouts.observeAll(),
+        month,
+    ) { (allPlans, allSessions, allActivities), allWorkouts, m ->
+        val days = build(m.atDay(1), m.lengthOfMonth(), allPlans, allSessions, allActivities, allWorkouts.associate { it.id to it.name }, false)
+        MonthState(m, firstDay, days.days, days.workoutNames)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun previousMonth() = month.update { it.minusMonths(1) }
+    fun nextMonth() = month.update { it.plusMonths(1) }
 
     fun previous() = weekStart.update { it.minusWeeks(1) }
     fun next() = weekStart.update { it.plusWeeks(1) }
@@ -73,13 +92,14 @@ class WeekViewModel @Inject constructor(
 
     private fun build(
         start: LocalDate,
+        length: Int,
         plans: List<PlannedWorkout>,
         sessions: List<SessionHeader>,
         activities: List<Activity>,
         names: Map<Long, String>,
         calendarOn: Boolean,
     ): WeekState {
-        val end = start.plusDays(6)
+        val end = start.plusDays(length - 1L)
         fun dayOf(millis: Long) = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
         val weekPlans = plans.filter { it.date in start..end }
         val weekSessions = sessions.filter { dayOf(it.startedAtMillis) in start..end }
@@ -87,7 +107,7 @@ class WeekViewModel @Inject constructor(
         val matched = PlanMatching.match(weekPlans, weekSessions, weekActivities, zone)
         val used = matched.values.toSet()
         val done = (weekSessions.map { DoneItem.Workout(it) } + weekActivities.map { DoneItem.Logged(it) }).sortedBy { it.atMillis }
-        val days = (0..6L).map { offset ->
+        val days = (0 until length.toLong()).map { offset ->
             val date = start.plusDays(offset)
             DayEntry(
                 date = date,

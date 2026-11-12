@@ -1,5 +1,9 @@
 package com.yonizilber.flownics.feature.journal
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.background
 import com.yonizilber.flownics.feature.garmin.GarminViewModel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.CardDefaults
@@ -97,8 +101,8 @@ fun JournalScreen(
     LaunchedEffect(Unit) { garmin.syncIfDue() }
     Column(Modifier.fillMaxSize()) {
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-            listOf(R.string.journal_week, R.string.journal_list).forEachIndexed { i, label ->
-                SegmentedButton(selected = mode == i, onClick = { mode = i }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
+            listOf(R.string.journal_week, R.string.journal_month, R.string.journal_list).forEachIndexed { i, label ->
+                SegmentedButton(selected = mode == i, onClick = { mode = i }, shape = SegmentedButtonDefaults.itemShape(i, 3)) { Text(stringResource(label)) }
             }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -123,6 +127,8 @@ fun JournalScreen(
         }
         if (mode == 0) {
             WeekView(onOpenSession, onOpenActivity, onLogActivity, onPlan, onOpenPlan)
+        } else if (mode == 1) {
+            MonthView(onOpenSession, onOpenActivity, onPlan, onOpenPlan)
         } else {
             HistoryScreen(
                 onOpenSession = onOpenSession,
@@ -271,5 +277,121 @@ fun planTitle(plan: PlannedWorkout, workoutNames: Map<Long, String>): String = p
     when (plan.kind) {
         PlanKind.WORKOUT -> plan.workoutId?.let(workoutNames::get) ?: stringResource(R.string.plan_untitled)
         PlanKind.ACTIVITY -> stringResource(CalendarSync.typeLabel(plan.activityType))
+    }
+}
+
+/**
+ * A month at a glance: each day marked with what was planned and done (a dot per item: filled =
+ * done, ring = planned, red ring = planned and not done). Tapping a day lists it below.
+ */
+@Composable
+private fun MonthView(
+    onOpenSession: (Long) -> Unit,
+    onOpenActivity: (Long) -> Unit,
+    onPlan: (LocalDate) -> Unit,
+    onOpenPlan: (Long) -> Unit,
+    viewModel: WeekViewModel = hiltViewModel(),
+) {
+    val state by viewModel.monthState.collectAsStateWithLifecycle()
+    val month = state ?: run {
+        Box(Modifier.fillMaxSize()) { CircularProgressIndicator(Modifier.align(Alignment.Center)) }
+        return
+    }
+    val today = LocalDate.now()
+    var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    val byDate = month.days.associateBy { it.date }
+    val lead = (month.month.atDay(1).dayOfWeek.value - month.firstDay.value + 7) % 7
+    val cells: List<LocalDate?> = List(lead) { null } + month.days.map { it.date }
+    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        item(key = "nav") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = viewModel::previousMonth) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = stringResource(R.string.journal_previous_month)) }
+                Text(
+                    month.month.format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault())),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                IconButton(onClick = viewModel::nextMonth) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = stringResource(R.string.journal_next_month)) }
+            }
+        }
+        item(key = "weekdays") {
+            Row(Modifier.fillMaxWidth()) {
+                (0..6).forEach { i ->
+                    Text(
+                        month.firstDay.plus(i.toLong()).getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+        cells.chunked(7).forEachIndexed { row, week ->
+            item(key = "row$row") {
+                Row(Modifier.fillMaxWidth()) {
+                    (0..6).forEach { i ->
+                        val date = week.getOrNull(i)
+                        Box(Modifier.weight(1f).aspectRatio(0.9f).padding(2.dp)) {
+                            if (date != null) {
+                                val day = byDate.getValue(date)
+                                val isSelected = selected == date.toString()
+                                Column(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .then(if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)) else Modifier)
+                                        .clickable { selected = date.toString() }
+                                        .padding(4.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text(
+                                        "${date.dayOfMonth}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (date == today) FontWeight.Bold else null,
+                                        color = if (date == today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    DayDots(day, isPast = date < today)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        item(key = "legend") {
+            Text(stringResource(R.string.journal_month_legend), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        selected?.let { LocalDate.parse(it) }?.let(byDate::get)?.let { day ->
+            item(key = "day") {
+                DayRow(day, isToday = day.date == today, isPast = day.date < today, workoutNames = month.workoutNames, onPlan = { onPlan(day.date) }, onOpenPlan = onOpenPlan, onOpenSession = onOpenSession, onOpenActivity = onOpenActivity)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayDots(day: DayEntry, isPast: Boolean) {
+    val done = MaterialTheme.colorScheme.primary
+    val missed = MaterialTheme.colorScheme.error
+    val planned = MaterialTheme.colorScheme.outline
+    val dots = day.plans.map { (plan, d) ->
+        when {
+            d != null -> done to true
+            plan.status == PlanStatus.SKIPPED -> planned to false
+            isPast -> missed to false
+            else -> planned to false
+        }
+    } + day.unplanned.map { done to true }
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(top = 4.dp)) {
+        dots.take(4).forEach { (color, filled) ->
+            Box(
+                Modifier
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .then(if (filled) Modifier.background(color) else Modifier.border(1.5.dp, color, CircleShape)),
+            )
+        }
     }
 }

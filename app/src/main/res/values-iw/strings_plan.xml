@@ -66,4 +66,8 @@
     <string name="calendar_made_by">נוצר ב-Flownics</string>
     <string name="calendar_done_line">בוצע: %1$s</string>
     <string name="calendar_done_workout">%1$d דק׳</string>
+    <string name="journal_month">חודש</string>
+    <string name="journal_previous_month">החודש הקודם</string>
+    <string name="journal_next_month">החודש הבא</string>
+    <string name="journal_month_legend">● בוצע · ○ מתוכנן · ○ אדום: תוכנן ולא בוצע. לחיצה על יום מציגה אותו.</string>
 </resources>

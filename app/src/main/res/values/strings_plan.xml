@@ -66,4 +66,8 @@
     <string name="calendar_made_by">Made by Flownics</string>
     <string name="calendar_done_line">Done: %1$s</string>
     <string name="calendar_done_workout">%1$d min</string>
+    <string name="journal_month">Month</string>
+    <string name="journal_previous_month">Previous month</string>
+    <string name="journal_next_month">Next month</string>
+    <string name="journal_month_legend">● done · ○ planned · red ○ planned and not done. Tap a day to see it.</string>
 </resources>
