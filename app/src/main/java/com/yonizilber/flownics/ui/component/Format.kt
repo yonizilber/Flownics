@@ -110,6 +110,7 @@ fun warningText(warning: CompileWarning, blocks: List<WorkoutBlock>, library: Ma
         is CompileWarning.MissingActiveRestExercise -> stringResource(R.string.warn_missing_active_rest, block)
         is CompileWarning.EmptyActiveRestPool -> stringResource(R.string.warn_empty_pool, block)
         CompileWarning.MissingRestFiller -> stringResource(R.string.warning_missing_filler)
+        is CompileWarning.ActiveRestInsideRound -> stringResource(R.string.warn_active_rest_inside_round, block)
         is CompileWarning.NoRestTimeForActiveRest -> stringResource(R.string.warn_no_rest_time, block)
         is CompileWarning.ActiveRestTooLong -> stringResource(
             R.string.warn_active_rest_too_long,

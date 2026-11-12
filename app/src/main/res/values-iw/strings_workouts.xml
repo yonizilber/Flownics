@@ -87,12 +87,13 @@
 
     <string name="delete_used_in_workouts">הוא משמש ב-%1$d אימונים; הם יציגו אזהרה עד שתחליף אותו.</string>
     <string name="wedit_filler_title">שילוב עם אימון אחר</string>
-    <string name="wedit_filler_hint">התרגילים שלו נכנסים למנוחות של האימון הזה, אחד בכל מנוחה, לפי הסדר שלו. למשל: אימון גמישות במנוחות של אימון כוח. מנוחה שכבר יש לה מנוחה אקטיבית משלה שומרת עליה.</string>
+    <string name="wedit_filler_hint">התרגילים שלו נכנסים למנוחות של האימון הזה, כל אחד פעם אחת, לפי הסדר שלו. למשל: אימון גמישות במנוחות של אימון כוח. רק מנוחות בין סטים ובין סבבים של סופר-סט, לא המנוחה הקצרה בין התרגילים שלו; מנוחה עם מנוחה אקטיבית משלה שומרת עליה.</string>
     <string name="wedit_filler_none">בלי אימון נוסף</string>
     <string name="wedit_filler_missing">(אימון שנמחק)</string>
     <string name="wedit_filler_leftovers">מה שלא נכנס – בסוף</string>
-    <string name="wedit_filler_summary">%1$d מתוך %2$d הסטים שלו נכנסים למנוחות.</string>
+    <string name="wedit_filler_summary">%1$d מתוך %2$d התרגילים שלו נכנסים למנוחות.</string>
     <string name="wedit_filler_at_end">%1$d בסוף.</string>
     <string name="wedit_filler_block">ואז: %1$s</string>
     <string name="warning_missing_filler">האימון שנבחר למילוי המנוחות נמחק; המנוחות נשארות רגילות.</string>
+    <string name="warn_active_rest_inside_round">ב-%1$s מנוחה אקטיבית מופיעה רק בין סבבים, לא במנוחה הקצרה בין התרגילים של הסבב; הגדר אותה למנוחה בין הסבבים.</string>
 </resources>

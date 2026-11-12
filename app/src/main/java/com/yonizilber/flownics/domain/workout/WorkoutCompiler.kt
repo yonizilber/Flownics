@@ -53,6 +53,12 @@ sealed interface CompileWarning {
 
     data class NoRestTimeForActiveRest(override val blockIndex: Int, val itemIndex: Int?) : CompileWarning
 
+    /**
+     * An item of a superset or circuit has its own active rest, but the rest after it is the short
+     * one between exercises of the round: active rest only comes between sets and rounds.
+     */
+    data class ActiveRestInsideRound(override val blockIndex: Int, val itemIndex: Int) : CompileWarning
+
     /** The workout chosen to fill the rests is gone. */
     data object MissingRestFiller : CompileWarning {
         override val blockIndex: Int = 0
@@ -76,7 +82,7 @@ data class CompiledWorkout(
      * whose steps use block index `template.blocks.size`.
      */
     val extraBlockTitle: String? = null,
-    /** How many of the rest-filler workout's sets went into rests, and how many in all. */
+    /** How many of the rest-filler workout's exercises went into rests, and how many in all. */
     val fillerUsed: Int = 0,
     val fillerTotal: Int = 0,
 )
@@ -130,7 +136,7 @@ object WorkoutCompiler {
                     null
                 }
             }
-            // The other workout as it would run on its own (its own filler ignored), cut into sets.
+            // The other workout as it would run on its own (its own filler ignored), one entry per exercise.
             fillerSource?.let { source -> filler += units(Compilation(library).run(source.copy(restFiller = null)).steps) }
             val fillerTotal = filler.size
             template.blocks.forEachIndexed { blockIndex, block ->
@@ -158,10 +164,17 @@ object WorkoutCompiler {
                             present.forEachIndexed { position, (itemIndex, item) ->
                                 addWork(blockIndex, itemIndex, item.exerciseId, 1, 1, round, rounds, item.target)
                                 val lastInRound = position == present.lastIndex
-                                if (!lastInRound || round == rounds) {
-                                    addRest(blockIndex, itemIndex, item.restSeconds, item.activeRest, worked(item.exerciseId))
-                                } else {
-                                    addRest(blockIndex, null, block.roundRestSeconds, block.roundActiveRest, blockMuscles)
+                                when {
+                                    // The short rest between exercises of a round: never active rest.
+                                    !lastInRound -> {
+                                        if (round == 1 && item.activeRest != ActiveRest.None) {
+                                            warnings += CompileWarning.ActiveRestInsideRound(blockIndex, itemIndex)
+                                        }
+                                        addRest(blockIndex, itemIndex, item.restSeconds, ActiveRest.None, emptySet(), fill = false)
+                                    }
+                                    // After the last round: the rest before the next block.
+                                    round == rounds -> addRest(blockIndex, itemIndex, item.restSeconds, item.activeRest, worked(item.exerciseId))
+                                    else -> addRest(blockIndex, null, block.roundRestSeconds, block.roundActiveRest, blockMuscles)
                                 }
                             }
                         }
@@ -199,7 +212,11 @@ object WorkoutCompiler {
             )
         }
 
-        /** Steps cut into sets: a set's work (both sides of a timed one-sided set) and the rest after it. */
+        /**
+         * Each exercise of the other workout once, in its order: its first set (both sides of a
+         * timed one-sided hold) and the rest after it. Unlike sets, a filler exercise isn't repeated:
+         * three rounds of a superset take three different exercises.
+         */
         private fun units(source: List<WorkoutStep>): List<List<WorkoutStep>> {
             val units = mutableListOf<MutableList<WorkoutStep>>()
             source.forEach { step ->
@@ -207,6 +224,8 @@ object WorkoutCompiler {
                 if (startsNew || units.isEmpty()) units += mutableListOf(step) else units.last() += step
             }
             return units
+                .filter { unit -> (unit.first() as? WorkStep)?.let { it.set == 1 && it.round == 1 } ?: false }
+                .distinctBy { unit -> (unit.first() as WorkStep).let { it.blockIndex to it.itemIndex } }
         }
 
         private fun worked(exerciseId: Long): Set<Muscle> =
@@ -248,6 +267,8 @@ object WorkoutCompiler {
             seconds: Int,
             activeRest: ActiveRest,
             workedMuscles: Set<Muscle>,
+            /** False for the rest between exercises of a round: the rest-filler workout doesn't go there. */
+            fill: Boolean = true,
         ) {
             if (seconds <= 0) {
                 if (activeRest != ActiveRest.None) warnings += CompileWarning.NoRestTimeForActiveRest(blockIndex, itemIndex)
@@ -255,7 +276,7 @@ object WorkoutCompiler {
             }
             // A rest with nothing of its own takes the next set of the rest-filler workout.
             lastFillerUnit = null
-            val activeId = if (activeRest == ActiveRest.None && filler.isNotEmpty()) {
+            val activeId = if (fill && activeRest == ActiveRest.None && filler.isNotEmpty()) {
                 filler.removeFirst().also { lastFillerUnit = it }.let { (it.first() as WorkStep).exerciseId }
             } else {
                 resolve(activeRest, blockIndex, itemIndex, workedMuscles)
