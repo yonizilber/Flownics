@@ -48,7 +48,9 @@ These were decided before any code was written:
 | 2026-11-12 | Garmin | Its own FIT decoder (tested on real recordings from several devices); import of `.fit` files; optional sync with Garmin's personal API key; laps become parts; cadence, step length, heart-rate drift and per-km splits. |
 | 2026-11-12 | Watch + app | A watch recording made during an app workout joins that workout: heart rate set by set, with a chart. A review fixed a calendar-sync loop. |
 
-The database schema went from v1 to v11 along the way, with a real migration for every version
+The database schema went from v1 to v11 by the first commit, with a real migration for every version
 (Room's exported schemas are in `app/schemas`).
 
-From here on, history is in the git log.
+From here on, history is in the git log (from 2026-11-12: combining workouts, background
+Garmin sync, the month view, reminders, heart-rate zones and load, live heart rate over
+Bluetooth).
