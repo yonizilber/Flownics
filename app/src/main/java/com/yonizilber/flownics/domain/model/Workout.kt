@@ -5,6 +5,8 @@ data class WorkoutTemplate(
     val name: String,
     val description: String = "",
     val blocks: List<WorkoutBlock> = emptyList(),
+    /** Another workout whose exercises fill this one's rests, one per rest, in order. */
+    val restFiller: RestFiller? = null,
     val createdAtMillis: Long = 0,
     val updatedAtMillis: Long = 0,
 )
@@ -63,3 +65,10 @@ enum class PoolFocus {
     WORKED_MUSCLES,
     ANY,
 }
+
+/**
+ * Two workouts done as one: during each rest of this workout (one without its own active rest),
+ * the next exercise of [workoutId] comes up, in that workout's order. With [leftoversAtEnd], what
+ * didn't fit in the rests is done after the last set, so the other workout is done in full.
+ */
+data class RestFiller(val workoutId: Long, val leftoversAtEnd: Boolean = true)

@@ -94,4 +94,13 @@
 
     <!-- Exercise delete -->
     <string name="delete_used_in_workouts">It is used in %1$d workouts; they will show a warning until you replace it.</string>
+    <string name="wedit_filler_title">Combine with another workout</string>
+    <string name="wedit_filler_hint">Its exercises come up in this workout\'s rests, one per rest, in its order: say, a stretching routine done in the rests of a strength workout. Rests that already have their own active rest keep it.</string>
+    <string name="wedit_filler_none">No other workout</string>
+    <string name="wedit_filler_missing">(a deleted workout)</string>
+    <string name="wedit_filler_leftovers">Do what doesn\'t fit at the end</string>
+    <string name="wedit_filler_summary">%1$d of its %2$d sets fit into the rests.</string>
+    <string name="wedit_filler_at_end">%1$d at the end.</string>
+    <string name="wedit_filler_block">Then: %1$s</string>
+    <string name="warning_missing_filler">The workout chosen to fill the rests was deleted; the rests stay plain.</string>
 </resources>

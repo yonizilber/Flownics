@@ -110,6 +110,9 @@ interface TransferDao {
     @Insert
     suspend fun insertWorkouts(entities: List<WorkoutTemplateEntity>)
 
+    @Query("UPDATE workout_templates SET restFillerWorkoutId = :filler WHERE id = :id")
+    suspend fun setRestFiller(id: Long, filler: Long)
+
     @Insert
     suspend fun insertSessions(entities: List<WorkoutSessionEntity>)
 

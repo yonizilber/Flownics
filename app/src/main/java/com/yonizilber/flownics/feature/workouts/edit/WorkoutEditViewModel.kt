@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.feature.workouts.edit
 
+import com.yonizilber.flownics.domain.model.RestFiller
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -42,6 +43,7 @@ data class WorkoutDraft(
     val showNameError: Boolean = false,
     val description: String = "",
     val blocks: List<BlockDraft> = emptyList(),
+    val restFiller: RestFiller? = null,
     val expandedItemKey: Long? = null,
     val saving: Boolean = false,
     val dirty: Boolean = false,
@@ -52,6 +54,8 @@ data class WorkoutEditorUiState(
     val library: Map<Long, Exercise> = emptyMap(),
     /** The draft compiled live, so the estimate and warnings update as the user edits. */
     val compiled: CompiledWorkout? = null,
+    /** Workouts that can fill this one's rests. */
+    val otherWorkouts: List<WorkoutTemplate> = emptyList(),
 ) {
     val blocks: List<WorkoutBlock> get() = draft.blocks.map { it.toBlock() }
 }
@@ -76,10 +80,15 @@ class WorkoutEditViewModel @Inject constructor(
     val saved: Flow<Long> = _saved.receiveAsFlow()
 
     val uiState: StateFlow<WorkoutEditorUiState> =
-        combine(draft, exerciseRepository.observeAll()) { d, exercises ->
+        combine(draft, exerciseRepository.observeAll(), workoutRepository.observeAll()) { d, exercises, all ->
             val library = exercises.associateBy { it.id }
             val template = d.toTemplate()
-            WorkoutEditorUiState(d, library, if (d.loading) null else WorkoutCompiler.compile(template, library))
+            WorkoutEditorUiState(
+                d,
+                library,
+                if (d.loading) null else WorkoutCompiler.compile(template, library, all.associateBy { it.id }),
+                otherWorkouts = all.filter { it.id != workoutId }.sortedBy { it.name.lowercase() },
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutEditorUiState())
 
     /** Called once with the localized default block title for a brand-new workout. */
@@ -98,6 +107,7 @@ class WorkoutEditViewModel @Inject constructor(
                     isNew = false,
                     name = existing.name,
                     description = existing.description,
+                    restFiller = existing.restFiller,
                     blocks = existing.blocks.map { block ->
                         BlockDraft(newKey(), block.copy(items = emptyList()), block.items.map { ItemDraft(newKey(), it) })
                     },
@@ -108,6 +118,7 @@ class WorkoutEditViewModel @Inject constructor(
 
     fun onNameChange(value: String) = edit { it.copy(name = value, showNameError = false) }
     fun onDescriptionChange(value: String) = edit { it.copy(description = value) }
+    fun onRestFillerChange(value: RestFiller?) = edit { it.copy(restFiller = value) }
 
     fun onAddBlock(title: String) = edit { it.copy(blocks = it.blocks + BlockDraft(newKey(), WorkoutBlock(title = title), emptyList())) }
     fun onRemoveBlock(key: Long) = edit { d -> d.copy(blocks = d.blocks.filterNot { it.key == key }) }
@@ -151,6 +162,7 @@ class WorkoutEditViewModel @Inject constructor(
         name = name.trim(),
         description = description.trim(),
         blocks = blocks.map { it.toBlock().copy(title = it.block.title.trim()) },
+        restFiller = restFiller,
         createdAtMillis = original?.createdAtMillis ?: 0,
     )
 

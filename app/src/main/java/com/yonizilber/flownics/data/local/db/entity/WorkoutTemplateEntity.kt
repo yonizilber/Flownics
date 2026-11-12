@@ -13,6 +13,9 @@ data class WorkoutTemplateEntity(
     val name: String,
     val description: String,
     val blocksJson: String,
+    // v12: the workout whose exercises fill the rests (see RestFiller).
+    val restFillerWorkoutId: Long? = null,
+    @androidx.room.ColumnInfo(defaultValue = "1") val restFillerLeftovers: Boolean = true,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
 )

@@ -48,7 +48,7 @@ class WorkoutsViewModel @Inject constructor(
             WorkoutsUiState(
                 loading = false,
                 workouts = templates.map { template ->
-                    val compiled = WorkoutCompiler.compile(template, library)
+                    val compiled = WorkoutCompiler.compile(template, library, templates.associateBy { it.id })
                     WorkoutSummary(
                         template = template,
                         estimatedSeconds = compiled.estimatedSeconds,

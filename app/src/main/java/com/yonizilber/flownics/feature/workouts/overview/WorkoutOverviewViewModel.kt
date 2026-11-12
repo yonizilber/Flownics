@@ -43,12 +43,12 @@ class WorkoutOverviewViewModel @Inject constructor(
     private val workoutId: Long = checkNotNull(savedStateHandle.get<Long>(Destination.ARG_WORKOUT_ID))
 
     val uiState: StateFlow<WorkoutOverviewUiState> =
-        combine(workoutRepository.observe(workoutId), exerciseRepository.observeAll()) { template, exercises ->
+        combine(workoutRepository.observe(workoutId), exerciseRepository.observeAll(), workoutRepository.observeAll()) { template, exercises, all ->
             if (template == null) {
                 WorkoutOverviewUiState.NotFound
             } else {
                 val library = exercises.associateBy { it.id }
-                WorkoutOverviewUiState.Loaded(template, WorkoutCompiler.compile(template, library), library)
+                WorkoutOverviewUiState.Loaded(template, WorkoutCompiler.compile(template, library, all.associateBy { it.id }), library)
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutOverviewUiState.Loading)
 

@@ -43,7 +43,7 @@ import com.yonizilber.flownics.data.local.db.entity.WorkoutTemplateEntity
         PlannedWorkoutEntity::class,
         CalendarLinkEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class FlownicsDatabase : RoomDatabase() {
@@ -297,8 +297,16 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
     }
 }
 
+// v11 → v12: a workout can fill its rests from another workout.
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `workout_templates` ADD COLUMN `restFillerWorkoutId` INTEGER")
+        db.execSQL("ALTER TABLE `workout_templates` ADD COLUMN `restFillerLeftovers` INTEGER NOT NULL DEFAULT 1")
+    }
+}
+
 // Every schema change gets a real Migration here. See DatabaseModule.
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
-    MIGRATION_10_11,
+    MIGRATION_10_11, MIGRATION_11_12,
 )

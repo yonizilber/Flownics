@@ -53,6 +53,11 @@ sealed interface CompileWarning {
 
     data class NoRestTimeForActiveRest(override val blockIndex: Int, val itemIndex: Int?) : CompileWarning
 
+    /** The workout chosen to fill the rests is gone. */
+    data object MissingRestFiller : CompileWarning {
+        override val blockIndex: Int = 0
+    }
+
     data class ActiveRestTooLong(
         override val blockIndex: Int,
         val itemIndex: Int?,
@@ -66,6 +71,14 @@ data class CompiledWorkout(
     val steps: List<WorkoutStep>,
     val warnings: List<CompileWarning>,
     val estimatedSeconds: Int,
+    /**
+     * When the rest-filler workout's leftovers are done at the end: the title of that extra block,
+     * whose steps use block index `template.blocks.size`.
+     */
+    val extraBlockTitle: String? = null,
+    /** How many of the rest-filler workout's sets went into rests, and how many in all. */
+    val fillerUsed: Int = 0,
+    val fillerTotal: Int = 0,
 )
 
 /**
@@ -79,8 +92,9 @@ object WorkoutCompiler {
     private const val UNKNOWN_SET_SECONDS = 45
     private const val MIN_SET_SECONDS = 20
 
-    fun compile(template: WorkoutTemplate, library: Map<Long, Exercise>): CompiledWorkout =
-        Compilation(library).run(template)
+    /** [workouts] is needed only to find a [WorkoutTemplate.restFiller]; without it the rests stay plain. */
+    fun compile(template: WorkoutTemplate, library: Map<Long, Exercise>, workouts: Map<Long, WorkoutTemplate> = emptyMap()): CompiledWorkout =
+        Compilation(library).run(template, workouts)
 
     /** Time an exercise needs as active rest, from its timed stages; null when unknown. */
     fun activeRestSeconds(exercise: Exercise): Int? {
@@ -103,7 +117,22 @@ object WorkoutCompiler {
         private val warnings = linkedSetOf<CompileWarning>()
         private var poolCursor = 0
 
-        fun run(template: WorkoutTemplate): CompiledWorkout {
+        /** The rest-filler workout's sets still to come, each with the rest that followed it there. */
+        private val filler = ArrayDeque<List<WorkoutStep>>()
+
+        /** The filler set the latest rest took, while that rest is still the last step. */
+        private var lastFillerUnit: List<WorkoutStep>? = null
+
+        fun run(template: WorkoutTemplate, workouts: Map<Long, WorkoutTemplate> = emptyMap()): CompiledWorkout {
+            val fillerSource = template.restFiller?.let { f ->
+                workouts[f.workoutId]?.takeIf { it.id != template.id } ?: run {
+                    warnings += CompileWarning.MissingRestFiller
+                    null
+                }
+            }
+            // The other workout as it would run on its own (its own filler ignored), cut into sets.
+            fillerSource?.let { source -> filler += units(Compilation(library).run(source.copy(restFiller = null)).steps) }
+            val fillerTotal = filler.size
             template.blocks.forEachIndexed { blockIndex, block ->
                 val present = block.items.withIndex().filter { (itemIndex, item) ->
                     (library[item.exerciseId] != null).also { found ->
@@ -139,13 +168,45 @@ object WorkoutCompiler {
                     }
                 }
             }
+            // Nothing to rest for after the very last set; a stretch it took goes back in line.
+            if (steps.lastOrNull() is RestStep) {
+                steps.removeAt(steps.lastIndex)
+                lastFillerUnit?.let { filler.addFirst(it) }
+            }
+            val fillerUsed = fillerTotal - filler.size
+            var extraTitle: String? = null
+            if (fillerSource != null && template.restFiller?.leftoversAtEnd == true && filler.isNotEmpty()) {
+                // What didn't fit in the rests is done at the end, as its own block.
+                extraTitle = fillerSource.name
+                val extraBlock = template.blocks.size
+                filler.flatten().forEach { step ->
+                    steps += when (step) {
+                        is WorkStep -> step.copy(blockIndex = extraBlock)
+                        is RestStep -> step.copy(blockIndex = extraBlock)
+                    }
+                }
+                filler.clear()
+            }
             // Nothing to rest for after the very last set.
             if (steps.lastOrNull() is RestStep) steps.removeAt(steps.lastIndex)
             return CompiledWorkout(
                 steps = steps.toList(),
                 warnings = warnings.toList(),
                 estimatedSeconds = steps.sumOf { estimateSeconds(it, library) },
+                extraBlockTitle = extraTitle,
+                fillerUsed = fillerUsed,
+                fillerTotal = fillerTotal,
             )
+        }
+
+        /** Steps cut into sets: a set's work (both sides of a timed one-sided set) and the rest after it. */
+        private fun units(source: List<WorkoutStep>): List<List<WorkoutStep>> {
+            val units = mutableListOf<MutableList<WorkoutStep>>()
+            source.forEach { step ->
+                val startsNew = step is WorkStep && step.side != Side.RIGHT
+                if (startsNew || units.isEmpty()) units += mutableListOf(step) else units.last() += step
+            }
+            return units
         }
 
         private fun worked(exerciseId: Long): Set<Muscle> =
@@ -161,6 +222,7 @@ object WorkoutCompiler {
             totalRounds: Int,
             target: SetTarget,
         ) {
+            lastFillerUnit = null
             val exercise = library.getValue(exerciseId)
             val timed = exercise.measureMode == MeasureMode.TIME && (target.seconds ?: 0) > 0
             val sides = if (exercise.unilateral && timed) listOf(Side.LEFT, Side.RIGHT) else listOf(null)
@@ -191,7 +253,13 @@ object WorkoutCompiler {
                 if (activeRest != ActiveRest.None) warnings += CompileWarning.NoRestTimeForActiveRest(blockIndex, itemIndex)
                 return
             }
-            val activeId = resolve(activeRest, blockIndex, itemIndex, workedMuscles)
+            // A rest with nothing of its own takes the next set of the rest-filler workout.
+            lastFillerUnit = null
+            val activeId = if (activeRest == ActiveRest.None && filler.isNotEmpty()) {
+                filler.removeFirst().also { lastFillerUnit = it }.let { (it.first() as WorkStep).exerciseId }
+            } else {
+                resolve(activeRest, blockIndex, itemIndex, workedMuscles)
+            }
             if (activeId != null) {
                 val needed = activeRestSeconds(library.getValue(activeId))
                 if (needed != null && needed > seconds) {

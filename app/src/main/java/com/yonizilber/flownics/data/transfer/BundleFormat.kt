@@ -169,6 +169,9 @@ data class WorkoutDto(
     val blocks: List<BlockJson> = emptyList(),
     val createdAtMillis: Long = 0,
     val updatedAtMillis: Long = 0,
+    /** The workout (in the same file) whose exercises fill the rests, if any. */
+    val restFillerWorkoutId: Long? = null,
+    val restFillerLeftovers: Boolean = true,
 )
 
 @Serializable

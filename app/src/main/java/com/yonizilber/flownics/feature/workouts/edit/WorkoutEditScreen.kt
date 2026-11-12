@@ -1,5 +1,12 @@
 package com.yonizilber.flownics.feature.workouts.edit
 
+import androidx.compose.material3.Switch
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.OutlinedCard
+import com.yonizilber.flownics.domain.workout.CompiledWorkout
+import com.yonizilber.flownics.domain.model.WorkoutTemplate
+import com.yonizilber.flownics.domain.model.RestFiller
 import com.yonizilber.flownics.domain.library.Families
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
@@ -154,6 +161,7 @@ fun WorkoutEditScreen(
                         label = { Text(stringResource(R.string.wedit_description)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    RestFillerCard(draft.restFiller, state.otherWorkouts, state.compiled, viewModel::onRestFillerChange)
                     state.compiled?.let { compiled ->
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -530,6 +538,52 @@ private fun AddBlockRow(onAdd: (String) -> Unit) {
                     label = { Text(title) },
                     leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Two workouts as one: the other workout's exercises fill this one's rests, one per rest, in
+ * order, and (if chosen) what doesn't fit is done at the end.
+ */
+@Composable
+private fun RestFillerCard(
+    filler: RestFiller?,
+    others: List<WorkoutTemplate>,
+    compiled: CompiledWorkout?,
+    onChange: (RestFiller?) -> Unit,
+) {
+    var menu by remember { mutableStateOf(false) }
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.wedit_filler_title), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.wedit_filler_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Box {
+                OutlinedButton(onClick = { menu = true }, enabled = others.isNotEmpty() || filler != null) {
+                    Text(filler?.let { f -> others.firstOrNull { it.id == f.workoutId }?.name ?: stringResource(R.string.wedit_filler_missing) } ?: stringResource(R.string.wedit_filler_none))
+                }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.wedit_filler_none)) }, onClick = { onChange(null); menu = false })
+                    others.forEach { w ->
+                        DropdownMenuItem(text = { Text(w.name) }, onClick = { onChange(RestFiller(w.id, filler?.leftoversAtEnd ?: true)); menu = false })
+                    }
+                }
+            }
+            if (filler != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.wedit_filler_leftovers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Switch(checked = filler.leftoversAtEnd, onCheckedChange = { onChange(filler.copy(leftoversAtEnd = it)) })
+                }
+                compiled?.takeIf { it.fillerTotal > 0 }?.let { c ->
+                    val atEnd = if (filler.leftoversAtEnd) c.fillerTotal - c.fillerUsed else 0
+                    Text(
+                        stringResource(R.string.wedit_filler_summary, c.fillerUsed, c.fillerTotal) +
+                            if (atEnd > 0) " " + stringResource(R.string.wedit_filler_at_end, atEnd) else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }

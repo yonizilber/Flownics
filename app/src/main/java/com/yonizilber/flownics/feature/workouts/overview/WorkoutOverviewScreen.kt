@@ -235,7 +235,9 @@ fun WorkoutOverviewScreen(
                     if (previous == null || previous.blockIndex != step.blockIndex) {
                         if (previous != null) HorizontalDivider(Modifier.padding(vertical = 8.dp))
                         Text(
-                            blockLabel(s.template.blocks[step.blockIndex], step.blockIndex),
+                            // The extra block (the rest-filler workout's leftovers) is past the template's own.
+                            s.template.blocks.getOrNull(step.blockIndex)?.let { blockLabel(it, step.blockIndex) }
+                                ?: stringResource(R.string.wedit_filler_block, s.compiled.extraBlockTitle.orEmpty()),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(vertical = 8.dp),

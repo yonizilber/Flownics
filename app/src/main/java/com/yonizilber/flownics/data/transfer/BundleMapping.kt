@@ -95,14 +95,24 @@ internal fun WorkoutTemplateEntity.toDto(json: Json) = WorkoutDto(
     blocks = json.decodeFromString(ListSerializer(BlockJson.serializer()), blocksJson),
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
+    restFillerWorkoutId = restFillerWorkoutId,
+    restFillerLeftovers = restFillerLeftovers,
 )
 
-internal fun WorkoutDto.toEntity(json: Json, id: Long = this.id, name: String = this.name, blocks: List<BlockJson> = this.blocks) =
+internal fun WorkoutDto.toEntity(
+    json: Json,
+    id: Long = this.id,
+    name: String = this.name,
+    blocks: List<BlockJson> = this.blocks,
+    restFillerWorkoutId: Long? = this.restFillerWorkoutId,
+) =
     WorkoutTemplateEntity(
         id = id,
         name = name,
         description = description,
         blocksJson = json.encodeToString(ListSerializer(BlockJson.serializer()), blocks),
+        restFillerWorkoutId = restFillerWorkoutId,
+        restFillerLeftovers = restFillerLeftovers,
         createdAtMillis = createdAtMillis,
         updatedAtMillis = updatedAtMillis,
     )

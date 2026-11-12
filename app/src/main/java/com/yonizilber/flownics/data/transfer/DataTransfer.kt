@@ -151,7 +151,10 @@ class DataTransfer @Inject constructor(
     }
 
     private suspend fun shareData(selection: ShareSelection): BundleData {
-        val workouts = dao.workouts().filter { it.id in selection.workoutIds }.map { it.toDto(json) }
+        val all = dao.workouts()
+        // A workout that fills its rests from another brings that one along, as it brings its exercises.
+        val chosen = selection.workoutIds + all.filter { it.id in selection.workoutIds }.mapNotNull { it.restFillerWorkoutId }
+        val workouts = all.filter { it.id in chosen }.map { it.toDto(json) }
         val wanted = selection.exerciseIds + workouts.flatMap { BundleMerge.referencedExercises(it.blocks) }
         val exercises = dao.exercises().filter { it.id in wanted }.map { it.toDto(json) }
         val ids = exercises.map { it.id }.toSet()
@@ -254,7 +257,13 @@ class DataTransfer @Inject constructor(
                         .map { it.toEntity(exerciseId = ids.getValue(it.exerciseId), addedExerciseId = it.addedExerciseId?.let(ids::get)) },
                 )
                 dao.insertNotes(data.aiNotes.filter { it.exerciseId in added }.map { it.toEntity(json, ids.getValue(it.exerciseId)) })
-                plan.workouts.forEach { w -> dao.insertWorkout(w.toEntity(json, id = 0, blocks = BundleMerge.remap(w.blocks, ids))) }
+                // Workouts get new ids; a rest-filler pointing at another workout of the file follows it.
+                val workoutIds = plan.workouts.associate { w ->
+                    w.id to dao.insertWorkout(w.toEntity(json, id = 0, blocks = BundleMerge.remap(w.blocks, ids), restFillerWorkoutId = null))
+                }
+                plan.workouts.forEach { w ->
+                    w.restFillerWorkoutId?.let(workoutIds::get)?.let { filler -> dao.setRestFiller(workoutIds.getValue(w.id), filler) }
+                }
             }
         } catch (e: Exception) {
             media.delete(created)

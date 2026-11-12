@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.data.mapper
 
+import com.yonizilber.flownics.domain.model.RestFiller
 import com.yonizilber.flownics.data.local.db.entity.ActiveRestJson
 import com.yonizilber.flownics.data.local.db.entity.BlockJson
 import com.yonizilber.flownics.data.local.db.entity.ItemJson
@@ -22,6 +23,7 @@ fun WorkoutTemplateEntity.toDomain(json: Json): WorkoutTemplate = WorkoutTemplat
     name = name,
     description = description,
     blocks = json.decodeFromString(blocksSerializer, blocksJson).map { it.toDomain() },
+    restFiller = restFillerWorkoutId?.let { RestFiller(it, restFillerLeftovers) },
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -31,6 +33,8 @@ fun WorkoutTemplate.toEntity(json: Json): WorkoutTemplateEntity = WorkoutTemplat
     name = name,
     description = description,
     blocksJson = json.encodeToString(blocksSerializer, blocks.map { it.toJson() }),
+    restFillerWorkoutId = restFiller?.workoutId,
+    restFillerLeftovers = restFiller?.leftoversAtEnd ?: true,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )

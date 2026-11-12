@@ -116,13 +116,13 @@ class PlayerController @Inject constructor(
         if (_state.value != null || sessions.inProgress() != null) return StartResult.AnotherInProgress
         val template = workouts.get(templateId) ?: return StartResult.NotFound
         val library = exercises.observeAll().first().associateBy { it.id }
-        val compiled = WorkoutCompiler.compile(template, library)
+        val compiled = WorkoutCompiler.compile(template, library, workouts.observeAll().first().associateBy { it.id })
         if (compiled.steps.isEmpty()) return StartResult.NothingToRun
 
         val draft = WorkoutSession(
             templateId = template.id,
             workoutName = template.name,
-            blockTitles = template.blocks.map { it.title },
+            blockTitles = template.blocks.map { it.title } + listOfNotNull(compiled.extraBlockTitle),
             steps = compiled.steps,
             status = SessionStatus.IN_PROGRESS,
             startedAtMillis = System.currentTimeMillis(),
