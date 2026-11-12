@@ -179,6 +179,7 @@ data class WorkoutDto(
     /** The workout (in the same file) whose exercises fill the rests, if any. */
     val restFillerWorkoutId: Long? = null,
     val restFillerLeftovers: Boolean = true,
+    val restFillerRepeatSets: Boolean = false,
 )
 
 @Serializable

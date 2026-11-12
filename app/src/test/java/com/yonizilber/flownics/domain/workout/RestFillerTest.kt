@@ -64,6 +64,15 @@ class RestFillerTest {
     }
 
     @Test
+    fun withRepeatSetsAnExerciseFollowsItsSets() {
+        val t = strength(leftovers = false).let { it.copy(restFiller = it.restFiller!!.copy(repeatSets = true)) }
+        val c = WorkoutCompiler.compile(t, library, listOf(stretching).associateBy { it.id })
+        // The hamstring stretch has 2 sets there: two rests in a row, then the hip flexor.
+        assertEquals(listOf(10L, 10L, 11L), rests(c))
+        assertEquals(4, c.fillerTotal)
+    }
+
+    @Test
     fun whatDoesntFitIsDoneAtTheEnd() {
         val short = strength(leftovers = true).let { it.copy(blocks = listOf(it.blocks[0].copy(items = it.blocks[0].items.take(1)))) }
         val c = WorkoutCompiler.compile(short, library, listOf(stretching).associateBy { it.id })

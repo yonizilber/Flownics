@@ -566,7 +566,10 @@ private fun RestFillerCard(
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.wedit_filler_none)) }, onClick = { onChange(null); menu = false })
                     others.forEach { w ->
-                        DropdownMenuItem(text = { Text(w.name) }, onClick = { onChange(RestFiller(w.id, filler?.leftoversAtEnd ?: true)); menu = false })
+                        DropdownMenuItem(
+                            text = { Text(w.name) },
+                            onClick = { onChange(RestFiller(w.id, filler?.leftoversAtEnd ?: true, filler?.repeatSets ?: false)); menu = false },
+                        )
                     }
                 }
             }
@@ -574,6 +577,17 @@ private fun RestFillerCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.wedit_filler_leftovers), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                     Switch(checked = filler.leftoversAtEnd, onCheckedChange = { onChange(filler.copy(leftoversAtEnd = it)) })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.wedit_filler_repeat), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(if (filler.repeatSets) R.string.wedit_filler_repeat_on else R.string.wedit_filler_repeat_off),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = filler.repeatSets, onCheckedChange = { onChange(filler.copy(repeatSets = it)) })
                 }
                 compiled?.takeIf { it.fillerTotal > 0 }?.let { c ->
                     val atEnd = if (filler.leftoversAtEnd) c.fillerTotal - c.fillerUsed else 0

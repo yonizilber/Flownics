@@ -137,7 +137,9 @@ object WorkoutCompiler {
                 }
             }
             // The other workout as it would run on its own (its own filler ignored), one entry per exercise.
-            fillerSource?.let { source -> filler += units(Compilation(library).run(source.copy(restFiller = null)).steps) }
+            fillerSource?.let { source ->
+                filler += units(Compilation(library).run(source.copy(restFiller = null)).steps, eachOnce = template.restFiller?.repeatSets != true)
+            }
             val fillerTotal = filler.size
             template.blocks.forEachIndexed { blockIndex, block ->
                 val present = block.items.withIndex().filter { (itemIndex, item) ->
@@ -213,18 +215,20 @@ object WorkoutCompiler {
         }
 
         /**
-         * Each exercise of the other workout once, in its order: its first set (both sides of a
-         * timed one-sided hold) and the rest after it. Unlike sets, a filler exercise isn't repeated:
-         * three rounds of a superset take three different exercises.
+         * The other workout's exercises in its order, each a set (both sides of a timed one-sided
+         * hold) with the rest after it. With [eachOnce], only the first set of each: unlike sets, a
+         * filler exercise isn't repeated, so three rounds of a superset take three different ones.
          */
-        private fun units(source: List<WorkoutStep>): List<List<WorkoutStep>> {
+        private fun units(source: List<WorkoutStep>, eachOnce: Boolean): List<List<WorkoutStep>> {
             val units = mutableListOf<MutableList<WorkoutStep>>()
             source.forEach { step ->
                 val startsNew = step is WorkStep && step.side != Side.RIGHT
                 if (startsNew || units.isEmpty()) units += mutableListOf(step) else units.last() += step
             }
-            return units
-                .filter { unit -> (unit.first() as? WorkStep)?.let { it.set == 1 && it.round == 1 } ?: false }
+            val sets = units.filter { it.first() is WorkStep }
+            if (!eachOnce) return sets
+            return sets
+                .filter { unit -> (unit.first() as WorkStep).let { it.set == 1 && it.round == 1 } }
                 .distinctBy { unit -> (unit.first() as WorkStep).let { it.blockIndex to it.itemIndex } }
         }
 

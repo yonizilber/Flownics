@@ -16,6 +16,8 @@ data class WorkoutTemplateEntity(
     // v12: the workout whose exercises fill the rests (see RestFiller).
     val restFillerWorkoutId: Long? = null,
     @androidx.room.ColumnInfo(defaultValue = "1") val restFillerLeftovers: Boolean = true,
+    // v13: the other workout's exercises as many times as their sets, rather than once each.
+    @androidx.room.ColumnInfo(defaultValue = "0") val restFillerRepeatSets: Boolean = false,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
 )

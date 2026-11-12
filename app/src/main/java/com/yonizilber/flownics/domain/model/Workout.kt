@@ -68,7 +68,8 @@ enum class PoolFocus {
 
 /**
  * Two workouts done as one: during each rest of this workout (one without its own active rest),
- * the next exercise of [workoutId] comes up, in that workout's order. With [leftoversAtEnd], what
+ * the next exercise of [workoutId] comes up, in that workout's order. Each of its exercises comes
+ * once, or with [repeatSets] as many times as it has sets there. With [leftoversAtEnd], what
  * didn't fit in the rests is done after the last set, so the other workout is done in full.
  */
-data class RestFiller(val workoutId: Long, val leftoversAtEnd: Boolean = true)
+data class RestFiller(val workoutId: Long, val leftoversAtEnd: Boolean = true, val repeatSets: Boolean = false)

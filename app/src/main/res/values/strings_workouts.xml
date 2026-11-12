@@ -99,9 +99,12 @@
     <string name="wedit_filler_none">No other workout</string>
     <string name="wedit_filler_missing">(a deleted workout)</string>
     <string name="wedit_filler_leftovers">Do what doesn\'t fit at the end</string>
-    <string name="wedit_filler_summary">%1$d of its %2$d exercises fit into the rests.</string>
+    <string name="wedit_filler_summary">%1$d of its %2$d fit into the rests.</string>
     <string name="wedit_filler_at_end">%1$d at the end.</string>
     <string name="wedit_filler_block">Then: %1$s</string>
     <string name="warning_missing_filler">The workout chosen to fill the rests was deleted; the rests stay plain.</string>
     <string name="warn_active_rest_inside_round">In %1$s, active rest only comes between rounds, not in the short rest between the exercises of a round; set it for the round\'s rest instead.</string>
+    <string name="wedit_filler_repeat">Repeat its sets</string>
+    <string name="wedit_filler_repeat_off">Off: each of its exercises comes once, so each rest has a different one.</string>
+    <string name="wedit_filler_repeat_on">On: an exercise with 3 sets there comes up in 3 rests in a row, as in that workout.</string>
 </resources>

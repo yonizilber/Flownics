@@ -23,7 +23,7 @@ fun WorkoutTemplateEntity.toDomain(json: Json): WorkoutTemplate = WorkoutTemplat
     name = name,
     description = description,
     blocks = json.decodeFromString(blocksSerializer, blocksJson).map { it.toDomain() },
-    restFiller = restFillerWorkoutId?.let { RestFiller(it, restFillerLeftovers) },
+    restFiller = restFillerWorkoutId?.let { RestFiller(it, restFillerLeftovers, restFillerRepeatSets) },
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -35,6 +35,7 @@ fun WorkoutTemplate.toEntity(json: Json): WorkoutTemplateEntity = WorkoutTemplat
     blocksJson = json.encodeToString(blocksSerializer, blocks.map { it.toJson() }),
     restFillerWorkoutId = restFiller?.workoutId,
     restFillerLeftovers = restFiller?.leftoversAtEnd ?: true,
+    restFillerRepeatSets = restFiller?.repeatSets ?: false,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
