@@ -120,7 +120,7 @@ class FitImporter @Inject constructor(
  */
 @Singleton
 class GarminSync @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
     private val http: OkHttpClient,
     private val cipher: ApiKeyCipher,
     private val json: Json,
@@ -139,12 +139,14 @@ class GarminSync @Inject constructor(
         exchange(trimmed)
         prefs.edit().putString(KEY_KEY, cipher.encrypt(trimmed)).remove(KEY_ERROR).remove(KEY_ERROR_DETAIL).apply()
         _settings.value = load()
+        GarminSyncWorker.schedule(context, hasKey = true)
     }
 
     fun removeKey() {
         token = null
         prefs.edit().remove(KEY_KEY).remove(KEY_ERROR).apply()
         _settings.value = load()
+        GarminSyncWorker.schedule(context, hasKey = false)
     }
 
     /** True when there's a key and the last sync is older than [hours]. */

@@ -14,7 +14,7 @@
     <string name="garmin_last_sync">סונכרן לאחרונה: %1$s</string>
     <string name="garmin_sync_now">סנכרון מגרמין</string>
     <string name="garmin_remove_key">הסרת המפתח</string>
-    <string name="garmin_how_sync">היומן מסתנכרן לבד כשפותחים אותו (כל כמה שעות), בפעם הראשונה 30 יום אחורה. כל פעילות יורדת פעם אחת; מה שכבר יובא מדולג. כשהמפתח פג, צור חדש והדבק כאן.</string>
+    <string name="garmin_how_sync">Flownics מסתנכרן ברקע כל כמה שעות כשיש רשת (אנדרואיד בוחר את הזמן המדויק כדי לחסוך סוללה), וגם כשפותחים את היומן. בפעם הראשונה 30 יום אחורה. כל פעילות יורדת פעם אחת. כשהמפתח פג, צור חדש והדבק כאן.</string>
     <string name="garmin_privacy">המפתח שמור מוצפן בטלפון (Android Keystore), נשלח רק לגרמין, ולא נכלל בגיבויים. גרמין מייעדת את המפתח האישי לנתונים שלך, לא לאפליקציות שמשרתות אחרים.</string>
     <string name="garmin_file_alternative">בלי מפתח: ב-Garmin Connect פותחים פעילות, ⋮, Export Original, ומייבאים את הקובץ ביומן (ייבוא קובץ FIT).</string>
     <string name="garmin_some_failed">%1$d לא נקראו.</string>

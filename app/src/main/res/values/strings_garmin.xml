@@ -14,7 +14,7 @@
     <string name="garmin_last_sync">Last synced %1$s</string>
     <string name="garmin_sync_now">Sync from Garmin</string>
     <string name="garmin_remove_key">Remove the key</string>
-    <string name="garmin_how_sync">The journal syncs by itself when you open it (every few hours), from 30 days back the first time. Each activity is downloaded once; already imported ones are skipped. When the key expires, make a new one and paste it here.</string>
+    <string name="garmin_how_sync">Flownics syncs in the background every few hours when there\'s a network (Android picks the exact time to save battery), and also when you open the journal. The first time it goes 30 days back. Each activity is downloaded once. When the key expires, make a new one and paste it here.</string>
     <string name="garmin_privacy">The key is kept encrypted on this phone (Android Keystore), is sent only to Garmin, and isn\'t in backups. Garmin intends the personal key for your own data, not for apps serving others.</string>
     <string name="garmin_file_alternative">Without a key: in Garmin Connect, open an activity, ⋮, Export Original, and import the file in the journal (Import a FIT file).</string>
     <string name="garmin_some_failed">%1$d couldn\'t be read.</string>

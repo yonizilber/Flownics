@@ -1,5 +1,7 @@
 package com.yonizilber.flownics
 
+import com.yonizilber.flownics.data.garmin.GarminSync
+import com.yonizilber.flownics.data.garmin.GarminSyncWorker
 import com.yonizilber.flownics.data.di.ApplicationScope
 import com.yonizilber.flownics.data.garmin.RecordingLinker
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +20,9 @@ class FlownicsApplication : Application() {
     lateinit var linker: RecordingLinker
 
     @Inject
+    lateinit var garmin: GarminSync
+
+    @Inject
     @ApplicationScope
     lateinit var scope: CoroutineScope
 
@@ -27,5 +32,6 @@ class FlownicsApplication : Application() {
         calendarSync.start()
         // Recordings imported before workouts could be joined, or whose workout is gone, are sorted out.
         scope.launch { linker.link() }
+        GarminSyncWorker.schedule(this, garmin.settings.value.hasKey)
     }
 }
