@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.player
 
+import com.yonizilber.flownics.sensors.SensorState
+import com.yonizilber.flownics.sensors.HeartRateMonitor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yonizilber.flownics.data.local.media.MediaStorage
@@ -23,7 +25,12 @@ class PlayerViewModel @Inject constructor(
     private val controller: PlayerController,
     cues: WorkoutCues,
     private val mediaStorage: MediaStorage,
+    heartRate: HeartRateMonitor,
 ) : ViewModel() {
+
+    /** Live heart rate, when a sensor is connected. */
+    val sensor: StateFlow<SensorState> = heartRate.state
+
 
     init {
         controller.restoreIfNeeded()

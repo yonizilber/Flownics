@@ -78,6 +78,8 @@ sealed class Destination(val route: String) {
 
     data object GarminSettings : Destination("settings/garmin")
 
+    data object HeartRateSensor : Destination("settings/sensor")
+
     // The player shows whichever workout is running; there is at most one.
     data object Player : Destination("player")
 

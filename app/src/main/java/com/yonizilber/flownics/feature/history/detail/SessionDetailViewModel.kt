@@ -113,9 +113,7 @@ class SessionDetailViewModel @Inject constructor(
     val watch: StateFlow<WatchData?> = activities.observeAttachedTo(sessionId)
         .mapLatest { a ->
             a?.let {
-                val heart = withContext(Dispatchers.IO) {
-                    runCatching { FitActivity.heart(linker.file(it.id).readBytes()) }.getOrDefault(emptyList())
-                }
+                val heart = linker.heart(it)
                 WatchData(it, WorkoutHeart.thin(heart))
             }
         }

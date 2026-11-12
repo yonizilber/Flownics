@@ -65,4 +65,19 @@
     <string name="coach_profile_max_hr">Max heart rate</string>
     <string name="coach_profile_rest_hr">Resting heart rate</string>
     <string name="coach_profile_hr_hint">For heart-rate zones and training load. Without a max, the highest your recordings measured is used.</string>
+    <string name="sensor_title">Heart-rate sensor</string>
+    <string name="sensor_settings_hint">Live heart rate during workouts in the app</string>
+    <string name="sensor_intro">Choose a heart-rate sensor (a chest strap, or your watch broadcasting its heart rate). Every workout in the app then connects to it, shows the live heart rate, and keeps it with the workout: heart rate set by set, zones and load. If the watch also records the workout and it syncs later, its recording takes over.</string>
+    <string name="sensor_garmin_hint">Garmin: on the watch, turn on Broadcast Heart Rate (in the heart-rate widget\'s menu, or Broadcast During Activity in the sensor settings, depending on the model), then scan here.</string>
+    <string name="sensor_scan">Look for sensors</string>
+    <string name="sensor_chosen">Chosen: %1$s</string>
+    <string name="sensor_live">♥ %1$d bpm</string>
+    <string name="sensor_connected">Connected, waiting for a reading…</string>
+    <string name="sensor_connecting">Connecting…</string>
+    <string name="sensor_off">Not connected now (it connects when a workout starts)</string>
+    <string name="sensor_test">Test</string>
+    <string name="sensor_forget">Forget it</string>
+    <string name="sensor_selected">chosen</string>
+    <string name="sensor_bluetooth_off">Bluetooth is off.</string>
+    <string name="sensor_denied">Without Bluetooth permission the app can\'t look for the sensor. You can allow it in the app\'s Android settings.</string>
 </resources>

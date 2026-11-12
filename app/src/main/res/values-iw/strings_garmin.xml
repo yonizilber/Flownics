@@ -66,4 +66,19 @@
     <string name="coach_profile_max_hr">דופק מקסימלי</string>
     <string name="coach_profile_rest_hr">דופק מנוחה</string>
     <string name="coach_profile_hr_hint">לאזורי דופק ולעומס אימונים. בלי מקסימום, נלקח הגבוה ביותר שההקלטות מדדו.</string>
+    <string name="sensor_title">חיישן דופק</string>
+    <string name="sensor_settings_hint">דופק חי באימונים באפליקציה</string>
+    <string name="sensor_intro">בחר חיישן דופק (רצועת חזה, או השעון שלך כשהוא משדר דופק). כל אימון באפליקציה מתחבר אליו, מציג דופק חי, ושומר אותו עם האימון: דופק לכל סט, אזורים ועומס. אם השעון גם מקליט את האימון והוא מסתנכרן אחר כך, ההקלטה שלו תופסת את המקום.</string>
+    <string name="sensor_garmin_hint">גרמין: בשעון מפעילים Broadcast Heart Rate (בתפריט הווידג׳ט של הדופק, או Broadcast During Activity בהגדרות החיישנים, תלוי בדגם), ואז מחפשים כאן.</string>
+    <string name="sensor_scan">חיפוש חיישנים</string>
+    <string name="sensor_chosen">נבחר: %1$s</string>
+    <string name="sensor_live">♥ %1$d פעימות לדקה</string>
+    <string name="sensor_connected">מחובר, ממתין לקריאה…</string>
+    <string name="sensor_connecting">מתחבר…</string>
+    <string name="sensor_off">לא מחובר עכשיו (מתחבר כשאימון מתחיל)</string>
+    <string name="sensor_test">בדיקה</string>
+    <string name="sensor_forget">לשכוח אותו</string>
+    <string name="sensor_selected">נבחר</string>
+    <string name="sensor_bluetooth_off">ה-Bluetooth כבוי.</string>
+    <string name="sensor_denied">בלי הרשאת Bluetooth האפליקציה לא יכולה לחפש את החיישן. אפשר לאשר בהגדרות האפליקציה של אנדרואיד.</string>
 </resources>

@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.player
 
+import com.yonizilber.flownics.data.garmin.RecordingLinker
+import com.yonizilber.flownics.sensors.HeartRateMonitor
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
@@ -74,6 +76,8 @@ class PlayerController @Inject constructor(
     private val workouts: WorkoutRepository,
     private val exercises: ExerciseRepository,
     private val cues: WorkoutCues,
+    private val heartRate: HeartRateMonitor,
+    private val linker: RecordingLinker,
 ) {
     val library: StateFlow<Map<Long, Exercise>> = exercises.observeAll()
         .map { list -> list.associateBy { it.id } }
@@ -109,6 +113,7 @@ class PlayerController @Inject constructor(
                 lastTime = lastTimeFor(session),
                 restored = true,
             )
+            startHeartRate()
         }
     }
 
@@ -132,6 +137,7 @@ class PlayerController @Inject constructor(
         cues.prepare()
         val workout = ActiveWorkout(session, WorkoutPlayer.start(session.steps, now()), emptyMap(), lastTimeFor(session))
         _state.value = workout
+        startHeartRate()
         cueNewStep(workout)
         ensureService()
         ensureTicker()
@@ -175,7 +181,9 @@ class PlayerController @Inject constructor(
     /** Saves the workout to history; returns its session id, or null when nothing was running. */
     suspend fun finish(notes: String): Long? {
         val w = _state.value ?: return null
+        val heart = heartRate.stopRecording()
         sessions.complete(w.session.id, System.currentTimeMillis(), notes.trim())
+        linker.saveSensor(w.session.id, heart)
         stop()
         return w.session.id
     }
@@ -187,7 +195,16 @@ class PlayerController @Inject constructor(
         stop()
     }
 
+    /** Live heart rate during the workout, when a sensor was chosen (a strap, or a watch broadcasting). */
+    private fun startHeartRate() {
+        if (heartRate.saved.value == null) return
+        heartRate.connect()
+        heartRate.startRecording()
+    }
+
     private fun stop() {
+        heartRate.stopRecording()
+        heartRate.disconnect()
         _state.value = null
         ticker?.cancel()
         cues.release()

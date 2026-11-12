@@ -52,6 +52,7 @@ class ActivityRepository @Inject constructor(
     suspend fun delete(id: Long) {
         dao.delete(id)
         File(context.filesDir, "fit/$id.fit").delete()
+        File(context.filesDir, "hr/$id.csv").delete()
     }
 
     /** The activity already made from this recording, if any. */

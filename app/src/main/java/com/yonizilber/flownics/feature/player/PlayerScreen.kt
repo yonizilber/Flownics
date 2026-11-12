@@ -1,5 +1,8 @@
 package com.yonizilber.flownics.feature.player
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import com.yonizilber.flownics.sensors.SensorState
 import android.os.SystemClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -116,6 +119,7 @@ fun PlayerScreen(
     val library by viewModel.library.collectAsStateWithLifecycle()
     val problems by viewModel.cueProblems.collectAsStateWithLifecycle()
     val entries by viewModel.entries.collectAsStateWithLifecycle()
+    val sensor by viewModel.sensor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
     var confirmEnd by remember { mutableStateOf(false) }
 
@@ -133,6 +137,19 @@ fun PlayerScreen(
                     }
                 },
                 actions = {
+                    // Live heart rate from the chosen sensor; "…" while it connects.
+                    when (val hr = sensor) {
+                        is SensorState.Live -> Text(
+                            "❤ " + (hr.bpm?.toString() ?: "…"),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .semantics { contentDescription = hr.bpm?.let { "heart rate $it" } ?: "heart rate connecting" },
+                        )
+                        SensorState.Connecting -> Text("❤ …", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+                        SensorState.Off -> Unit
+                    }
                     if (w != null && w.player.phase !is Phase.Finished) {
                         Box {
                             IconButton(onClick = { menuOpen = true }) {

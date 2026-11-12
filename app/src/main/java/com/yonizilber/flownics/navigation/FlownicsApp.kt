@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.navigation
 
+import com.yonizilber.flownics.feature.settings.HeartRateSensorScreen
 import com.yonizilber.flownics.feature.garmin.GarminSettingsScreen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -227,6 +228,9 @@ private fun MainScaffold(
                     onOpenGarmin = { navController.navigate(Destination.GarminSettings.route) },
                 )
             }
+            composable(Destination.HeartRateSensor.route) {
+                HeartRateSensorScreen(onBack = { navController.popBackStack() })
+            }
             composable(Destination.GarminSettings.route) {
                 GarminSettingsScreen(onBack = { navController.popBackStack() })
             }
@@ -272,6 +276,7 @@ private fun MainScaffold(
                     onOpenData = { navController.navigate(Destination.Data.route) },
                     onOpenCalendar = { navController.navigate(Destination.CalendarSettings.route) },
                     onOpenGarmin = { navController.navigate(Destination.GarminSettings.route) },
+                    onOpenSensor = { navController.navigate(Destination.HeartRateSensor.route) },
                 )
             }
             composable(Destination.Data.route) {

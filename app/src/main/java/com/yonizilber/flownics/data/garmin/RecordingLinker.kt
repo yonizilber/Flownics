@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.data.garmin
 
+import com.yonizilber.flownics.domain.fit.HeartPoint
 import android.content.Context
 import com.yonizilber.flownics.data.local.db.dao.ActivityDao
 import com.yonizilber.flownics.data.local.db.dao.SessionDao
@@ -42,7 +43,10 @@ class RecordingLinker @Inject constructor(
         withContext(Dispatchers.IO) {
             val done = sessions.observeCompleted().first().map { it.toDomain() }
             val ids = done.map { it.id }.toSet()
-            activities.all().map { it.toDomain(json) }.forEach { a0 ->
+            val all = activities.all().map { it.toDomain(json) }
+            // A watch recording of a workout is richer than the live heart rate read during it: it replaces it.
+            val sensorBySession = all.filter { it.source == ActivitySource.SENSOR && it.attachedSessionId != null }.associateBy { it.attachedSessionId!! }
+            all.forEach { a0 ->
                 // Recordings imported before heart-rate zones existed get their histogram now.
                 val a = backfill(a0)
                 when {
@@ -54,6 +58,10 @@ class RecordingLinker @Inject constructor(
                             WorkoutHeart.overlap(a.startedAtMillis, a.endedAtMillis, s.startedAtMillis, s.endedAtMillis) >= WorkoutHeart.MIN_OVERLAP
                         }.maxByOrNull { s -> WorkoutHeart.overlap(a.startedAtMillis, a.endedAtMillis, s.startedAtMillis, s.endedAtMillis) }
                         if (session != null) {
+                            sensorBySession[session.id]?.let { s ->
+                                activities.delete(s.id)
+                                sensorFile(s.id).delete()
+                            }
                             val heart = runCatching { FitActivity.heart(file(a.id).readBytes()) }.getOrDefault(emptyList())
                             val sets = WorkoutHeart.sets(sessions.logs(session.id).map { it.toDomain() }, heart)
                             activities.update(a.copy(attachedSessionId = session.id, metrics = (a.metrics ?: ActivityMetrics()).copy(sets = sets)).toEntity(json))
@@ -85,4 +93,56 @@ class RecordingLinker @Inject constructor(
 
     /** The recording on this phone, kept when it was imported. */
     fun file(activityId: Long) = File(context.filesDir, "${FitImporter.FIT_DIR}/$activityId.fit")
+
+    private fun sensorFile(activityId: Long) = File(context.filesDir, "$SENSOR_DIR/$activityId.csv")
+
+    /** The heart rate of a recording over time: from its FIT file, or the readings of a sensor. */
+    suspend fun heart(a: com.yonizilber.flownics.domain.model.Activity): List<HeartPoint> = withContext(Dispatchers.IO) {
+        runCatching {
+            when (a.source) {
+                ActivitySource.FIT -> FitActivity.heart(file(a.id).readBytes())
+                ActivitySource.SENSOR -> sensorFile(a.id).readLines().mapNotNull { line ->
+                    line.split(',').takeIf { it.size == 2 }?.let { (t, b) -> HeartPoint(t.toLong(), b.toInt()) }
+                }
+                ActivitySource.MANUAL -> emptyList()
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    /**
+     * Keeps the live heart rate read during a workout as that workout's recording (unless a watch
+     * recording already joined it): totals, zones and set by set, with the readings in a file.
+     */
+    suspend fun saveSensor(sessionId: Long, points: List<HeartPoint>) = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (points.size < MIN_SENSOR_POINTS) return@withContext
+            val all = activities.all().map { it.toDomain(json) }
+            if (all.any { it.attachedSessionId == sessionId }) return@withContext
+            val sorted = points.sortedBy { it.atMillis }
+            val logs = sessions.logs(sessionId).map { it.toDomain() }
+            val activity = com.yonizilber.flownics.domain.model.Activity(
+                type = com.yonizilber.flownics.domain.model.ActivityType.OTHER,
+                title = "",
+                startedAtMillis = sorted.first().atMillis,
+                durationSeconds = ((sorted.last().atMillis - sorted.first().atMillis) / 1000).toInt().coerceAtLeast(1),
+                avgHeartRate = sorted.map { it.bpm }.average().toInt(),
+                maxHeartRate = sorted.maxOf { it.bpm },
+                source = ActivitySource.SENSOR,
+                attachedSessionId = sessionId,
+                metrics = ActivityMetrics(
+                    sets = WorkoutHeart.sets(logs, sorted),
+                    hrHistogram = com.yonizilber.flownics.domain.fit.HeartZones.histogram(sorted),
+                    samples = sorted.size,
+                ),
+            )
+            val id = activities.insert(activity.toEntity(json))
+            File(context.filesDir, SENSOR_DIR).mkdirs()
+            sensorFile(id).writeText(sorted.joinToString("\n") { "${it.atMillis},${it.bpm}" })
+        }
+    }
+
+    private companion object {
+        const val SENSOR_DIR = "hr"
+        const val MIN_SENSOR_POINTS = 10
+    }
 }

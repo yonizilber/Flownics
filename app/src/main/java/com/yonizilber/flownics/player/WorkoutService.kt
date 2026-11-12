@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.player
 
+import com.yonizilber.flownics.sensors.HeartRateMonitor
 import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
@@ -43,6 +44,8 @@ class WorkoutService : Service() {
 
     @Inject lateinit var controller: PlayerController
 
+    @Inject lateinit var heartRate: HeartRateMonitor
+
     private val scope = MainScope()
     private var observing: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
@@ -62,7 +65,13 @@ class WorkoutService : Service() {
         // startForeground must follow startForegroundService promptly, even when about to stop.
         val notification = buildNotification(this, controller.state.value, controller.library.value)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            // Reading a Bluetooth heart-rate sensor in the background needs the connected-device type too.
+            val sensor = heartRate.saved.value != null && heartRate.hasPermission()
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or (if (sensor) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0),
+            )
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }

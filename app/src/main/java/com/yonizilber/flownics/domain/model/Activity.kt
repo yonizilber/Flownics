@@ -22,8 +22,11 @@ data class ActivitySegment(
     val paceSecondsPerKm: Int? get() = pace(durationSeconds, distanceMeters)
 }
 
-/** [FIT]: read from a watch recording (a file the user imported, or synced from Garmin). */
-enum class ActivitySource { MANUAL, FIT }
+/**
+ * [FIT]: read from a watch recording (a file the user imported, or synced from Garmin).
+ * [SENSOR]: live heart rate the app read over Bluetooth during one of its workouts.
+ */
+enum class ActivitySource { MANUAL, FIT, SENSOR }
 
 /** One whole kilometre of a recorded activity. */
 @Serializable
