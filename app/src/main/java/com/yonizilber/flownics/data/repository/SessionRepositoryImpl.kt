@@ -37,6 +37,14 @@ class SessionRepositoryImpl @Inject constructor(
         linker.link()
     }
 
+    override suspend fun updatePlan(session: WorkoutSession, shiftFrom: Int, shiftBy: Int) {
+        if (shiftBy != 0) {
+            dao.shiftLogsUp(session.id, shiftFrom, shiftBy)
+            dao.shiftLogsDown(session.id)
+        }
+        dao.updatePlan(session.id, session.toEntity(json).planJson)
+    }
+
     override suspend fun delete(sessionId: Long) {
         dao.delete(sessionId)
         linker.link()

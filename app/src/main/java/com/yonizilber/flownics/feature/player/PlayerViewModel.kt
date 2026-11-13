@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.player
 
+import com.yonizilber.flownics.data.local.prefs.WorkoutDefaults
+import com.yonizilber.flownics.data.local.prefs.AppPreferences
 import com.yonizilber.flownics.sensors.SensorState
 import com.yonizilber.flownics.sensors.HeartRateMonitor
 import androidx.lifecycle.ViewModel
@@ -26,7 +28,16 @@ class PlayerViewModel @Inject constructor(
     cues: WorkoutCues,
     private val mediaStorage: MediaStorage,
     heartRate: HeartRateMonitor,
+    prefs: AppPreferences,
 ) : ViewModel() {
+
+    val defaults: StateFlow<WorkoutDefaults> = prefs.observeWorkoutDefaults()
+
+    fun setHoldAll(on: Boolean) = controller.setHoldAll(on)
+    fun addSet() = controller.addSet()
+    fun addExercise(a: AddedExercise) = controller.addExercise(a.exerciseId, a.sets, a.target, a.restSeconds)
+    fun continueInNextRest(): Boolean = controller.continueInNextRest()
+
 
     /** Live heart rate, when a sensor is connected. */
     val sensor: StateFlow<SensorState> = heartRate.state

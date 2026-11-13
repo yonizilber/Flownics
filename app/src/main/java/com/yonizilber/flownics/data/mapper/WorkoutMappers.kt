@@ -24,6 +24,7 @@ fun WorkoutTemplateEntity.toDomain(json: Json): WorkoutTemplate = WorkoutTemplat
     description = description,
     blocks = json.decodeFromString(blocksSerializer, blocksJson).map { it.toDomain() },
     restFiller = restFillerWorkoutId?.let { RestFiller(it, restFillerLeftovers, restFillerRepeatSets) },
+    confirmActiveRest = confirmActiveRest,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -36,6 +37,7 @@ fun WorkoutTemplate.toEntity(json: Json): WorkoutTemplateEntity = WorkoutTemplat
     restFillerWorkoutId = restFiller?.workoutId,
     restFillerLeftovers = restFiller?.leftoversAtEnd ?: true,
     restFillerRepeatSets = restFiller?.repeatSets ?: false,
+    confirmActiveRest = confirmActiveRest,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -64,6 +66,7 @@ private fun ItemJson.toDomain() = WorkoutItem(
     target = SetTarget(reps, seconds, weightKg, distanceMeters),
     restSeconds = restSeconds,
     activeRest = activeRest.toDomain(),
+    confirmEnd = confirmEnd,
 )
 
 private fun WorkoutItem.toJson() = ItemJson(
@@ -75,6 +78,7 @@ private fun WorkoutItem.toJson() = ItemJson(
     distanceMeters = target.distanceMeters,
     restSeconds = restSeconds,
     activeRest = activeRest.toJson(),
+    confirmEnd = confirmEnd,
 )
 
 private fun ActiveRestJson.toDomain(): ActiveRest = when (this) {

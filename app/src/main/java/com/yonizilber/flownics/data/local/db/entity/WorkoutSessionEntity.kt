@@ -90,6 +90,7 @@ sealed interface StepJson {
         val distanceMeters: Int? = null,
         val side: String? = null,
         val durationSeconds: Int? = null,
+        val holdAtEnd: Boolean = false,
     ) : StepJson
 
     @Serializable
@@ -98,5 +99,6 @@ sealed interface StepJson {
         val blockIndex: Int,
         val durationSeconds: Int,
         val activeExerciseId: Long? = null,
+        val holdAtEnd: Boolean = false,
     ) : StepJson
 }

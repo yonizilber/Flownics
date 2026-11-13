@@ -7,6 +7,8 @@ data class WorkoutTemplate(
     val blocks: List<WorkoutBlock> = emptyList(),
     /** Another workout whose exercises fill this one's rests, one per rest, in order. */
     val restFiller: RestFiller? = null,
+    /** Active rests wait for the user at zero (counting the extra time) instead of moving on. */
+    val confirmActiveRest: Boolean = true,
     val createdAtMillis: Long = 0,
     val updatedAtMillis: Long = 0,
 )
@@ -38,6 +40,8 @@ data class WorkoutItem(
     /** STRAIGHT_SETS: rest after every set. CIRCUIT: rest after this exercise within a round. */
     val restSeconds: Int = 60,
     val activeRest: ActiveRest = ActiveRest.None,
+    /** A timed set of this exercise waits for the user at zero instead of moving on. */
+    val confirmEnd: Boolean = false,
 )
 
 /** Which fields apply depends on the exercise's [MeasureMode]; the rest stay null. */

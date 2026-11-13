@@ -1,5 +1,8 @@
 package com.yonizilber.flownics.feature.player
 
+import androidx.compose.material3.Checkbox
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import com.yonizilber.flownics.sensors.SensorState
@@ -120,7 +123,10 @@ fun PlayerScreen(
     val problems by viewModel.cueProblems.collectAsStateWithLifecycle()
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val sensor by viewModel.sensor.collectAsStateWithLifecycle()
+    val defaults by viewModel.defaults.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
+    var adding by remember { mutableStateOf(false) }
+    var noNextRest by remember { mutableStateOf(false) }
     var confirmEnd by remember { mutableStateOf(false) }
 
     KeepScreenOn()
@@ -156,6 +162,42 @@ fun PlayerScreen(
                                 Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.action_more))
                             }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                // Changing the workout as it goes: the day rarely matches the plan.
+                                val current = w.step
+                                if (current is RestStep && current.activeExerciseId != null) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.player_continue_next_rest)) },
+                                        leadingIcon = { Icon(Icons.Outlined.Repeat, contentDescription = null) },
+                                        onClick = {
+                                            menuOpen = false
+                                            noNextRest = !viewModel.continueInNextRest()
+                                        },
+                                    )
+                                }
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.player_add_set)) },
+                                    leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        viewModel.addSet()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.player_add_exercise)) },
+                                    leadingIcon = { Icon(Icons.AutoMirrored.Outlined.PlaylistAdd, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        adding = true
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.player_hold_all)) },
+                                    leadingIcon = { Checkbox(checked = w.holdAll, onCheckedChange = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        viewModel.setHoldAll(!w.holdAll)
+                                    },
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.player_end_workout)) },
                                     leadingIcon = { Icon(Icons.Outlined.Flag, contentDescription = null) },
@@ -183,8 +225,15 @@ fun PlayerScreen(
                 onSave = { notes -> viewModel.finish(notes) { id -> if (id != null) onSaved(id) else onClose() } },
                 onDiscard = { viewModel.discard(onClose) },
                 onBackToWorkout = viewModel::previous,
+                onAddExercise = { adding = true },
                 modifier = Modifier.padding(innerPadding),
             )
+            if (adding) {
+                AddExerciseSheet(library, defaults.sets, defaults.restBetweenSets, stringResource(R.string.player_add_and_go), onDismiss = { adding = false }) {
+                    adding = false
+                    viewModel.addExercise(it)
+                }
+            }
             return@Scaffold
         }
 
@@ -243,6 +292,19 @@ fun PlayerScreen(
         }
     }
 
+    if (adding && workout?.player?.phase !is Phase.Finished) {
+        AddExerciseSheet(library, defaults.sets, defaults.restBetweenSets, stringResource(R.string.player_add_confirm), onDismiss = { adding = false }) {
+            adding = false
+            viewModel.addExercise(it)
+        }
+    }
+    if (noNextRest) {
+        AlertDialog(
+            onDismissRequest = { noNextRest = false },
+            text = { Text(stringResource(R.string.player_no_next_rest)) },
+            confirmButton = { TextButton(onClick = { noNextRest = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
     if (confirmEnd) {
         AlertDialog(
             onDismissRequest = { confirmEnd = false },
@@ -424,6 +486,24 @@ private fun RestContent(
 private fun TimerRing(phase: Phase, label: String?, color: Color) {
     val now = rememberNow(phase)
     val remaining = WorkoutPlayer.remainingMs(phase, now) ?: return
+    // Past zero on a step that waits for the user: the time over, counting up, until they move on.
+    val over = WorkoutPlayer.overtimeMs(phase, now)
+    if (remaining == 0L && over > 0) {
+        Box(Modifier.size(240.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                progress = { 1f },
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.error,
+                strokeWidth = 12.dp,
+                strokeCap = StrokeCap.Round,
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(stringResource(R.string.player_overtime), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                Text("−" + formatClock((over / 1000).toInt()), style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+            }
+        }
+        return
+    }
     val total = (WorkoutPlayer.totalMs(phase) ?: 1L).coerceAtLeast(1L)
     Box(Modifier.size(240.dp), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(
@@ -647,6 +727,7 @@ private fun SummaryContent(
     onSave: (String) -> Unit,
     onDiscard: () -> Unit,
     onBackToWorkout: () -> Unit,
+    onAddExercise: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var notes by rememberSaveable { mutableStateOf("") }
@@ -692,6 +773,9 @@ private fun SummaryContent(
             modifier = Modifier.fillMaxWidth(),
         )
         Button(onClick = { onSave(notes) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.player_save)) }
+        OutlinedButton(onClick = onAddExercise, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.player_keep_going))
+        }
         OutlinedButton(onClick = onBackToWorkout, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.player_back_to_workout))
         }

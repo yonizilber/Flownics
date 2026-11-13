@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.feature.workouts.edit
 
+import com.yonizilber.flownics.domain.model.BlockStructure
+import com.yonizilber.flownics.data.local.prefs.AppPreferences
 import com.yonizilber.flownics.domain.model.RestFiller
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -44,6 +46,7 @@ data class WorkoutDraft(
     val description: String = "",
     val blocks: List<BlockDraft> = emptyList(),
     val restFiller: RestFiller? = null,
+    val confirmActiveRest: Boolean = true,
     val expandedItemKey: Long? = null,
     val saving: Boolean = false,
     val dirty: Boolean = false,
@@ -67,7 +70,10 @@ class WorkoutEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val workoutRepository: WorkoutRepository,
     exerciseRepository: ExerciseRepository,
+    private val prefs: AppPreferences,
 ) : ViewModel() {
+
+    private val defaults get() = prefs.observeWorkoutDefaults().value
 
     private val workoutId: Long = savedStateHandle.get<Long>(Destination.ARG_WORKOUT_ID) ?: 0L
     private var original: WorkoutTemplate? = null
@@ -100,7 +106,11 @@ class WorkoutEditViewModel @Inject constructor(
             val existing = if (workoutId != 0L) workoutRepository.get(workoutId) else null
             original = existing
             draft.value = if (existing == null) {
-                WorkoutDraft(loading = false, blocks = listOf(BlockDraft(newKey(), WorkoutBlock(title = defaultBlockTitle), emptyList())))
+                WorkoutDraft(
+                    loading = false,
+                    confirmActiveRest = defaults.confirmActiveRest,
+                    blocks = listOf(BlockDraft(newKey(), WorkoutBlock(title = defaultBlockTitle, roundRestSeconds = defaults.restBetweenRounds), emptyList())),
+                )
             } else {
                 WorkoutDraft(
                     loading = false,
@@ -108,6 +118,7 @@ class WorkoutEditViewModel @Inject constructor(
                     name = existing.name,
                     description = existing.description,
                     restFiller = existing.restFiller,
+                    confirmActiveRest = existing.confirmActiveRest,
                     blocks = existing.blocks.map { block ->
                         BlockDraft(newKey(), block.copy(items = emptyList()), block.items.map { ItemDraft(newKey(), it) })
                     },
@@ -120,14 +131,33 @@ class WorkoutEditViewModel @Inject constructor(
     fun onDescriptionChange(value: String) = edit { it.copy(description = value) }
     fun onRestFillerChange(value: RestFiller?) = edit { it.copy(restFiller = value) }
 
-    fun onAddBlock(title: String) = edit { it.copy(blocks = it.blocks + BlockDraft(newKey(), WorkoutBlock(title = title), emptyList())) }
+    fun onAddBlock(title: String) = edit {
+        it.copy(blocks = it.blocks + BlockDraft(newKey(), WorkoutBlock(title = title, roundRestSeconds = defaults.restBetweenRounds), emptyList()))
+    }
+
+    fun onConfirmActiveRestChange(value: Boolean) = edit { it.copy(confirmActiveRest = value) }
+
+    /** Sets every rest in the workout to the defaults from the settings, in one go. */
+    fun onApplyDefaultRests() = edit { d ->
+        val df = defaults
+        d.copy(
+            blocks = d.blocks.map { b ->
+                val circuit = b.block.structure == BlockStructure.CIRCUIT
+                b.copy(
+                    block = if (circuit) b.block.copy(roundRestSeconds = df.restBetweenRounds) else b.block,
+                    items = b.items.map { it.copy(item = it.item.copy(restSeconds = if (circuit) df.restInRound else df.restBetweenSets)) },
+                )
+            },
+        )
+    }
     fun onRemoveBlock(key: Long) = edit { d -> d.copy(blocks = d.blocks.filterNot { it.key == key }) }
     fun onMoveBlock(from: Int, to: Int) = edit { it.copy(blocks = it.blocks.move(from, to)) }
     fun onUpdateBlock(key: Long, transform: (WorkoutBlock) -> WorkoutBlock) = editBlock(key) { it.copy(block = transform(it.block)) }
 
     fun onAddExercises(blockKey: Long, exerciseIds: List<Long>) {
         val library = uiState.value.library
-        val added = exerciseIds.mapNotNull { library[it] }.map { ItemDraft(newKey(), defaultItemFor(it)) }
+        val circuit = draft.value.blocks.firstOrNull { it.key == blockKey }?.block?.structure == BlockStructure.CIRCUIT
+        val added = exerciseIds.mapNotNull { library[it] }.map { ItemDraft(newKey(), defaultItemFor(it, circuit)) }
         if (added.isEmpty()) return
         editBlock(blockKey) { it.copy(items = it.items + added) }
         // Open the first new item so its sets/rest are one tap away.
@@ -163,6 +193,7 @@ class WorkoutEditViewModel @Inject constructor(
         description = description.trim(),
         blocks = blocks.map { it.toBlock().copy(title = it.block.title.trim()) },
         restFiller = restFiller,
+        confirmActiveRest = confirmActiveRest,
         createdAtMillis = original?.createdAtMillis ?: 0,
     )
 
@@ -174,18 +205,24 @@ class WorkoutEditViewModel @Inject constructor(
 
     private fun newKey(): Long = nextKey++
 
-    private fun defaultItemFor(exercise: Exercise): WorkoutItem {
+    private fun defaultItemFor(exercise: Exercise, circuit: Boolean): WorkoutItem {
         val target = when (exercise.measureMode) {
             MeasureMode.REPS, MeasureMode.REPS_WEIGHT -> SetTarget(reps = 10)
             MeasureMode.TIME -> SetTarget(seconds = 30)
             MeasureMode.DISTANCE -> SetTarget(distanceMeters = 400)
         }
         val effort = exercise.category in setOf(ExerciseCategory.STRENGTH, ExerciseCategory.CORE, ExerciseCategory.CARDIO)
+        val df = defaults
         return WorkoutItem(
             exerciseId = exercise.id,
-            sets = if (effort) 3 else 1,
+            sets = if (effort) df.sets else 1,
             target = target,
-            restSeconds = if (effort) 60 else 15,
+            restSeconds = when {
+                circuit -> df.restInRound
+                effort -> df.restBetweenSets
+                else -> df.restInRound
+            },
+            confirmEnd = exercise.measureMode == MeasureMode.TIME && df.confirmTimed,
         )
     }
 }

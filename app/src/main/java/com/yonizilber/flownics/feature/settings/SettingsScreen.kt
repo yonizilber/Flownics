@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.feature.settings
 
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material.icons.outlined.Event
@@ -50,6 +51,7 @@ fun SettingsScreen(
     onOpenCalendar: () -> Unit,
     onOpenGarmin: () -> Unit,
     onOpenSensor: () -> Unit,
+    onOpenDefaults: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -100,6 +102,12 @@ fun SettingsScreen(
             modifier = Modifier.clickable(onClick = onOpenSensor),
         )
         SectionTitle(stringResource(R.string.settings_player_section))
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.defaults_title)) },
+            supportingContent = { Text(stringResource(R.string.defaults_hint)) },
+            leadingContent = { Icon(Icons.Outlined.Tune, contentDescription = null) },
+            modifier = Modifier.clickable(onClick = onOpenDefaults),
+        )
         CueSwitch(
             title = stringResource(R.string.settings_cue_sound),
             hint = stringResource(R.string.settings_cue_sound_hint),

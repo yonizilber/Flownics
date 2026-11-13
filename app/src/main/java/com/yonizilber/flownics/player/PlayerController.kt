@@ -1,5 +1,8 @@
 package com.yonizilber.flownics.player
 
+import com.yonizilber.flownics.domain.workout.RestStep
+import com.yonizilber.flownics.R
+import com.yonizilber.flownics.domain.player.SessionEdits
 import com.yonizilber.flownics.data.garmin.RecordingLinker
 import com.yonizilber.flownics.sensors.HeartRateMonitor
 import android.content.Context
@@ -48,7 +51,12 @@ data class ActiveWorkout(
     val lastTime: Map<Long, SetLog>,
     /** The app was closed mid-workout and the session came back paused. */
     val restored: Boolean = false,
+    /** Set during the workout: every timed step waits at zero for the user. */
+    val holdAll: Boolean = false,
 ) {
+    /** The current timed step is past zero, waiting for the user. */
+    fun overtimeMs(nowMs: Long): Long = step?.takeIf { WorkoutPlayer.holds(it, holdAll) }?.let { WorkoutPlayer.overtimeMs(player.phase, nowMs) } ?: 0
+
     val step: WorkoutStep? get() = session.steps.getOrNull(player.index)
 
     /** The next set to do after the current step. */
@@ -92,6 +100,7 @@ class PlayerController @Inject constructor(
     private var restoreChecked = false
     private var ticker: Job? = null
     private var lastBeepSecond = -1
+    private var overtimeCued: Int? = null
 
     private fun now() = SystemClock.elapsedRealtime()
 
@@ -178,6 +187,88 @@ class PlayerController @Inject constructor(
 
     fun dismissRestoredNotice() = transition { w, _ -> w.copy(restored = false) }
 
+    // ---- Changing the workout while it runs ----------------------------------------------------
+
+    /** Every timed step waits at zero for the user (or not), for the rest of this workout. */
+    fun setHoldAll(on: Boolean) {
+        transition { w, _ -> w.copy(holdAll = on) }
+        ensureTicker()
+    }
+
+    /** The current active-rest exercise goes on in the next rest; later ones move one rest on. */
+    fun continueInNextRest(): Boolean {
+        val w = _state.value ?: return false
+        val (steps, _) = SessionEdits.continueInNextRest(w.session.steps, w.player.index) ?: return false
+        apply(w, steps, shiftFrom = Int.MAX_VALUE, shiftBy = 0)
+        return true
+    }
+
+    /** One more set of the current exercise. */
+    fun addSet() {
+        val w = _state.value ?: return
+        val edit = SessionEdits.addSet(w.session.steps, w.player.index) ?: return
+        apply(w, edit.steps, edit.insertedAt, edit.shift)
+    }
+
+    /** An exercise that wasn't in the plan: after the current step, or (when it was over) as the next thing to do. */
+    fun addExercise(exerciseId: Long, sets: Int, target: SetTarget, restSeconds: Int) {
+        val w = _state.value ?: return
+        val exercise = library.value[exerciseId] ?: return
+        val (titles, block) = addedBlock(w.session.blockTitles)
+        val finished = w.player.phase is Phase.Finished
+        val edit = SessionEdits.addAfterCurrent(w.session.steps, w.player.index, finished, SessionEdits.exerciseSteps(exercise, sets, target, restSeconds, block))
+        apply(w, edit.steps, edit.insertedAt, edit.shift, titles)
+        if (finished) {
+            // The workout goes on: straight into what was just added.
+            transition { a, now -> a.copy(player = WorkoutPlayer.jumpTo(a.session.steps, edit.insertedAt, now)) }
+            ensureService()
+        }
+    }
+
+    /** A workout without a plan: starts with the exercises chosen, and more can be added as it goes. */
+    suspend fun startFree(first: List<Triple<Long, Int, SetTarget>>, restSeconds: Int): StartResult {
+        if (_state.value != null || sessions.inProgress() != null) return StartResult.AnotherInProgress
+        val lib = library.value.ifEmpty { exercises.observeAll().first().associateBy { it.id } }
+        val steps = first.flatMap { (id, sets, target) -> lib[id]?.let { SessionEdits.exerciseSteps(it, sets, target, restSeconds, 0) }.orEmpty() }
+            .dropLastWhile { it is RestStep }
+        if (steps.isEmpty()) return StartResult.NothingToRun
+        val draft = WorkoutSession(
+            templateId = null,
+            workoutName = context.getString(R.string.player_free_workout),
+            blockTitles = listOf(context.getString(R.string.player_added_block)),
+            steps = steps,
+            status = SessionStatus.IN_PROGRESS,
+            startedAtMillis = System.currentTimeMillis(),
+        )
+        val session = draft.copy(id = sessions.create(draft))
+        restoreChecked = true
+        cues.prepare()
+        val workout = ActiveWorkout(session, WorkoutPlayer.start(session.steps, now()), emptyMap(), lastTimeFor(session))
+        _state.value = workout
+        startHeartRate()
+        cueNewStep(workout)
+        ensureService()
+        ensureTicker()
+        return StartResult.Started
+    }
+
+    /** The block exercises added during the workout go in (made once, at the end). */
+    private fun addedBlock(titles: List<String>): Pair<List<String>, Int> {
+        val name = context.getString(R.string.player_added_block)
+        return if (titles.lastOrNull() == name) titles to titles.lastIndex else (titles + name) to titles.size
+    }
+
+    /** Puts edited steps in place: the player stays on the same step, logs stay with their steps, all saved. */
+    private fun apply(w: ActiveWorkout, steps: List<WorkoutStep>, shiftFrom: Int, shiftBy: Int, titles: List<String> = w.session.blockTitles) {
+        val session = w.session.copy(steps = steps, blockTitles = titles)
+        val logs = w.logs.mapKeys { (i, _) -> if (i >= shiftFrom) i + shiftBy else i }
+            .mapValues { (i, log) -> log.copy(stepIndex = i) }
+        val index = if (w.player.index >= shiftFrom) w.player.index + shiftBy else w.player.index
+        _state.value = w.copy(session = session, logs = logs, player = WorkoutPlayer.reindex(w.player, index))
+        scope.launch { sessions.updatePlan(session, shiftFrom, shiftBy) }
+        ensureTicker()
+    }
+
     /** Saves the workout to history; returns its session id, or null when nothing was running. */
     suspend fun finish(notes: String): Long? {
         val w = _state.value ?: return null
@@ -241,7 +332,8 @@ class PlayerController @Inject constructor(
         ticker = scope.launch {
             while (true) {
                 val phase = _state.value?.player?.phase ?: break
-                if (WorkoutPlayer.nextDeadline(phase) == null) break
+                val w = _state.value ?: break
+                if (WorkoutPlayer.nextDeadline(w.player, w.session.steps, now(), w.holdAll) == null) break
                 tick()
                 beepCountdown()
                 delay(TICK_MS)
@@ -250,7 +342,12 @@ class PlayerController @Inject constructor(
     }
 
     private fun tick() = transition { w, now ->
-        val next = WorkoutPlayer.tick(w.player, w.session.steps, now)
+        val next = WorkoutPlayer.tick(w.player, w.session.steps, now, w.holdAll)
+        // A step that waits for the user just reached zero: say so, once.
+        if (next.index == w.player.index && w.overtimeMs(now) == 0L && w.copy(player = next).overtimeMs(now + 1) > 0 && overtimeCued != next.index) {
+            overtimeCued = next.index
+            cues.stepStarted()
+        }
         // Timed sets that ran out on their own were done in full.
         val logged = (w.player.index until next.index).fold(w) { acc, index ->
             val step = w.session.steps[index] as? WorkStep ?: return@fold acc

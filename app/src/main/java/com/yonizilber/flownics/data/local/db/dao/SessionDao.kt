@@ -69,4 +69,14 @@ interface SessionDao {
 
     @Query("UPDATE workout_sessions SET notes = :notes WHERE id = :id")
     suspend fun updateNotes(id: Long, notes: String)
+
+    @Query("UPDATE workout_sessions SET planJson = :planJson WHERE id = :id")
+    suspend fun updatePlan(id: Long, planJson: String)
+
+    // Two steps, so the unique (session, step) index never sees two rows at once on the same step.
+    @Query("UPDATE set_logs SET stepIndex = stepIndex + 1000000 + :by WHERE sessionId = :sessionId AND stepIndex >= :from")
+    suspend fun shiftLogsUp(sessionId: Long, from: Int, by: Int)
+
+    @Query("UPDATE set_logs SET stepIndex = stepIndex - 1000000 WHERE sessionId = :sessionId AND stepIndex >= 1000000")
+    suspend fun shiftLogsDown(sessionId: Long)
 }

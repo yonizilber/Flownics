@@ -162,6 +162,14 @@ fun WorkoutEditScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     RestFillerCard(draft.restFiller, state.otherWorkouts, state.compiled, viewModel::onRestFillerChange)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.wedit_confirm_active_rest), style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.wedit_confirm_active_rest_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = draft.confirmActiveRest, onCheckedChange = viewModel::onConfirmActiveRestChange)
+                    }
+                    TextButton(onClick = viewModel::onApplyDefaultRests) { Text(stringResource(R.string.wedit_apply_default_rests)) }
                     state.compiled?.let { compiled ->
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -489,6 +497,15 @@ private fun ItemSettings(
             }
         }
         ActiveRestButton(value.activeRest, library, onEditActiveRest)
+        if (mode == MeasureMode.TIME) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.wedit_confirm_end), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.wedit_confirm_end_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = value.confirmEnd, onCheckedChange = { on -> onUpdate { it.copy(confirmEnd = on) } })
+            }
+        }
     }
 }
 

@@ -119,7 +119,7 @@ class WorkoutService : Service() {
         val lock = wakeLock ?: return
         val phase = workout.player.phase
         val remaining = WorkoutPlayer.remainingMs(phase, SystemClock.elapsedRealtime())
-        if (WorkoutPlayer.nextDeadline(phase) != null && remaining != null) {
+        if (WorkoutPlayer.nextDeadline(phase) != null && remaining != null && remaining > 0) {
             // Re-acquiring a non-counted lock just moves its timeout; the margin covers the
             // transition into the next step, which acquires again.
             lock.acquire(remaining + WAKE_LOCK_MARGIN_MS)

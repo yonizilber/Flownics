@@ -16,6 +16,9 @@ sealed interface WorkoutStep {
 
     /** Null means open-ended: the user taps "done" (e.g. a set of 10 reps). */
     val durationSeconds: Int?
+
+    /** At the end of its time, wait for the user rather than move on. */
+    val holdAtEnd: Boolean
 }
 
 data class WorkStep(
@@ -29,13 +32,19 @@ data class WorkStep(
     val target: SetTarget,
     val side: Side?,
     override val durationSeconds: Int?,
+    /** A timed set that doesn't move on by itself: at zero it counts on (overtime) until confirmed. */
+    override val holdAtEnd: Boolean = false,
 ) : WorkoutStep
 
-/** A rest period; with [activeExerciseId] it is active rest (do that exercise while resting). */
+/**
+ * A rest period; with [activeExerciseId] it is active rest (do that exercise while resting). With
+ * [holdAtEnd] it waits for the user at zero, counting the extra time, instead of moving on.
+ */
 data class RestStep(
     override val blockIndex: Int,
     override val durationSeconds: Int,
     val activeExerciseId: Long?,
+    override val holdAtEnd: Boolean = false,
 ) : WorkoutStep
 
 /** Problems are reported, never silently patched: the builder shows each one to the user. */
@@ -130,7 +139,10 @@ object WorkoutCompiler {
         /** The filler set the latest rest took, while that rest is still the last step. */
         private var lastFillerUnit: List<WorkoutStep>? = null
 
+        private var confirmActiveRest = false
+
         fun run(template: WorkoutTemplate, workouts: Map<Long, WorkoutTemplate> = emptyMap()): CompiledWorkout {
+            confirmActiveRest = template.confirmActiveRest
             val fillerSource = template.restFiller?.let { f ->
                 workouts[f.workoutId]?.takeIf { it.id != template.id } ?: run {
                     warnings += CompileWarning.MissingRestFiller
@@ -156,7 +168,7 @@ object WorkoutCompiler {
                     BlockStructure.STRAIGHT_SETS -> present.forEach { (itemIndex, item) ->
                         val sets = item.sets.coerceAtLeast(1)
                         for (set in 1..sets) {
-                            addWork(blockIndex, itemIndex, item.exerciseId, set, sets, 1, 1, item.target)
+                            addWork(blockIndex, itemIndex, item.exerciseId, set, sets, 1, 1, item.target, item.confirmEnd)
                             addRest(blockIndex, itemIndex, item.restSeconds, item.activeRest, worked(item.exerciseId))
                         }
                     }
@@ -165,7 +177,7 @@ object WorkoutCompiler {
                         val blockMuscles = present.flatMap { worked(it.value.exerciseId) }.toSet()
                         for (round in 1..rounds) {
                             present.forEachIndexed { position, (itemIndex, item) ->
-                                addWork(blockIndex, itemIndex, item.exerciseId, 1, 1, round, rounds, item.target)
+                                addWork(blockIndex, itemIndex, item.exerciseId, 1, 1, round, rounds, item.target, item.confirmEnd)
                                 val lastInRound = position == present.lastIndex
                                 when {
                                     // The short rest between exercises of a round: never active rest.
@@ -248,6 +260,7 @@ object WorkoutCompiler {
             round: Int,
             totalRounds: Int,
             target: SetTarget,
+            confirmEnd: Boolean,
         ) {
             lastFillerUnit = null
             val exercise = library.getValue(exerciseId)
@@ -265,6 +278,7 @@ object WorkoutCompiler {
                     target = target,
                     side = side,
                     durationSeconds = if (timed) target.seconds else null,
+                    holdAtEnd = timed && confirmEnd,
                 )
             }
         }
@@ -296,7 +310,8 @@ object WorkoutCompiler {
                     warnings += CompileWarning.ActiveRestTooLong(blockIndex, itemIndex, activeId, needed, seconds)
                 }
             }
-            steps += RestStep(blockIndex, seconds, activeId)
+            // Active rest waits at zero for the user (when the workout says so): a stretch may need longer.
+            steps += RestStep(blockIndex, seconds, activeId, holdAtEnd = activeId != null && confirmActiveRest)
         }
 
         private fun resolve(activeRest: ActiveRest, blockIndex: Int, itemIndex: Int?, workedMuscles: Set<Muscle>): Long? =

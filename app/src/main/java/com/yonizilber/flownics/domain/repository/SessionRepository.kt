@@ -41,4 +41,10 @@ interface SessionRepository {
     fun observeLogs(sessionId: Long): Flow<List<SetLog>>
 
     suspend fun updateNotes(sessionId: Long, notes: String)
+
+    /**
+     * The running workout's plan after an edit mid-workout. Logs of steps from [shiftFrom] on move
+     * by [shiftBy], so they stay with their steps.
+     */
+    suspend fun updatePlan(session: WorkoutSession, shiftFrom: Int = Int.MAX_VALUE, shiftBy: Int = 0)
 }

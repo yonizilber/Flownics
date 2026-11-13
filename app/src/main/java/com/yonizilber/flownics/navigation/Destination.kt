@@ -80,6 +80,8 @@ sealed class Destination(val route: String) {
 
     data object HeartRateSensor : Destination("settings/sensor")
 
+    data object WorkoutDefaults : Destination("settings/defaults")
+
     // The player shows whichever workout is running; there is at most one.
     data object Player : Destination("player")
 

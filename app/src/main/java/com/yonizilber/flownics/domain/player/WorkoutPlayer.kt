@@ -39,8 +39,12 @@ object WorkoutPlayer {
     fun restore(steps: List<WorkoutStep>, index: Int, nowMs: Long): PlayerState =
         pause(enter(steps, index.coerceIn(0, steps.size), nowMs, afterRest = false), nowMs)
 
-    /** Runs every deadline passed by [nowMs]; each next step starts exactly when the previous one ended. */
-    fun tick(state: PlayerState, steps: List<WorkoutStep>, nowMs: Long): PlayerState {
+    /**
+     * Runs every deadline passed by [nowMs]; each next step starts exactly when the previous one
+     * ended. A step that holds at its end (its own setting, or [holdAll] for every timed step)
+     * stays, counting overtime, until the user moves on.
+     */
+    fun tick(state: PlayerState, steps: List<WorkoutStep>, nowMs: Long, holdAll: Boolean = false): PlayerState {
         var s = state
         while (true) {
             val phase = s.phase
@@ -49,12 +53,34 @@ object WorkoutPlayer {
                     val duration = checkNotNull(steps[s.index].durationSeconds) * 1000L
                     s.copy(phase = Phase.Running(phase.endsAtMs, phase.endsAtMs + duration))
                 }
-                phase is Phase.Running && phase.endsAtMs != null && nowMs >= phase.endsAtMs ->
+                phase is Phase.Running && phase.endsAtMs != null && nowMs >= phase.endsAtMs && !holds(steps[s.index], holdAll) ->
                     enter(steps, s.index + 1, phase.endsAtMs, afterRest = steps[s.index] is RestStep)
                 else -> return s
             }
         }
     }
+
+    fun holds(step: WorkoutStep, holdAll: Boolean) = step.durationSeconds != null && (step.holdAtEnd || holdAll)
+
+    /** How far past zero a holding step is; 0 when it isn't. */
+    fun overtimeMs(phase: Phase, nowMs: Long): Long = when (phase) {
+        is Phase.Running -> phase.endsAtMs?.let { (nowMs - it).coerceAtLeast(0) } ?: 0
+        is Phase.Paused -> overtimeMs(phase.frozen, phase.pausedAtMs)
+        else -> 0
+    }
+
+    /** The next moment something happens on its own; null when the player waits (open-ended, or holding past zero). */
+    fun nextDeadline(state: PlayerState, steps: List<WorkoutStep>, nowMs: Long, holdAll: Boolean): Long? {
+        val d = nextDeadline(state.phase) ?: return null
+        val step = steps.getOrNull(state.index) ?: return d
+        return if (state.phase is Phase.Running && d <= nowMs && holds(step, holdAll)) null else d
+    }
+
+    /** After the steps were edited mid-workout: the same moment, at [index] in the new list. */
+    fun reindex(state: PlayerState, index: Int): PlayerState = state.copy(index = index)
+
+    /** Jumps into [index] (e.g. a step added at the end, after the workout had finished). */
+    fun jumpTo(steps: List<WorkoutStep>, index: Int, nowMs: Long): PlayerState = enter(steps, index, nowMs, afterRest = false)
 
     /** The user finished or skipped the current step. A paused player stays paused on the next step. */
     fun advance(state: PlayerState, steps: List<WorkoutStep>, nowMs: Long): PlayerState {

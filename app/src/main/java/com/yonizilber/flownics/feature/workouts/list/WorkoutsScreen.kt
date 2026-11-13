@@ -1,5 +1,10 @@
 package com.yonizilber.flownics.feature.workouts.list
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.material.icons.outlined.PlayArrow
+import com.yonizilber.flownics.feature.player.AddExerciseSheet
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,6 +58,15 @@ fun WorkoutsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val active by viewModel.activeWorkout.collectAsStateWithLifecycle()
+    val library by viewModel.library.collectAsStateWithLifecycle()
+    val defaults by viewModel.defaults.collectAsStateWithLifecycle()
+    var freeOpen by remember { mutableStateOf(false) }
+    if (freeOpen) {
+        AddExerciseSheet(library, defaults.sets, defaults.restBetweenSets, stringResource(R.string.player_free_start), onDismiss = { freeOpen = false }) { first ->
+            freeOpen = false
+            viewModel.startFree(first, onResumeWorkout)
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -62,6 +76,12 @@ fun WorkoutsScreen(
                 if (!state.loading && !state.libraryIsEmpty) {
                     SmallFloatingActionButton(onClick = onCreateWithAi) {
                         Icon(Icons.Outlined.AutoAwesome, contentDescription = stringResource(R.string.ai_generate_draft_title))
+                    }
+                    // A workout with no plan: start with one exercise, add more as you go.
+                    if (active == null) {
+                        SmallFloatingActionButton(onClick = { freeOpen = true }) {
+                            Icon(Icons.Outlined.PlayArrow, contentDescription = stringResource(R.string.player_free_workout))
+                        }
                     }
                 }
                 ExtendedFloatingActionButton(

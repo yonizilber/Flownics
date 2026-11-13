@@ -1,5 +1,11 @@
 package com.yonizilber.flownics.feature.workouts.list
 
+import kotlinx.coroutines.launch
+import com.yonizilber.flownics.player.StartResult
+import com.yonizilber.flownics.feature.player.AddedExercise
+import com.yonizilber.flownics.domain.model.Exercise
+import com.yonizilber.flownics.data.local.prefs.WorkoutDefaults
+import com.yonizilber.flownics.data.local.prefs.AppPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yonizilber.flownics.domain.model.WorkoutTemplate
@@ -32,8 +38,18 @@ data class WorkoutsUiState(
 class WorkoutsViewModel @Inject constructor(
     workoutRepository: WorkoutRepository,
     exerciseRepository: ExerciseRepository,
-    player: PlayerController,
+    private val player: PlayerController,
+    prefs: AppPreferences,
 ) : ViewModel() {
+
+    val defaults: StateFlow<WorkoutDefaults> = prefs.observeWorkoutDefaults()
+    val library: StateFlow<Map<Long, Exercise>> = player.library
+
+    /** A workout without a plan, starting with [first]; more is added from the player as it goes. */
+    fun startFree(first: AddedExercise, onStarted: () -> Unit) = viewModelScope.launch {
+        if (player.startFree(listOf(Triple(first.exerciseId, first.sets, first.target)), first.restSeconds) == StartResult.Started) onStarted()
+    }
+
 
     init {
         player.restoreIfNeeded()

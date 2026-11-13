@@ -18,6 +18,8 @@ data class WorkoutTemplateEntity(
     @androidx.room.ColumnInfo(defaultValue = "1") val restFillerLeftovers: Boolean = true,
     // v13: the other workout's exercises as many times as their sets, rather than once each.
     @androidx.room.ColumnInfo(defaultValue = "0") val restFillerRepeatSets: Boolean = false,
+    // v14: active rests wait for the user at zero.
+    @androidx.room.ColumnInfo(defaultValue = "1") val confirmActiveRest: Boolean = true,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
 )
@@ -42,6 +44,7 @@ data class ItemJson(
     val distanceMeters: Int? = null,
     val restSeconds: Int = 0,
     val activeRest: ActiveRestJson = ActiveRestJson.None,
+    val confirmEnd: Boolean = false,
 )
 
 @Serializable
