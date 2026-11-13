@@ -246,7 +246,12 @@ private fun PlanLine(plan: PlannedWorkout, done: DoneItem?, isPast: Boolean, wor
         Column(Modifier.weight(1f)) {
             Text(planTitle(plan, workoutNames), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                listOfNotNull(plan.time?.toString(), plan.durationMinutes?.let { formatDuration(it * 60) }, status).joinToString(" · "),
+                // Done: when it really happened, not when it was planned.
+                listOfNotNull(
+                    done?.let { java.time.Instant.ofEpochMilli(it.atMillis).atZone(java.time.ZoneId.systemDefault()).toLocalTime().withSecond(0).withNano(0).toString() } ?: plan.time?.toString(),
+                    plan.durationMinutes?.takeIf { done == null }?.let { formatDuration(it * 60) },
+                    status,
+                ).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isPast && done == null && plan.status == PlanStatus.PLANNED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -220,6 +220,8 @@ class CalendarSync @Inject constructor(
             add(context.getString(R.string.calendar_made_by))
         }.joinToString("\n")
         val minutes = (p.durationMinutes ?: DEFAULT_MINUTES).coerceAtLeast(MIN_MINUTES)
+        // Done: the event moves to when it really happened, so the calendar shows the day as it was.
+        doneSpan(done)?.let { (start, end) -> return Event(mark + name, description, start, end, allDay = false) }
         return if (p.time == null) {
             val start = p.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
             Event(mark + name, description, start, start + TimeUnit.DAYS.toMillis(1), allDay = true)
@@ -227,6 +229,12 @@ class CalendarSync @Inject constructor(
             val start = p.date.atTime(p.time).atZone(zone).toInstant().toEpochMilli()
             Event(mark + name, description, start, start + TimeUnit.MINUTES.toMillis(minutes.toLong()), allDay = false)
         }
+    }
+
+    private fun doneSpan(done: DoneItem?): Pair<Long, Long>? = when (done) {
+        null -> null
+        is DoneItem.Workout -> done.session.startedAtMillis to maxOf(done.session.endedAtMillis, done.session.startedAtMillis + 60_000)
+        is DoneItem.Logged -> done.activity.startedAtMillis to done.activity.endedAtMillis
     }
 
     private fun sessionEvent(s: SessionHeader) =
