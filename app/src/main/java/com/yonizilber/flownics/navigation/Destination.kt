@@ -78,6 +78,10 @@ sealed class Destination(val route: String) {
 
     data object GarminSettings : Destination("settings/garmin")
 
+    data object GarminExplorer : Destination("settings/garmin/explorer")
+
+    data object Wellness : Destination("wellness")
+
     data object HeartRateSensor : Destination("settings/sensor")
 
     data object WorkoutDefaults : Destination("settings/defaults")

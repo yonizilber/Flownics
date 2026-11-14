@@ -229,6 +229,7 @@ private fun MainScaffold(
                     onAskAi = { navController.navigate(Destination.Coach.aboutHistory()) },
                     onOpenMuscle = openMuscle,
                     onOpenGarmin = { navController.navigate(Destination.GarminSettings.route) },
+                    onOpenWellness = { navController.navigate(Destination.Wellness.route) },
                 )
             }
             composable(Destination.WorkoutDefaults.route) {
@@ -238,7 +239,20 @@ private fun MainScaffold(
                 HeartRateSensorScreen(onBack = { navController.popBackStack() })
             }
             composable(Destination.GarminSettings.route) {
-                GarminSettingsScreen(onBack = { navController.popBackStack() })
+                GarminSettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenExplorer = { navController.navigate(Destination.GarminExplorer.route) },
+                    onOpenWellness = { navController.navigate(Destination.Wellness.route) },
+                )
+            }
+            composable(Destination.GarminExplorer.route) {
+                com.yonizilber.flownics.feature.wellness.GarminExplorerScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Destination.Wellness.route) {
+                com.yonizilber.flownics.feature.wellness.WellnessScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenGarmin = { navController.navigate(Destination.GarminSettings.route) },
+                )
             }
             composable(
                 Destination.PlanEdit.route,

@@ -96,6 +96,7 @@ fun JournalScreen(
     onAskAi: () -> Unit,
     onOpenMuscle: (Muscle) -> Unit,
     onOpenGarmin: () -> Unit,
+    onOpenWellness: () -> Unit,
     garmin: GarminViewModel = hiltViewModel(),
 ) {
     var mode by rememberSaveable { mutableIntStateOf(0) }
@@ -117,6 +118,7 @@ fun JournalScreen(
                 Text(stringResource(if (garminSettings.hasKey) R.string.garmin_sync_now else R.string.garmin_connect), modifier = Modifier.padding(start = 6.dp))
             }
             TextButton(onClick = { pickFit.launch(arrayOf("*/*")) }, enabled = !busy) { Text(stringResource(R.string.fit_import)) }
+            TextButton(onClick = onOpenWellness) { Text(stringResource(R.string.wellness_short)) }
             if (busy) CircularProgressIndicator(Modifier.size(20.dp))
         }
         message?.let { m ->

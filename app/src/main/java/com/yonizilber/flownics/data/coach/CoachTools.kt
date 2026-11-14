@@ -47,6 +47,7 @@ object CoachToolNames {
     const val PROPOSE_EXERCISE_CHANGE = "propose_exercise_change"
     const val PROPOSE_ACTIVITY = "propose_activity"
     const val PLAN_LIST = "plan_list"
+    const val WELLNESS = "sleep_recovery"
     const val PROPOSE_PLAN = "propose_plan"
     const val MEMORY_SAVE = "memory_save"
     const val MEMORY_DELETE = "memory_delete"
@@ -75,6 +76,7 @@ class CoachTools @Inject constructor(
     private val plans: PlanRepository,
     private val store: CoachStore,
     private val zones: com.yonizilber.flownics.data.garmin.Zones,
+    private val wellness: com.yonizilber.flownics.data.garmin.WellnessSync,
 ) {
     val specs: List<AiToolSpec> = listOf(
         AiToolSpec(
@@ -89,6 +91,19 @@ class CoachTools @Inject constructor(
                     "from_date" to AiSchema.Str(description = "YYYY-MM-DD, inclusive."),
                     "to_date" to AiSchema.Str(description = "YYYY-MM-DD, inclusive."),
                     "exercise_id" to AiSchema.Integer(description = "One exercise's id, or 0 for all."),
+                ),
+            ),
+        ),
+        AiToolSpec(
+            CoachToolNames.WELLNESS,
+            "The user's sleep and recovery from their Garmin watch between two dates, one line a day: sleep length and time in each stage, " +
+                "bed and wake time, Garmin's sleep score, overnight HRV (with its 7-day average, usual range and status), resting heart rate, " +
+                "Body Battery, average stress, breathing rate, steps and VO2max, as Garmin calculated them. Use it to judge recovery and readiness " +
+                "and how training, sleep and heart rate go together; look at the trend over days, not one night.",
+            AiSchema.Obj(
+                mapOf(
+                    "from_date" to AiSchema.Str(description = "YYYY-MM-DD, inclusive."),
+                    "to_date" to AiSchema.Str(description = "YYYY-MM-DD, inclusive."),
                 ),
             ),
         ),
@@ -191,6 +206,10 @@ class CoachTools @Inject constructor(
                         zones = zones.info.value?.zones,
                     ),
                 )
+            }
+            CoachToolNames.WELLNESS -> {
+                val (from, to) = range(call.args)
+                Read(com.yonizilber.flownics.domain.wellness.WellnessFormat.table(wellness.days(from, to), zone))
             }
             CoachToolNames.MUSCLE_LOAD -> {
                 val (from, to) = range(call.args)

@@ -36,6 +36,7 @@ sealed class GarminException(message: String, cause: Throwable? = null) : Except
     class NoKey : GarminException("No Garmin key")
     class KeyRejected : GarminException("Garmin refused the key")
     class Http(val status: Int) : GarminException("Garmin answered $status")
+    class RateLimited : GarminException("Garmin is limiting requests")
     class Network(cause: Throwable) : GarminException("Network error", cause)
     class Unexpected(val detail: String) : GarminException(detail)
     class BadFile(val detail: String) : GarminException(detail)
@@ -52,7 +53,8 @@ data class GarminSettings(
 /** What one import added: the activity's id, and whether it was there already. */
 data class ImportOutcome(val activityId: Long, val alreadyThere: Boolean)
 
-data class SyncOutcome(val added: Int, val alreadyThere: Int, val failed: List<String>)
+/** [wellness] is how the all-day data went: days updated, or why it stopped. */
+data class SyncOutcome(val added: Int, val alreadyThere: Int, val failed: List<String>, val wellness: WellnessOutcome)
 
 /**
  * Turns a watch recording (a .fit file, or the .zip Garmin wraps it in) into an activity in the
@@ -121,29 +123,29 @@ class FitImporter @Inject constructor(
 @Singleton
 class GarminSync @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val http: OkHttpClient,
+    private val client: GarminClient,
     private val cipher: ApiKeyCipher,
     private val json: Json,
     private val importer: FitImporter,
+    private val wellness: WellnessSync,
 ) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val _settings = MutableStateFlow(load())
     val settings: StateFlow<GarminSettings> = _settings.asStateFlow()
     private val mutex = Mutex()
-    private var token: Pair<String, Long>? = null
 
     /** Checks the key with Garmin before keeping it, so a mistyped key is caught at once. */
     suspend fun saveKey(key: String) = withContext(Dispatchers.IO) {
         val trimmed = key.trim()
-        token = null
-        exchange(trimmed)
+        client.forget()
+        client.exchange(trimmed)
         prefs.edit().putString(KEY_KEY, cipher.encrypt(trimmed)).remove(KEY_ERROR).remove(KEY_ERROR_DETAIL).apply()
         _settings.value = load()
         GarminSyncWorker.schedule(context, hasKey = true)
     }
 
     fun removeKey() {
-        token = null
+        client.forget()
         prefs.edit().remove(KEY_KEY).remove(KEY_ERROR).apply()
         _settings.value = load()
         GarminSyncWorker.schedule(context, hasKey = false)
@@ -164,7 +166,7 @@ class GarminSync @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val key = storedKey() ?: throw GarminException.NoKey()
-                val bearer = bearer(key)
+                val bearer = client.bearer(key)
                 val since = _settings.value.lastSyncAtMillis?.let { LocalDate.ofEpochDay(it / 86_400_000).minusDays(2) }
                     ?: LocalDate.now().minusDays(FIRST_DAYS)
                 val ids = activityIds(bearer, since, LocalDate.now().plusDays(1))
@@ -189,7 +191,9 @@ class GarminSync @Inject constructor(
                     .remove(KEY_ERROR)
                     .apply()
                 _settings.value = load()
-                SyncOutcome(added, already, failed)
+                // Then sleep, HRV and the rest of the day: its own failure never undoes the activities.
+                val days = wellness.sync(bearer)
+                SyncOutcome(added, already, failed, days)
             } catch (e: GarminException) {
                 prefs.edit().putString(KEY_ERROR, e.javaClass.simpleName).putString(KEY_ERROR_DETAIL, e.message).apply()
                 _settings.value = load()
@@ -200,27 +204,10 @@ class GarminSync @Inject constructor(
 
     private fun storedKey(): String? = prefs.getString(KEY_KEY, null)?.let { runCatching { cipher.decrypt(it) }.getOrNull() }
 
-    private fun bearer(key: String): String {
-        token?.let { (value, expires) -> if (System.currentTimeMillis() < expires - REFRESH_MARGIN_MS) return value }
-        return exchange(key)
-    }
-
-    /** The key is swapped for an access token: a plain JWT in the body, valid about 24 hours. */
-    private fun exchange(key: String): String {
-        val request = Request.Builder()
-            .url(BASE + TOKEN_PATH)
-            .header("Accept", "*/*")
-            .header("Authorization", "ApiKey $key")
-            .post(ByteArray(0).toRequestBody(null))
-            .build()
-        val body = call(request) { status -> if (status == 401 || status == 403) GarminException.KeyRejected() else GarminException.Http(status) }
-        val jwt = String(body).trim()
-        val expires = runCatching {
-            val payload = String(Base64.getUrlDecoder().decode(jwt.split('.')[1].let { it + "=".repeat((4 - it.length % 4) % 4) }))
-            (json.parseToJsonElement(payload) as JsonObject)["exp"]!!.toString().toDouble().toLong() * 1000
-        }.getOrElse { throw GarminException.Unexpected("Garmin's token couldn't be read") }
-        token = jwt to expires
-        return jwt
+    /** One request for the data explorer: what Garmin answers, as it came. */
+    suspend fun explore(path: String): ByteArray = withContext(Dispatchers.IO) {
+        val key = storedKey() ?: throw GarminException.NoKey()
+        client.get(client.bearer(key), BASE + path, "application/json")
     }
 
     /** Ids of the activities between two dates, page by page. */
@@ -229,7 +216,7 @@ class GarminSync @Inject constructor(
         var start = 0
         while (true) {
             val url = "$BASE$SEARCH_PATH?start=$start&limit=$PAGE&startDate=$from&endDate=$to"
-            val page = json.parseToJsonElement(String(get(bearer, url, "application/json")))
+            val page = json.parseToJsonElement(String(client.get(bearer, url, "application/json")))
             val items = itemsOf(page)
             val pageIds = items.mapNotNull { item -> (item["activityId"] as? JsonPrimitive)?.contentOrNull }
             if (items.isNotEmpty() && pageIds.isEmpty()) {
@@ -251,24 +238,7 @@ class GarminSync @Inject constructor(
     }
 
     private fun download(bearer: String, id: String): ByteArray =
-        get(bearer, "$BASE$DOWNLOAD_PATH$id", "application/zip, application/x-zip-compressed, application/octet-stream")
-
-    private fun get(bearer: String, url: String, accept: String): ByteArray {
-        val request = Request.Builder().url(url).header("Accept", accept).header("Authorization", "Bearer $bearer").get().build()
-        return call(request) { status ->
-            if (status == 401) token = null
-            if (status == 401 || status == 403) GarminException.KeyRejected() else GarminException.Http(status)
-        }
-    }
-
-    private fun call(request: Request, onError: (Int) -> GarminException): ByteArray = try {
-        http.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw onError(response.code)
-            response.body?.bytes() ?: ByteArray(0)
-        }
-    } catch (e: IOException) {
-        throw GarminException.Network(e)
-    }
+        client.get(bearer, "$BASE$DOWNLOAD_PATH$id", "application/zip, application/x-zip-compressed, application/octet-stream")
 
     private fun load() = GarminSettings(
         hasKey = prefs.contains(KEY_KEY),
@@ -284,14 +254,75 @@ class GarminSync @Inject constructor(
         private const val KEY_ERROR_DETAIL = "last_error_detail"
         private const val KEY_ERROR = "last_error"
         private const val KEY_DONE_IDS = "imported_ids"
-        private const val BASE = "https://personal.connectapi.garmin.com"
-        private const val TOKEN_PATH = "/personalapitoken-service/personal-api/personal-api-key/token"
+        const val BASE = GarminClient.BASE
         private const val SEARCH_PATH = "/activitylist-service/activities/search/activities"
         private const val DOWNLOAD_PATH = "/download-service/files/activity/"
         private const val PAGE = 50
         private const val MAX_ITEMS = 2_000
         private const val MAX_REMEMBERED = 5_000
         private const val FIRST_DAYS = 30L
+    }
+}
+
+/**
+ * Garmin's personal API over HTTPS: the key is swapped for an access token (kept in memory only)
+ * and each request carries it. Shared by the activity sync, the all-day data and the explorer.
+ */
+@Singleton
+class GarminClient @Inject constructor(
+    private val http: OkHttpClient,
+    private val json: Json,
+) {
+    private var token: Pair<String, Long>? = null
+
+    fun forget() {
+        token = null
+    }
+
+    fun bearer(key: String): String {
+        token?.let { (value, expires) -> if (System.currentTimeMillis() < expires - REFRESH_MARGIN_MS) return value }
+        return exchange(key)
+    }
+
+    /** The key is swapped for an access token: a plain JWT in the body, valid about 24 hours. */
+    fun exchange(key: String): String {
+        val request = Request.Builder()
+            .url(BASE + TOKEN_PATH)
+            .header("Accept", "*/*")
+            .header("Authorization", "ApiKey $key")
+            .post(ByteArray(0).toRequestBody(null))
+            .build()
+        val body = call(request) { status -> if (status == 401 || status == 403) GarminException.KeyRejected() else GarminException.Http(status) }
+        val jwt = String(body).trim()
+        val expires = runCatching {
+            val payload = String(Base64.getUrlDecoder().decode(jwt.split('.')[1].let { it + "=".repeat((4 - it.length % 4) % 4) }))
+            (json.parseToJsonElement(payload) as JsonObject)["exp"]!!.toString().toDouble().toLong() * 1000
+        }.getOrElse { throw GarminException.Unexpected("Garmin's token couldn't be read") }
+        token = jwt to expires
+        return jwt
+    }
+
+    fun get(bearer: String, url: String, accept: String): ByteArray {
+        val request = Request.Builder().url(url).header("Accept", accept).header("Authorization", "Bearer $bearer").get().build()
+        return call(request) { status ->
+            if (status == 401) token = null
+            if (status == 401 || status == 403) GarminException.KeyRejected() else GarminException.Http(status)
+        }
+    }
+
+    private fun call(request: Request, onError: (Int) -> GarminException): ByteArray = try {
+        http.newCall(request).execute().use { response ->
+            if (response.code == 429) throw GarminException.RateLimited()
+            if (!response.isSuccessful) throw onError(response.code)
+            response.body?.bytes() ?: ByteArray(0)
+        }
+    } catch (e: IOException) {
+        throw GarminException.Network(e)
+    }
+
+    companion object {
+        const val BASE = "https://personal.connectapi.garmin.com"
+        private const val TOKEN_PATH = "/personalapitoken-service/personal-api/personal-api-key/token"
         private const val REFRESH_MARGIN_MS = 3_600_000L
     }
 }

@@ -42,6 +42,7 @@ class CoachAgent @Inject constructor(
     private val activities: ActivityRepository,
     private val plans: PlanRepository,
     private val zones: Zones,
+    private val wellness: com.yonizilber.flownics.data.garmin.WellnessSync,
 ) {
     /** Answers the conversation's last message, which must be the user's. */
     suspend fun reply(conversationId: Long, topic: CoachTopic?, language: String) {
@@ -89,6 +90,10 @@ class CoachAgent @Inject constructor(
 
     private suspend fun status(zone: ZoneId): String {
         val library = exercises.observeAll().first().associateBy { it.id }
+        val today = java.time.LocalDate.now(zone)
+        // The last three days of sleep and recovery, when there are any; the tool has more.
+        val recent = wellness.days(today.minusDays(2), today)
+        val recovery = if (recent.isEmpty()) "" else "\n" + com.yonizilber.flownics.domain.wellness.WellnessFormat.table(recent, zone)
         return CoachFormat.status(
             nowMillis = System.currentTimeMillis(),
             zone = zone,
@@ -109,7 +114,7 @@ class CoachAgent @Inject constructor(
                     (1..5).joinToString(", ") { "Z$it ${z.zones.bounds[it - 1]}-${z.zones.bounds[it]}" } +
                     if (z.maxFromRecordings) " (max HR ${z.zones.max} is the highest recorded, not one the user gave)" else " (from the user's max HR ${z.zones.max})"
             },
-        )
+        ) + recovery
     }
 
     /**
@@ -187,6 +192,7 @@ object CoachPrompt {
         How to work:
         - Look things up with the tools instead of guessing. Never invent numbers, dates, sets or exercises. If the data isn't there, say so.
         - Runs synced from the watch carry their laps (each interval with pace, heart rate, cadence and step length), km splits, and form figures. Judge intervals rep by rep, steady runs by their splits and heart-rate drift, and say when data is missing rather than guessing.
+        - Sleep and recovery (sleep_recovery; the status has the last three days): Garmin's numbers, some of them its own estimates (Body Battery, sleep score). Judge by the trend against the user's own usual values, not one night or population norms, and link it to training (load, hard sessions, heart rate in runs) when the data shows it.
         - Look at individual sets and sessions, not only totals or averages: the pattern (a pyramid, a failed last set, a missed week) often matters more than the mean.
         - Ask for focused date ranges. The status already has the last two weeks and the saved workouts.
         - Dates in tools are YYYY-MM-DD in the user's time zone. "Today" is in the status.

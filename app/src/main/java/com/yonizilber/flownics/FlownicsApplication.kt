@@ -27,6 +27,9 @@ class FlownicsApplication : Application() {
     lateinit var reminders: PlanReminders
 
     @Inject
+    lateinit var wellness: com.yonizilber.flownics.data.garmin.WellnessSync
+
+    @Inject
     @ApplicationScope
     lateinit var scope: CoroutineScope
 
@@ -37,6 +40,8 @@ class FlownicsApplication : Application() {
         reminders.start()
         // Recordings imported before workouts could be joined, or whose workout is gone, are sorted out.
         scope.launch { linker.link() }
+        // Days kept from Garmin are read again when this version reads them differently.
+        scope.launch { wellness.rebuildIfReaderChanged() }
         GarminSyncWorker.schedule(this, garmin.settings.value.hasKey)
     }
 }

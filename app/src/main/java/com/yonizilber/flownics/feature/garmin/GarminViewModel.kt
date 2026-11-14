@@ -9,6 +9,8 @@ import com.yonizilber.flownics.data.garmin.FitImporter
 import com.yonizilber.flownics.data.garmin.GarminException
 import com.yonizilber.flownics.data.garmin.GarminSettings
 import com.yonizilber.flownics.data.garmin.GarminSync
+import com.yonizilber.flownics.data.garmin.WellnessSettings
+import com.yonizilber.flownics.data.garmin.WellnessSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -28,9 +30,17 @@ class GarminViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sync: GarminSync,
     private val importer: FitImporter,
+    private val wellness: WellnessSync,
 ) : ViewModel() {
 
     val settings: StateFlow<GarminSettings> = sync.settings
+    val wellnessSettings: StateFlow<WellnessSettings> = wellness.settings
+
+    fun setHistoryDays(days: Int) = wellness.setHistoryDays(days)
+
+    fun clearWellness() {
+        viewModelScope.launch { wellness.clear() }
+    }
 
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
@@ -51,8 +61,11 @@ class GarminViewModel @Inject constructor(
         val text = buildString {
             append(context.resources.getQuantityString(R.plurals.garmin_synced, r.added, r.added))
             if (r.failed.isNotEmpty()) append(" " + context.getString(R.string.garmin_some_failed, r.failed.size))
+            if (r.wellness.requests > 0) append(" " + context.getString(R.string.wellness_synced))
+            r.wellness.errorKind?.let { append(" " + context.getString(R.string.wellness_sync_stopped, errorText(context, it, r.wellness.errorDetail))) }
         }
-        if (quiet && r.added == 0 && r.failed.isEmpty()) null else GarminMessage(text, r.failed.isNotEmpty())
+        val problem = r.failed.isNotEmpty() || r.wellness.errorKind != null
+        if (quiet && r.added == 0 && !problem) null else GarminMessage(text, problem)
     }
 
     fun importFile(uri: Uri) = run {
@@ -95,6 +108,8 @@ class GarminViewModel @Inject constructor(
             GarminException.NoKey::class.java.simpleName -> context.getString(R.string.garmin_error_no_key)
             GarminException.KeyRejected::class.java.simpleName -> context.getString(R.string.garmin_error_key)
             GarminException.Network::class.java.simpleName -> context.getString(R.string.garmin_error_network)
+            GarminException.RateLimited::class.java.simpleName -> context.getString(R.string.garmin_error_rate)
+            GarminException.Http::class.java.simpleName -> context.getString(R.string.garmin_error_other, detail.orEmpty())
             GarminException.BadFile::class.java.simpleName -> context.getString(R.string.fit_error, detail.orEmpty())
             else -> context.getString(R.string.garmin_error_other, detail.orEmpty())
         }

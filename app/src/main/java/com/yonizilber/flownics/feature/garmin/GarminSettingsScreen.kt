@@ -23,6 +23,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -48,8 +52,14 @@ import com.yonizilber.flownics.ui.component.rememberDateTexts
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GarminSettingsScreen(onBack: () -> Unit, viewModel: GarminViewModel = hiltViewModel()) {
+fun GarminSettingsScreen(
+    onBack: () -> Unit,
+    onOpenExplorer: () -> Unit,
+    onOpenWellness: () -> Unit,
+    viewModel: GarminViewModel = hiltViewModel(),
+) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val wellness by viewModel.wellnessSettings.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     var key by rememberSaveable { mutableStateOf("") }
@@ -88,6 +98,33 @@ fun GarminSettingsScreen(onBack: () -> Unit, viewModel: GarminViewModel = hiltVi
                     if (busy) CircularProgressIndicator()
                 }
                 Text(stringResource(R.string.garmin_how_sync), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                HorizontalDivider()
+                Text(stringResource(R.string.wellness_settings_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.wellness_settings_intro), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.wellness_history), style = MaterialTheme.typography.bodyMedium)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    HISTORY_OPTIONS.forEachIndexed { i, days ->
+                        SegmentedButton(
+                            selected = wellness.historyDays == days,
+                            onClick = { viewModel.setHistoryDays(days) },
+                            shape = SegmentedButtonDefaults.itemShape(i, HISTORY_OPTIONS.size),
+                        ) { Text(stringResource(R.string.wellness_history_days, days)) }
+                    }
+                }
+                Text(stringResource(R.string.wellness_history_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                wellness.lastErrorKind?.let { Text(stringResource(R.string.wellness_sync_stopped, GarminViewModel.errorText(context, it, wellness.lastErrorDetail)), color = MaterialTheme.colorScheme.error) }
+                if (wellness.missing.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.wellness_missing_fields, wellness.missing.entries.joinToString("; ") { (k, v) -> k.lowercase() + ": " + v.joinToString() }),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onOpenWellness) { Text(stringResource(R.string.wellness_title)) }
+                    OutlinedButton(onClick = onOpenExplorer) { Text(stringResource(R.string.explorer_title)) }
+                }
+                TextButton(onClick = viewModel::clearWellness, enabled = !busy) { Text(stringResource(R.string.wellness_clear)) }
             } else {
                 Text(stringResource(R.string.garmin_steps_title), style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.garmin_steps), style = MaterialTheme.typography.bodyMedium)
@@ -110,5 +147,7 @@ fun GarminSettingsScreen(onBack: () -> Unit, viewModel: GarminViewModel = hiltVi
         }
     }
 }
+
+private val HISTORY_OPTIONS = listOf(30, 90, 180)
 
 private const val KEY_PAGE = "https://connect.garmin.com/app/settings/personalApiToken"

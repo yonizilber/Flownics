@@ -60,4 +60,7 @@ object DatabaseModule {
 
     @Provides
     fun providePlanDao(database: FlownicsDatabase): PlanDao = database.planDao()
+
+    @Provides
+    fun provideWellnessDao(database: FlownicsDatabase): com.yonizilber.flownics.data.local.db.dao.WellnessDao = database.wellnessDao()
 }

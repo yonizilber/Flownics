@@ -13,6 +13,9 @@ import com.yonizilber.flownics.data.local.db.dao.ExerciseVariationDao
 import com.yonizilber.flownics.data.local.db.dao.SessionDao
 import com.yonizilber.flownics.data.local.db.dao.TransferDao
 import com.yonizilber.flownics.data.local.db.dao.WorkoutTemplateDao
+import com.yonizilber.flownics.data.local.db.dao.WellnessDao
+import com.yonizilber.flownics.data.local.db.entity.GarminRawEntity
+import com.yonizilber.flownics.data.local.db.entity.WellnessDayEntity
 import com.yonizilber.flownics.data.local.db.entity.ActivityEntity
 import com.yonizilber.flownics.data.local.db.entity.CalendarLinkEntity
 import com.yonizilber.flownics.data.local.db.entity.PlannedWorkoutEntity
@@ -42,8 +45,10 @@ import com.yonizilber.flownics.data.local.db.entity.WorkoutTemplateEntity
         ActivityEntity::class,
         PlannedWorkoutEntity::class,
         CalendarLinkEntity::class,
+        GarminRawEntity::class,
+        WellnessDayEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
 )
 abstract class FlownicsDatabase : RoomDatabase() {
@@ -64,6 +69,8 @@ abstract class FlownicsDatabase : RoomDatabase() {
     abstract fun activityDao(): ActivityDao
 
     abstract fun planDao(): PlanDao
+
+    abstract fun wellnessDao(): WellnessDao
 }
 
 // v1 → v2: workout templates. The SQL must match app/schemas/…/2.json exactly; the migration test
@@ -326,8 +333,16 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
     }
 }
 
+// v15 → v16: Garmin's all-day data (sleep, HRV, Body Battery…): its answers as they came, and the days built from them.
+val MIGRATION_15_16 = object : Migration(15, 16) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `garmin_raw` (`endpoint` TEXT NOT NULL, `startDate` TEXT NOT NULL, `endDate` TEXT NOT NULL, `fetchedAtMillis` INTEGER NOT NULL, `gzip` BLOB NOT NULL, PRIMARY KEY(`endpoint`, `startDate`))")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `wellness_days` (`date` TEXT NOT NULL, `dataJson` TEXT NOT NULL, PRIMARY KEY(`date`))")
+    }
+}
+
 // Every schema change gets a real Migration here. See DatabaseModule.
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
-    MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15,
+    MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
 )
