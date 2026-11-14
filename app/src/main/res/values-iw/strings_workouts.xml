@@ -150,5 +150,8 @@
     <string name="player_rest_not_now">לא עכשיו</string>
     <string name="player_rest_choose">בחירה…</string>
     <string name="player_rest_add">הוספת תרגיל מנוחה…</string>
-    <string name="player_hold_all_short">להמתין לי באפס</string>
+    <string name="player_hold_all_short">לא לעבור לבד כשהזמן נגמר</string>
+    <string name="player_hold_all_hint">כשטיימר מגיע לאפס הוא ממשיך לספור במינוס, ועובר לשלב הבא רק כשלוחצים ״הבא״. לכל השלבים שעל זמן באימון הזה.</string>
+    <string name="player_map_added">נוסף עכשיו</string>
+    <string name="player_add_set_none">אין כאן סט להוסיף אליו עוד אחד.</string>
 </resources>

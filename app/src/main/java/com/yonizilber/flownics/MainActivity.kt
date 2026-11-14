@@ -1,5 +1,7 @@
 package com.yonizilber.flownics
 
+import androidx.compose.foundation.LocalOverscrollFactory
+import androidx.compose.runtime.CompositionLocalProvider
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -30,7 +32,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             // Layout direction follows the app language: Hebrew renders RTL, English LTR.
             FlownicsTheme {
-                FlownicsApp(openPlayerRequest = openPlayerRequests.intValue, modifier = Modifier.fillMaxSize())
+                // No stretch at the end of a list: on some phones (OnePlus/Oppo) the system's edge
+                // effect makes Compose lists shake when they reach the end.
+                CompositionLocalProvider(LocalOverscrollFactory provides null) {
+                    FlownicsApp(openPlayerRequest = openPlayerRequests.intValue, modifier = Modifier.fillMaxSize())
+                }
             }
         }
     }

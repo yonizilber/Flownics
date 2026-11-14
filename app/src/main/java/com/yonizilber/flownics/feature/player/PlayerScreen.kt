@@ -280,10 +280,8 @@ fun PlayerScreen(
                 mapTab = null
                 viewModel.restPick(e)
             },
-            onAddSet = {
-                mapTab = null
-                viewModel.addSet()
-            },
+            // The map stays open, showing the new set, so it's clear it was added.
+            onAddSet = viewModel::addSet,
             onAddExercise = {
                 mapTab = null
                 adding = true

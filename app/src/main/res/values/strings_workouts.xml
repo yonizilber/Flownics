@@ -158,5 +158,8 @@
     <string name="player_rest_not_now">Not now</string>
     <string name="player_rest_choose">Choose…</string>
     <string name="player_rest_add">Add a rest exercise…</string>
-    <string name="player_hold_all_short">Wait for me at zero</string>
+    <string name="player_hold_all_short">Don\'t move on by itself at zero</string>
+    <string name="player_hold_all_hint">When a timer reaches zero it keeps counting (in minus) and moves on only when you tap Next. For every timed step of this workout.</string>
+    <string name="player_map_added">Just added</string>
+    <string name="player_add_set_none">There is no set here to add one to.</string>
 </resources>

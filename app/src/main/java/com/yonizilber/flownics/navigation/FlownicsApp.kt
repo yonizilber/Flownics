@@ -4,6 +4,7 @@ import com.yonizilber.flownics.feature.settings.WorkoutDefaultsScreen
 import com.yonizilber.flownics.feature.settings.HeartRateSensorScreen
 import com.yonizilber.flownics.feature.garmin.GarminSettingsScreen
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -113,7 +114,8 @@ private fun MainScaffold(
         NavHost(
             navController = navController,
             startDestination = Destination.Workouts.route,
-            modifier = Modifier.padding(innerPadding),
+            // The bars' room is taken here once; each screen's own Scaffold must not add it again.
+            modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding),
         ) {
             composable(Destination.Workouts.route) {
                 WorkoutsScreen(

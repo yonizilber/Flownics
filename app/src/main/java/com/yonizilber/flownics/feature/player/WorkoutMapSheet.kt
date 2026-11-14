@@ -22,10 +22,12 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
-import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -74,7 +76,8 @@ fun WorkoutMapSheet(
     initialTab: MapTab,
     onJump: (Int) -> Unit,
     onPick: (LaneEntry) -> Unit,
-    onAddSet: () -> Unit,
+    /** Adds a set; gives its step index (shown and marked in the list), or null when nothing was added. */
+    onAddSet: () -> Int?,
     onAddExercise: () -> Unit,
     onHoldAll: (Boolean) -> Unit,
     onEnd: () -> Unit,
@@ -82,20 +85,37 @@ fun WorkoutMapSheet(
 ) {
     val hasLane = RestLane.exists(workout.session.steps)
     var tab by rememberSaveable { mutableStateOf(if (hasLane) initialTab else MapTab.SETS) }
+    var added by rememberSaveable { mutableStateOf<Int?>(null) }
+    var nothingToAdd by rememberSaveable { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxHeight(0.9f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.player_map), style = MaterialTheme.typography.titleLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(onClick = onAddSet, label = { Text(stringResource(R.string.player_add_set)) }, leadingIcon = { Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)) })
-                AssistChip(onClick = onAddExercise, label = { Text(stringResource(R.string.player_add_exercise)) }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.PlaylistAdd, null, Modifier.size(18.dp)) })
-                FilterChip(
-                    selected = workout.holdAll,
-                    onClick = { onHoldAll(!workout.holdAll) },
-                    label = { Text(stringResource(R.string.player_hold_all_short)) },
-                    leadingIcon = { Icon(Icons.Outlined.Timer, null, Modifier.size(18.dp)) },
+                AssistChip(
+                    onClick = {
+                        val at = onAddSet()
+                        added = at
+                        nothingToAdd = at == null
+                        tab = MapTab.SETS
+                    },
+                    label = { Text(stringResource(R.string.player_add_set)) },
+                    leadingIcon = { Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)) },
                 )
+                AssistChip(onClick = onAddExercise, label = { Text(stringResource(R.string.player_add_exercise)) }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.PlaylistAdd, null, Modifier.size(18.dp)) })
                 AssistChip(onClick = onEnd, label = { Text(stringResource(R.string.player_end_workout)) }, leadingIcon = { Icon(Icons.Outlined.Flag, null, Modifier.size(18.dp)) })
             }
+            // What it does is said right there: the name alone wasn't clear.
+            Row(
+                Modifier.fillMaxWidth().toggleable(value = workout.holdAll, role = Role.Switch, onValueChange = onHoldAll),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.player_hold_all_short), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.player_hold_all_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = workout.holdAll, onCheckedChange = null)
+            }
+            if (nothingToAdd) Text(stringResource(R.string.player_add_set_none), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             if (hasLane) {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     MapTab.entries.forEachIndexed { i, t ->
@@ -108,7 +128,7 @@ fun WorkoutMapSheet(
                 }
             }
             when (tab) {
-                MapTab.SETS -> SetsLane(workout, library, onJump, Modifier.weight(1f))
+                MapTab.SETS -> SetsLane(workout, library, onJump, added, Modifier.weight(1f))
                 MapTab.RESTS -> RestsLane(workout, library, onPick, Modifier.weight(1f))
             }
         }
@@ -117,13 +137,18 @@ fun WorkoutMapSheet(
 
 /** Every set, by block, with what was done; the current step marked. Tapping one goes there. */
 @Composable
-private fun SetsLane(workout: ActiveWorkout, library: Map<Long, Exercise>, onJump: (Int) -> Unit, modifier: Modifier) {
+private fun SetsLane(workout: ActiveWorkout, library: Map<Long, Exercise>, onJump: (Int) -> Unit, added: Int?, modifier: Modifier) {
     val steps = workout.session.steps
     val index = workout.player.index
     val res = LocalResources.current
     // The rows: sets, plus the rest being done now (so "you are here" shows between two sets).
     val rows = steps.indices.filter { steps[it] is WorkStep || it == index }
-    val state = rememberLazyListState(initialFirstVisibleItemIndex = (rows.indexOfFirst { it >= index }.takeIf { it >= 0 } ?: rows.size) .minus(2).coerceAtLeast(0))
+    val state = rememberLazyListState(initialFirstVisibleItemIndex = (rows.indexOfFirst { it >= index }.takeIf { it >= 0 } ?: rows.size).minus(2).coerceAtLeast(0))
+    // A set just added: bring it into view.
+    LaunchedEffect(added) {
+        val row = added?.let(rows::indexOf)?.takeIf { it >= 0 } ?: return@LaunchedEffect
+        state.animateScrollToItem((row - 2).coerceAtLeast(0))
+    }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.player_map_sets_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         LazyColumn(state = state) {
@@ -145,11 +170,13 @@ private fun SetsLane(workout: ActiveWorkout, library: Map<Long, Exercise>, onJum
                             log != null -> Icons.Outlined.CheckCircle
                             else -> Icons.Outlined.RadioButtonUnchecked
                         }
+                        val isNew = added != null && (i == added || (i == added + 1 && step.side == Side.RIGHT))
                         MapRow(
-                            icon = icon,
+                            icon = if (isNew) Icons.Outlined.Add else icon,
                             title = (exercise?.name ?: stringResource(R.string.wedit_deleted_exercise)) + side(step.side),
-                            detail = progressText(res, step) + " · " + if (log != null && !log.skipped) formatTarget(log.actual, exercise) else formatTarget(step.target, exercise),
-                            current = i == index,
+                            detail = (if (isNew) stringResource(R.string.player_map_added) + " · " else "") +
+                                progressText(res, step) + " · " + if (log != null && !log.skipped) formatTarget(log.actual, exercise) else formatTarget(step.target, exercise),
+                            current = i == index || isNew,
                             dim = log != null,
                             onClick = if (i == index) null else ({ onJump(i) }),
                             status = when {

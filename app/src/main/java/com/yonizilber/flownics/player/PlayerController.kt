@@ -238,11 +238,12 @@ class PlayerController @Inject constructor(
     private fun laneBlock(titles: List<String>): Pair<List<String>, Int> =
         (titles + context.getString(R.string.player_rest_leftovers)) to titles.size
 
-    /** One more set of the current exercise. */
-    fun addSet() {
-        val w = _state.value ?: return
-        val edit = SessionEdits.addSet(w.session.steps, w.player.index) ?: return
+    /** One more set of the current exercise; returns where it went, or null when there was nothing to add to. */
+    fun addSet(): Int? {
+        val w = _state.value ?: return null
+        val edit = SessionEdits.addSet(w.session.steps, w.player.index) ?: return null
         apply(w, edit.steps, edit.insertedAt, edit.shift)
+        return edit.insertedAt
     }
 
     /** An exercise that wasn't in the plan: after the current step, or (when it was over) as the next thing to do. */

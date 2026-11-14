@@ -35,7 +35,7 @@ class PlayerViewModel @Inject constructor(
     val defaults: StateFlow<WorkoutDefaults> = prefs.observeWorkoutDefaults()
 
     fun setHoldAll(on: Boolean) = controller.setHoldAll(on)
-    fun addSet() = controller.addSet()
+    fun addSet(): Int? = controller.addSet()
     fun addExercise(a: AddedExercise) = controller.addExercise(a.exerciseId, a.sets, a.target, a.restSeconds)
     fun restAgain() = controller.restAgain()
     fun restNotNow() = controller.restNotNow()
