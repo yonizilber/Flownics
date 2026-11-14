@@ -91,6 +91,7 @@ sealed interface StepJson {
         val side: String? = null,
         val durationSeconds: Int? = null,
         val holdAtEnd: Boolean = false,
+        val fromRests: Boolean = false,
     ) : StepJson
 
     @Serializable
@@ -100,5 +101,11 @@ sealed interface StepJson {
         val durationSeconds: Int,
         val activeExerciseId: Long? = null,
         val holdAtEnd: Boolean = false,
+        /** Missing in plans saved before it existed: those count every rest as one between sets. */
+        val slot: Boolean = true,
+        val activeReps: Int? = null,
+        val activeSeconds: Int? = null,
+        val activeWeightKg: Double? = null,
+        val activeDistanceMeters: Int? = null,
     ) : StepJson
 }

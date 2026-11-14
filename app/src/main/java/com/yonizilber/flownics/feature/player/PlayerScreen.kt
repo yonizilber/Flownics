@@ -1,6 +1,13 @@
 package com.yonizilber.flownics.feature.player
 
-import androidx.compose.material3.Checkbox
+import com.yonizilber.flownics.domain.player.RestLane
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.AssistChip
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.PauseCircleOutline
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.ui.semantics.semantics
@@ -28,7 +35,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Remove
@@ -39,8 +45,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -124,9 +128,8 @@ fun PlayerScreen(
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val sensor by viewModel.sensor.collectAsStateWithLifecycle()
     val defaults by viewModel.defaults.collectAsStateWithLifecycle()
-    var menuOpen by remember { mutableStateOf(false) }
+    var mapTab by remember { mutableStateOf<MapTab?>(null) }
     var adding by remember { mutableStateOf(false) }
-    var noNextRest by remember { mutableStateOf(false) }
     var confirmEnd by remember { mutableStateOf(false) }
 
     KeepScreenOn()
@@ -157,56 +160,10 @@ fun PlayerScreen(
                         SensorState.Off -> Unit
                     }
                     if (w != null && w.player.phase !is Phase.Finished) {
-                        Box {
-                            IconButton(onClick = { menuOpen = true }) {
-                                Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.action_more))
-                            }
-                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                // Changing the workout as it goes: the day rarely matches the plan.
-                                val current = w.step
-                                if (current is RestStep && current.activeExerciseId != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.player_continue_next_rest)) },
-                                        leadingIcon = { Icon(Icons.Outlined.Repeat, contentDescription = null) },
-                                        onClick = {
-                                            menuOpen = false
-                                            noNextRest = !viewModel.continueInNextRest()
-                                        },
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.player_add_set)) },
-                                    leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                                    onClick = {
-                                        menuOpen = false
-                                        viewModel.addSet()
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.player_add_exercise)) },
-                                    leadingIcon = { Icon(Icons.AutoMirrored.Outlined.PlaylistAdd, contentDescription = null) },
-                                    onClick = {
-                                        menuOpen = false
-                                        adding = true
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.player_hold_all)) },
-                                    leadingIcon = { Checkbox(checked = w.holdAll, onCheckedChange = null) },
-                                    onClick = {
-                                        menuOpen = false
-                                        viewModel.setHoldAll(!w.holdAll)
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.player_end_workout)) },
-                                    leadingIcon = { Icon(Icons.Outlined.Flag, contentDescription = null) },
-                                    onClick = {
-                                        menuOpen = false
-                                        confirmEnd = true
-                                    },
-                                )
-                            }
+                        // The workout map: both lanes (sets and rests) and every change to the workout.
+                        TextButton(onClick = { mapTab = MapTab.SETS }) {
+                            Icon(Icons.AutoMirrored.Outlined.List, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Text(stringResource(R.string.player_map_short), modifier = Modifier.padding(start = 6.dp))
                         }
                     }
                 },
@@ -275,6 +232,17 @@ fun PlayerScreen(
                         library = library,
                         onAdjust = viewModel::adjust,
                         onOpenExercise = onOpenExercise,
+                        lane = if (step.slot && RestLane.exists(w.session.steps)) {
+                            LaneControls(
+                                previous = RestLane.previousEntry(w.session.steps, w.player.index)?.let { e -> { viewModel.restPick(e) } },
+                                onSkip = viewModel::restSkip,
+                                onAgain = viewModel::restAgain,
+                                onNotNow = viewModel::restNotNow,
+                                onChoose = { mapTab = MapTab.RESTS },
+                            )
+                        } else {
+                            null
+                        },
                     )
                     null -> Unit
                 }
@@ -298,11 +266,34 @@ fun PlayerScreen(
             viewModel.addExercise(it)
         }
     }
-    if (noNextRest) {
-        AlertDialog(
-            onDismissRequest = { noNextRest = false },
-            text = { Text(stringResource(R.string.player_no_next_rest)) },
-            confirmButton = { TextButton(onClick = { noNextRest = false }) { Text(stringResource(R.string.ok)) } },
+    val map = mapTab
+    if (map != null && w != null && w.player.phase !is Phase.Finished) {
+        WorkoutMapSheet(
+            workout = w,
+            library = library,
+            initialTab = map,
+            onJump = { i ->
+                mapTab = null
+                viewModel.jumpTo(i)
+            },
+            onPick = { e ->
+                mapTab = null
+                viewModel.restPick(e)
+            },
+            onAddSet = {
+                mapTab = null
+                viewModel.addSet()
+            },
+            onAddExercise = {
+                mapTab = null
+                adding = true
+            },
+            onHoldAll = viewModel::setHoldAll,
+            onEnd = {
+                mapTab = null
+                confirmEnd = true
+            },
+            onDismiss = { mapTab = null },
         )
     }
     if (confirmEnd) {
@@ -440,6 +431,7 @@ private fun RestContent(
     library: Map<Long, Exercise>,
     onAdjust: (Int) -> Unit,
     onOpenExercise: (Long) -> Unit,
+    lane: LaneControls?,
 ) {
     val active = step.activeExerciseId?.let { library[it] }
     Column(
@@ -479,6 +471,34 @@ private fun RestContent(
                 }
             }
         }
+        lane?.let { LaneRow(it, hasExercise = active != null || step.activeExerciseId != null) }
+    }
+}
+
+/** What can be done in the rest lane from here: each one only moves the rest exercises, never the sets. */
+class LaneControls(
+    val previous: (() -> Unit)?,
+    val onSkip: () -> Unit,
+    val onAgain: () -> Unit,
+    val onNotNow: () -> Unit,
+    val onChoose: () -> Unit,
+)
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LaneRow(lane: LaneControls, hasExercise: Boolean) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), modifier = Modifier.fillMaxWidth()) {
+        lane.previous?.let { AssistChip(onClick = it, label = { Text(stringResource(R.string.player_rest_previous)) }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Undo, null, Modifier.size(18.dp)) }) }
+        if (hasExercise) {
+            AssistChip(onClick = lane.onSkip, label = { Text(stringResource(R.string.player_rest_skip)) }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, Modifier.size(18.dp)) })
+            AssistChip(onClick = lane.onAgain, label = { Text(stringResource(R.string.player_rest_again)) }, leadingIcon = { Icon(Icons.Outlined.Repeat, null, Modifier.size(18.dp)) })
+            AssistChip(onClick = lane.onNotNow, label = { Text(stringResource(R.string.player_rest_not_now)) }, leadingIcon = { Icon(Icons.Outlined.PauseCircleOutline, null, Modifier.size(18.dp)) })
+        }
+        AssistChip(
+            onClick = lane.onChoose,
+            label = { Text(stringResource(if (hasExercise) R.string.player_rest_choose else R.string.player_rest_add)) },
+            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.List, null, Modifier.size(18.dp)) },
+        )
     }
 }
 

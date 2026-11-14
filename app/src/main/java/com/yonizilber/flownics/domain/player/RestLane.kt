@@ -1,0 +1,224 @@
+package com.yonizilber.flownics.domain.player
+
+import com.yonizilber.flownics.domain.model.Exercise
+import com.yonizilber.flownics.domain.model.MeasureMode
+import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.domain.workout.RestStep
+import com.yonizilber.flownics.domain.workout.Side
+import com.yonizilber.flownics.domain.workout.WorkStep
+import com.yonizilber.flownics.domain.workout.WorkoutCompiler
+import com.yonizilber.flownics.domain.workout.WorkoutStep
+
+/** Where a rest exercise stands: done, now, in a later rest, or left for the end of the workout. */
+enum class LaneStatus { DONE, NOW, NEXT, AT_END }
+
+/** One rest exercise in the lane, at [stepIndex] (its rest, or the first step of it at the end). */
+data class LaneEntry(val exerciseId: Long, val status: LaneStatus, val stepIndex: Int)
+
+/**
+ * The rests as a lane of their own, beside the sets. The exercises done in the rests between sets
+ * and rounds (a combined workout's stretches, or the active rest set in the workout) form a queue
+ * with its own place: moving back or forward in one lane leaves the other where it is.
+ *
+ * Only rests marked [RestStep.slot] belong to it; the short rests between the exercises of a round
+ * never get an exercise. What doesn't fit in the rests left goes to the end of the workout
+ * ([WorkStep.fromRests]), so nothing is lost on the way. Pure, so it is unit-tested.
+ */
+object RestLane {
+
+    /** An exercise in the queue; [unit] is its own steps when it waits at the end. */
+    private data class Item(val exerciseId: Long, val target: SetTarget?, val source: Int, val unit: List<WorkoutStep>? = null)
+
+    /** The exercises left at the end that can still change: after [from], none logged. */
+    private data class Tail(val start: Int, val end: Int, val units: List<List<WorkoutStep>>, val blockIndex: Int)
+
+    /** Every rest exercise of the workout, in order, with where it stands from step [index]. */
+    fun entries(steps: List<WorkoutStep>, index: Int): List<LaneEntry> = buildList {
+        steps.forEachIndexed { i, s ->
+            when {
+                s is RestStep && s.slot && s.activeExerciseId != null -> add(
+                    LaneEntry(
+                        s.activeExerciseId,
+                        when {
+                            i < index -> LaneStatus.DONE
+                            i == index -> LaneStatus.NOW
+                            else -> LaneStatus.NEXT
+                        },
+                        i,
+                    ),
+                )
+                s is WorkStep && s.fromRests && s.side != Side.RIGHT -> add(
+                    LaneEntry(
+                        s.exerciseId,
+                        when {
+                            i < index -> LaneStatus.DONE
+                            i == index || (s.side == Side.LEFT && i + 1 == index) -> LaneStatus.NOW
+                            else -> LaneStatus.AT_END
+                        },
+                        i,
+                    ),
+                )
+            }
+        }
+    }
+
+    /** The workout has a rest lane at all: some rest exercise, or a rest that could take one. */
+    fun exists(steps: List<WorkoutStep>): Boolean = entries(steps, 0).isNotEmpty()
+
+    /** The rest at [index] has an exercise of the lane in it now. */
+    fun isActiveSlot(steps: List<WorkoutStep>, index: Int): Boolean =
+        (steps.getOrNull(index) as? RestStep)?.let { it.slot && it.activeExerciseId != null } == true
+
+    /** The rest exercise done before the current one, to do it again now. */
+    fun previousEntry(steps: List<WorkoutStep>, index: Int): LaneEntry? =
+        entries(steps, index).lastOrNull { it.status == LaneStatus.DONE }
+
+    /** Do it again in the next rest too; the later ones each move one rest on. */
+    fun again(steps: List<WorkoutStep>, index: Int, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout? {
+        if (!isActiveSlot(steps, index)) return null
+        val current = item(steps, index)
+        return layout(steps, slots(steps, index + 1), listOf(current) + queue(steps, index + 1, logged), library, logged, index, newBlock)
+    }
+
+    /** Not now: this rest stays plain and its exercise moves to the next one, the later ones on with it. */
+    fun postpone(steps: List<WorkoutStep>, index: Int, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout? {
+        if (!isActiveSlot(steps, index)) return null
+        val cleared = steps.toMutableList().also { it[index] = (it[index] as RestStep).copy(activeExerciseId = null, activeTarget = null, holdAtEnd = false) }
+        return layout(cleared, slots(steps, index + 1), queue(steps, index, logged), library, logged, index, newBlock)
+    }
+
+    /** Skip it: the next one comes into this rest and the queue closes up (the skipped one can be picked again). */
+    fun skip(steps: List<WorkoutStep>, index: Int, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout? {
+        if (!isActiveSlot(steps, index)) return null
+        return layout(steps, slots(steps, index), queue(steps, index + 1, logged), library, logged, index, newBlock)
+    }
+
+    /**
+     * Do [entry] now (in this rest, when the current step is a rest between sets) or in the next
+     * rest. One still to come moves up from its place; one already done is done again, and the
+     * others each move one rest on.
+     */
+    fun pick(steps: List<WorkoutStep>, index: Int, entry: LaneEntry, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout? {
+        val inRest = (steps.getOrNull(index) as? RestStep)?.slot == true
+        val from = if (inRest) index else index + 1
+        val positions = slots(steps, from)
+        if (positions.isEmpty()) return null
+        val rest = queue(steps, from, logged)
+        val chosen = rest.firstOrNull { it.source == entry.stepIndex } ?: itemAt(steps, entry.stepIndex) ?: return null
+        return layout(steps, positions, listOf(chosen.copy(source = -1)) + rest.filter { it.source != entry.stepIndex }, library, logged, index, newBlock)
+    }
+
+    /**
+     * Moving from step [from] to step [to] in the sets (back to redo one, or ahead) keeps the rest
+     * lane where it is: the rests from [to] on take the exercises that were still to come.
+     */
+    fun moveSets(steps: List<WorkoutStep>, from: Int, to: Int, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout? {
+        if (!exists(steps)) return null
+        val tailFrom = maxOf(from, to)
+        val q = queue(steps, from, logged).filter { it.unit == null || it.source > tailFrom }
+        // Rests jumped over weren't done: they stay plain, their exercises go on with the queue.
+        val passed = steps.toMutableList()
+        slots(steps, from).filter { it < to }.forEach { i -> passed[i] = (steps[i] as RestStep).copy(activeExerciseId = null, activeTarget = null, holdAtEnd = false) }
+        return layout(passed, slots(steps, to), q, library, logged, tailFrom, newBlock)
+    }
+
+    /** Steps after a change to the lane; logs at [shiftFrom] and after move by [shiftBy]; [newBlockUsed] when the end got a new block. */
+    data class Layout(val steps: List<WorkoutStep>, val shiftFrom: Int, val shiftBy: Int, val newBlockUsed: Boolean)
+
+    private fun slots(steps: List<WorkoutStep>, from: Int): List<Int> =
+        steps.indices.filter { it >= from && (steps[it] as? RestStep)?.slot == true }
+
+    private fun item(steps: List<WorkoutStep>, index: Int): Item {
+        val r = steps[index] as RestStep
+        return Item(checkNotNull(r.activeExerciseId), r.activeTarget, index)
+    }
+
+    /** A rest exercise from wherever it is (a rest, or the end), for doing it again. */
+    private fun itemAt(steps: List<WorkoutStep>, index: Int): Item? = when (val s = steps.getOrNull(index)) {
+        is RestStep -> s.activeExerciseId?.let { Item(it, s.activeTarget, index) }
+        is WorkStep -> if (s.fromRests) Item(s.exerciseId, s.target, index) else null
+        null -> null
+    }
+
+    /** The exercises still to come from [from]: those in the rests, then those at the end. */
+    private fun queue(steps: List<WorkoutStep>, from: Int, logged: Set<Int>): List<Item> {
+        val inRests = slots(steps, from).mapNotNull { i -> (steps[i] as RestStep).activeExerciseId?.let { Item(it, (steps[i] as RestStep).activeTarget, i) } }
+        val tail = tail(steps, from - 1, logged)
+        var at = tail?.start ?: 0
+        val atEnd = tail?.units.orEmpty().map { unit ->
+            val first = unit.first() as WorkStep
+            Item(first.exerciseId, first.target, at, unit).also { at += unit.size }
+        }
+        return inRests + atEnd
+    }
+
+    private fun tail(steps: List<WorkoutStep>, after: Int, logged: Set<Int>): Tail? {
+        val lastLogged = logged.filter { (steps.getOrNull(it) as? WorkStep)?.fromRests == true }.maxOrNull() ?: -1
+        val firstFree = maxOf(after, lastLogged) + 1
+        val start = (firstFree until steps.size).firstOrNull { (steps[it] as? WorkStep)?.let { w -> w.fromRests && w.side != Side.RIGHT } == true } ?: return null
+        // The end block runs until the next set that isn't one of them (say, an exercise added at the end).
+        val end = (start until steps.size).firstOrNull { (steps[it] as? WorkStep)?.fromRests == false } ?: steps.size
+        val units = mutableListOf<MutableList<WorkoutStep>>()
+        for (i in start until end) {
+            val s = steps[i]
+            if (s is WorkStep && s.side != Side.RIGHT) units += mutableListOf(s) else units.last() += s
+        }
+        return Tail(start, end, units, steps[start].blockIndex)
+    }
+
+    /**
+     * The queue laid over the rests at [positions] in order; rests past its end stay plain, and what
+     * doesn't fit becomes (or stays) the block at the end.
+     */
+    private fun layout(
+        steps: List<WorkoutStep>,
+        positions: List<Int>,
+        queue: List<Item>,
+        library: Map<Long, Exercise>,
+        logged: Set<Int>,
+        tailAfter: Int,
+        newBlock: Int,
+    ): Layout {
+        val confirm = steps.filterIsInstance<RestStep>().firstOrNull { it.slot && it.activeExerciseId != null }?.holdAtEnd ?: true
+        val out = steps.toMutableList()
+        positions.forEachIndexed { k, i ->
+            val r = steps[i] as RestStep
+            val it = queue.getOrNull(k)
+            out[i] = r.copy(activeExerciseId = it?.exerciseId, activeTarget = it?.target, holdAtEnd = it != null && confirm)
+        }
+        val overflow = queue.drop(positions.size)
+        val tail = tail(steps, tailAfter, logged)
+        val block = tail?.blockIndex ?: newBlock
+        val restBetween = tail?.units?.firstNotNullOfOrNull { u -> (u.lastOrNull() as? RestStep)?.durationSeconds }
+        val newTail = overflow.flatMap { item ->
+            val unit = item.unit ?: unitFor(item, library, restBetween)
+            unit.map { s ->
+                when (s) {
+                    is WorkStep -> s.copy(blockIndex = block)
+                    is RestStep -> s.copy(blockIndex = block)
+                }
+            }
+        }
+        val start = tail?.start ?: steps.size
+        val end = tail?.end ?: steps.size
+        var region = newTail
+        // Nothing to rest for after the very last set.
+        if (end == steps.size && region.lastOrNull() is RestStep) region = region.dropLast(1)
+        val result = out.take(start) + region + out.drop(end)
+        return Layout(result, shiftFrom = end, shiftBy = region.size - (end - start), newBlockUsed = tail == null && region.isNotEmpty())
+    }
+
+    /** An exercise moved from a rest to the end: one set (both sides of a one-sided hold), its own time when timed. */
+    private fun unitFor(item: Item, library: Map<Long, Exercise>, restSeconds: Int?): List<WorkoutStep> {
+        val exercise = library[item.exerciseId]
+        val timedMode = exercise?.measureMode == MeasureMode.TIME
+        val target = item.target ?: if (timedMode) SetTarget(seconds = exercise?.let(WorkoutCompiler::activeRestSeconds) ?: DEFAULT_SECONDS) else SetTarget()
+        val timed = timedMode && (target.seconds ?: 0) > 0
+        val sides = if (exercise?.unilateral == true && timed) listOf(Side.LEFT, Side.RIGHT) else listOf(null)
+        return sides.map { side ->
+            WorkStep(0, 0, item.exerciseId, 1, 1, 1, 1, target, side, if (timed) target.seconds else null, fromRests = true)
+        } + listOfNotNull(restSeconds?.takeIf { it > 0 }?.let { RestStep(0, it, null, slot = false) })
+    }
+
+    private const val DEFAULT_SECONDS = 30
+}

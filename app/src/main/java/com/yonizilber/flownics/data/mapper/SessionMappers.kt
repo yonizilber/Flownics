@@ -57,8 +57,12 @@ fun StepJson.toDomain(): WorkoutStep = when (this) {
         side = side?.let(Side::valueOf),
         durationSeconds = durationSeconds,
         holdAtEnd = holdAtEnd,
+        fromRests = fromRests,
     )
-    is StepJson.Rest -> RestStep(blockIndex, durationSeconds, activeExerciseId, holdAtEnd)
+    is StepJson.Rest -> RestStep(
+        blockIndex, durationSeconds, activeExerciseId, holdAtEnd, slot,
+        activeTarget = if (listOf(activeReps, activeSeconds, activeWeightKg, activeDistanceMeters).all { it == null }) null else SetTarget(activeReps, activeSeconds, activeWeightKg, activeDistanceMeters),
+    )
 }
 
 fun WorkoutStep.toJson(): StepJson = when (this) {
@@ -77,8 +81,12 @@ fun WorkoutStep.toJson(): StepJson = when (this) {
         side = side?.name,
         durationSeconds = durationSeconds,
         holdAtEnd = holdAtEnd,
+        fromRests = fromRests,
     )
-    is RestStep -> StepJson.Rest(blockIndex, durationSeconds, activeExerciseId, holdAtEnd)
+    is RestStep -> StepJson.Rest(
+        blockIndex, durationSeconds, activeExerciseId, holdAtEnd, slot,
+        activeTarget?.reps, activeTarget?.seconds, activeTarget?.weightKg, activeTarget?.distanceMeters,
+    )
 }
 
 fun SetLogEntity.toDomain(): SetLog = SetLog(

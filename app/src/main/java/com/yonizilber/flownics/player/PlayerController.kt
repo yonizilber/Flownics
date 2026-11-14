@@ -3,6 +3,8 @@ package com.yonizilber.flownics.player
 import com.yonizilber.flownics.domain.workout.RestStep
 import com.yonizilber.flownics.R
 import com.yonizilber.flownics.domain.player.SessionEdits
+import com.yonizilber.flownics.domain.player.LaneEntry
+import com.yonizilber.flownics.domain.player.RestLane
 import com.yonizilber.flownics.data.garmin.RecordingLinker
 import com.yonizilber.flownics.sensors.HeartRateMonitor
 import android.content.Context
@@ -195,13 +197,46 @@ class PlayerController @Inject constructor(
         ensureTicker()
     }
 
-    /** The current active-rest exercise goes on in the next rest; later ones move one rest on. */
-    fun continueInNextRest(): Boolean {
+    // The rest lane: the exercises of the rests have their own place, beside the sets.
+
+    fun restAgain() = laneEdit { w, logged, block -> RestLane.again(w.session.steps, w.player.index, library.value, logged, block) }
+
+    fun restNotNow() = laneEdit { w, logged, block -> RestLane.postpone(w.session.steps, w.player.index, library.value, logged, block) }
+
+    fun restSkip() = laneEdit { w, logged, block -> RestLane.skip(w.session.steps, w.player.index, library.value, logged, block) }
+
+    /** [entry] in this rest (or the next one, during a set); the rest of the lane moves to make room. */
+    fun restPick(entry: LaneEntry) = laneEdit { w, logged, block -> RestLane.pick(w.session.steps, w.player.index, entry, library.value, logged, block) }
+
+    /**
+     * Goes to step [target] of the sets (back to redo one, or ahead). The rest lane stays where it
+     * was: the rests from there on take the exercises still to come.
+     */
+    fun jumpTo(target: Int) {
+        val w = _state.value ?: return
+        if (target !in w.session.steps.indices || target == w.player.index) return
+        val from = w.player.index.coerceAtMost(w.session.steps.lastIndex)
+        val (titles, block) = laneBlock(w.session.blockTitles)
+        RestLane.moveSets(w.session.steps, from, target, library.value, w.logs.keys, block)?.let { edit ->
+            apply(w, edit.steps, edit.shiftFrom, edit.shiftBy, if (edit.newBlockUsed) titles else w.session.blockTitles)
+        }
+        transition { a, now -> a.copy(player = WorkoutPlayer.jumpTo(a.session.steps, target, now)) }
+        ensureService()
+    }
+
+    private fun laneEdit(edit: (ActiveWorkout, Set<Int>, Int) -> RestLane.Layout?): Boolean {
         val w = _state.value ?: return false
-        val (steps, _) = SessionEdits.continueInNextRest(w.session.steps, w.player.index) ?: return false
-        apply(w, steps, shiftFrom = Int.MAX_VALUE, shiftBy = 0)
+        val (titles, block) = laneBlock(w.session.blockTitles)
+        val layout = edit(w, w.logs.keys, block) ?: return false
+        apply(w, layout.steps, layout.shiftFrom, layout.shiftBy, if (layout.newBlockUsed) titles else w.session.blockTitles)
+        // The rest now holds another exercise: say which, as when a step starts.
+        if (layout.steps.getOrNull(w.player.index) != w.session.steps.getOrNull(w.player.index)) _state.value?.let(::cueNewStep)
         return true
     }
+
+    /** Where rest exercises that no longer fit go when the workout has no such block yet. */
+    private fun laneBlock(titles: List<String>): Pair<List<String>, Int> =
+        (titles + context.getString(R.string.player_rest_leftovers)) to titles.size
 
     /** One more set of the current exercise. */
     fun addSet() {

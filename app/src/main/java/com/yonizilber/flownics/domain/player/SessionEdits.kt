@@ -18,27 +18,6 @@ data class EditResult(val steps: List<WorkoutStep>, val insertedAt: Int, val shi
  */
 object SessionEdits {
 
-    /**
-     * The stretch of the current active rest goes on in the next rest too (it needed more time).
-     * Every later active-rest exercise moves one rest on, so none is lost from the middle; if there
-     * are more exercises than rests left, the last one is left over (and returned).
-     */
-    fun continueInNextRest(steps: List<WorkoutStep>, index: Int): Pair<List<WorkoutStep>, Long?>? {
-        val current = steps.getOrNull(index) as? RestStep ?: return null
-        val exercise = current.activeExerciseId ?: return null
-        val later = steps.withIndex().filter { (i, s) -> i > index && s is RestStep }.map { it.index }
-        if (later.isEmpty()) return null
-        val chain = listOf(exercise) + later.mapNotNull { (steps[it] as RestStep).activeExerciseId }
-        val out = steps.toMutableList()
-        later.forEachIndexed { k, i ->
-            val r = steps[i] as RestStep
-            // Rests without an exercise of their own stay plain unless the chain still has one to give.
-            out[i] = r.copy(activeExerciseId = chain.getOrNull(k) ?: r.activeExerciseId, holdAtEnd = r.holdAtEnd || current.holdAtEnd)
-        }
-        val leftover = chain.drop(later.size).lastOrNull()
-        return out to leftover
-    }
-
     /** One more set of the current (or just done) exercise, right after it, with the same rest. */
     fun addSet(steps: List<WorkoutStep>, index: Int): EditResult? {
         val workIndex = (minOf(index, steps.lastIndex) downTo 0).firstOrNull { steps[it] is WorkStep } ?: return null

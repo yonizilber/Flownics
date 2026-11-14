@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.yonizilber.flownics.data.local.media.MediaStorage
 import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.domain.player.LaneEntry
 import com.yonizilber.flownics.player.ActiveWorkout
 import com.yonizilber.flownics.player.CueProblem
 import com.yonizilber.flownics.player.PlayerController
@@ -36,8 +37,11 @@ class PlayerViewModel @Inject constructor(
     fun setHoldAll(on: Boolean) = controller.setHoldAll(on)
     fun addSet() = controller.addSet()
     fun addExercise(a: AddedExercise) = controller.addExercise(a.exerciseId, a.sets, a.target, a.restSeconds)
-    fun continueInNextRest(): Boolean = controller.continueInNextRest()
-
+    fun restAgain() = controller.restAgain()
+    fun restNotNow() = controller.restNotNow()
+    fun restSkip() = controller.restSkip()
+    fun restPick(entry: LaneEntry) = controller.restPick(entry)
+    fun jumpTo(index: Int) = controller.jumpTo(index)
 
     /** Live heart rate, when a sensor is connected. */
     val sensor: StateFlow<SensorState> = heartRate.state

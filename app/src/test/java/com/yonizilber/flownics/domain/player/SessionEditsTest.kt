@@ -37,15 +37,6 @@ class SessionEditsTest {
     }
 
     @Test
-    fun aStretchCarriesIntoTheNextRestAndTheRestMoveOn() {
-        val steps = listOf<WorkoutStep>(work(1), rest(active = 10), work(2), rest(active = 11), work(3), rest(active = 12), work(1, ex = 2))
-        val (out, leftover) = checkNotNull(SessionEdits.continueInNextRest(steps, 1))
-        assertEquals(listOf(10L, 10L, 11L), out.filterIsInstance<RestStep>().map { it.activeExerciseId })
-        assertEquals(12L, leftover)
-        assertNull(SessionEdits.continueInNextRest(steps, 0))
-    }
-
-    @Test
     fun oneMoreSetGoesRightAfterAndRenumbers() {
         val steps = listOf<WorkoutStep>(work(1), rest(), work(2), rest(), work(3), rest(), work(1, total = 2, ex = 2))
         val edit = checkNotNull(SessionEdits.addSet(steps, 2))
@@ -58,6 +49,10 @@ class SessionEditsTest {
         val holds = listOf<WorkoutStep>(work(1, 1, seconds = 30, side = Side.LEFT), work(1, 1, seconds = 30, side = Side.RIGHT), rest())
         val e2 = checkNotNull(SessionEdits.addSet(holds, 1))
         assertEquals(listOf(Side.LEFT, Side.RIGHT, Side.LEFT, Side.RIGHT), e2.steps.filterIsInstance<WorkStep>().map { it.side })
+        // In a superset the short rest after it stays one that never takes a rest exercise.
+        val superset = listOf<WorkoutStep>(work(1), RestStep(0, 15, null, slot = false), work(1, ex = 2), rest(active = 10))
+        val e3 = checkNotNull(SessionEdits.addSet(superset, 0))
+        assertEquals(false, (e3.steps[3] as RestStep).slot)
     }
 
     @Test

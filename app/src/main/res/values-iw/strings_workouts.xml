@@ -115,8 +115,6 @@
     <string name="wedit_confirm_end_hint">בסוף הזמן להמשיך לספור במינוס, ולעבור הלאה רק כשלוחצים "הבא".</string>
     <string name="player_add_exercise">הוספת תרגיל…</string>
     <string name="player_add_set">עוד סט</string>
-    <string name="player_continue_next_rest">להמשיך את זה גם במנוחה הבאה</string>
-    <string name="player_no_next_rest">אין מנוחה אחרי זו להמשיך אליה.</string>
     <string name="player_hold_all">להמתין לי באפס (בכל שלב על זמן)</string>
     <string name="player_overtime">מעבר לזמן · לחץ "הבא"</string>
     <string name="player_keep_going">להמשיך: הוספת תרגיל</string>
@@ -132,4 +130,25 @@
     <string name="player_added_block">נוסף במהלך האימון</string>
     <string name="player_free_workout">אימון חופשי</string>
     <string name="player_free_start">התחלה</string>
+    <string name="player_rest_leftovers">נשאר מהמנוחות</string>
+    <string name="player_map">מפת האימון</string>
+    <string name="player_map_short">מפה</string>
+    <string name="player_map_sets">סטים</string>
+    <string name="player_map_rests">מנוחות</string>
+    <string name="player_map_sets_hint">הקשה על סט עוברת אליו. תרגילי המנוחה נשארים במקומם.</string>
+    <string name="player_map_rests_hint_now">הקשה על תרגיל – עושים אותו במנוחה הזו. הסטים לא זזים.</string>
+    <string name="player_map_rests_hint_next">הקשה על תרגיל – עושים אותו במנוחה הבאה. הסטים לא זזים.</string>
+    <string name="player_map_rest_now">במנוחה עכשיו</string>
+    <string name="player_map_skipped">דולג</string>
+    <string name="player_lane_done">בוצע</string>
+    <string name="player_lane_now">עכשיו</string>
+    <string name="player_lane_next">במנוחה בהמשך</string>
+    <string name="player_lane_at_end">בסוף האימון</string>
+    <string name="player_rest_previous">הקודם</string>
+    <string name="player_rest_skip">דילוג</string>
+    <string name="player_rest_again">שוב במנוחה הבאה</string>
+    <string name="player_rest_not_now">לא עכשיו</string>
+    <string name="player_rest_choose">בחירה…</string>
+    <string name="player_rest_add">הוספת תרגיל מנוחה…</string>
+    <string name="player_hold_all_short">להמתין לי באפס</string>
 </resources>

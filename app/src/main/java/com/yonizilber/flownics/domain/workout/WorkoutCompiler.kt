@@ -34,6 +34,8 @@ data class WorkStep(
     override val durationSeconds: Int?,
     /** A timed set that doesn't move on by itself: at zero it counts on (overtime) until confirmed. */
     override val holdAtEnd: Boolean = false,
+    /** A rest exercise that didn't fit in the rests, done at the end ([RestStep.slot]'s queue goes on here). */
+    val fromRests: Boolean = false,
 ) : WorkoutStep
 
 /**
@@ -45,6 +47,13 @@ data class RestStep(
     override val durationSeconds: Int,
     val activeExerciseId: Long?,
     override val holdAtEnd: Boolean = false,
+    /**
+     * A rest between sets or rounds, where active rest may go. False for the short rest between
+     * the exercises of a round (a superset or circuit), which stays plain whatever is changed.
+     */
+    val slot: Boolean = true,
+    /** The rest exercise's own target (from the combined workout), kept should it move to the end. */
+    val activeTarget: SetTarget? = null,
 ) : WorkoutStep
 
 /** Problems are reported, never silently patched: the builder shows each one to the user. */
@@ -212,8 +221,9 @@ object WorkoutCompiler {
                 val extraBlock = template.blocks.size
                 filler.flatten().forEach { step ->
                     steps += when (step) {
-                        is WorkStep -> step.copy(blockIndex = extraBlock)
-                        is RestStep -> step.copy(blockIndex = extraBlock)
+                        is WorkStep -> step.copy(blockIndex = extraBlock, fromRests = true)
+                        // The rests between them are their own, not rests to fill.
+                        is RestStep -> step.copy(blockIndex = extraBlock, slot = false, activeExerciseId = null, holdAtEnd = false)
                     }
                 }
                 filler.clear()
@@ -299,8 +309,9 @@ object WorkoutCompiler {
             // With a rest-filler workout, its next exercise fills the rest, in place of any active
             // rest set here: combining the workouts is the choice that counts.
             lastFillerUnit = null
+            var target: SetTarget? = null
             val activeId = if (fill && filler.isNotEmpty()) {
-                filler.removeFirst().also { lastFillerUnit = it }.let { (it.first() as WorkStep).exerciseId }
+                filler.removeFirst().also { lastFillerUnit = it }.let { (it.first() as WorkStep).also { w -> target = w.target }.exerciseId }
             } else {
                 resolve(activeRest, blockIndex, itemIndex, workedMuscles)
             }
@@ -311,7 +322,7 @@ object WorkoutCompiler {
                 }
             }
             // Active rest waits at zero for the user (when the workout says so): a stretch may need longer.
-            steps += RestStep(blockIndex, seconds, activeId, holdAtEnd = activeId != null && confirmActiveRest)
+            steps += RestStep(blockIndex, seconds, activeId, holdAtEnd = activeId != null && confirmActiveRest, slot = fill, activeTarget = target)
         }
 
         private fun resolve(activeRest: ActiveRest, blockIndex: Int, itemIndex: Int?, workedMuscles: Set<Muscle>): Long? =
