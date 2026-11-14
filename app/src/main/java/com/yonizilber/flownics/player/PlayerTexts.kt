@@ -25,9 +25,11 @@ class PlayerTexts(private val res: Resources) {
         if (workout.player.phase is Phase.Finished) return res.getString(R.string.notif_finished)
         return when (val step = workout.step) {
             is WorkStep -> exerciseName(step.exerciseId, library) + sideSuffix(step.side)
-            is RestStep -> step.activeExerciseId
-                ?.let { res.getString(R.string.notif_active_rest, exerciseName(it, library)) }
-                ?: res.getString(R.string.player_rest)
+            is RestStep -> if (step.active.isNotEmpty()) {
+                res.getString(R.string.notif_active_rest, step.active.joinToString(" + ") { exerciseName(it.exerciseId, library) })
+            } else {
+                res.getString(R.string.player_rest)
+            }
             null -> workout.session.workoutName
         }
     }
@@ -67,9 +69,11 @@ class PlayerTexts(private val res: Resources) {
                 ).joinToString(" ")
             }
             is RestStep -> {
-                val rest = step.activeExerciseId
-                    ?.let { res.getString(R.string.say_active_rest, exerciseName(it, library)) }
-                    ?: res.getString(R.string.say_rest, step.durationSeconds)
+                val rest = if (step.active.isNotEmpty()) {
+                    res.getString(R.string.say_active_rest, step.active.joinToString(res.getString(R.string.say_then)) { exerciseName(it.exerciseId, library) })
+                } else {
+                    res.getString(R.string.say_rest, step.durationSeconds)
+                }
                 val next = workout.nextWork()?.let { res.getString(R.string.say_next, exerciseName(it.exerciseId, library)) }
                 listOfNotNull(rest, next).joinToString(" ")
             }

@@ -190,7 +190,7 @@ private fun SetsLane(workout: ActiveWorkout, library: Map<Long, Exercise>, onJum
                     is RestStep -> MapRow(
                         icon = Icons.Outlined.PlayCircle,
                         title = stringResource(R.string.player_map_rest_now),
-                        detail = step.activeExerciseId?.let { library[it]?.name }.orEmpty(),
+                        detail = step.active.joinToString(" + ") { library[it.exerciseId]?.name ?: "?" },
                         current = true,
                         dim = false,
                         onClick = null,
@@ -217,14 +217,14 @@ private fun RestsLane(workout: ActiveWorkout, library: Map<Long, Exercise>, onPi
         )
         LazyColumn(state = state) {
             items(entries, key = { it.stepIndex }) { entry ->
-                val exercise = library[entry.exerciseId]
+                val deleted = stringResource(R.string.wedit_deleted_exercise)
                 MapRow(
                     icon = when (entry.status) {
                         LaneStatus.DONE -> Icons.Outlined.CheckCircle
                         LaneStatus.NOW -> Icons.Outlined.PlayCircle
                         LaneStatus.NEXT, LaneStatus.AT_END -> Icons.Outlined.RadioButtonUnchecked
                     },
-                    title = exercise?.name ?: stringResource(R.string.wedit_deleted_exercise),
+                    title = entry.exerciseIds.joinToString(" + ") { library[it]?.name ?: deleted },
                     detail = stringResource(
                         when (entry.status) {
                             LaneStatus.DONE -> R.string.player_lane_done

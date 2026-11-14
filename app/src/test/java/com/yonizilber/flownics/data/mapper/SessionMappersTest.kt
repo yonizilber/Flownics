@@ -4,6 +4,7 @@ import com.yonizilber.flownics.domain.model.SessionStatus
 import com.yonizilber.flownics.domain.model.SetLog
 import com.yonizilber.flownics.domain.model.SetTarget
 import com.yonizilber.flownics.domain.model.WorkoutSession
+import com.yonizilber.flownics.domain.workout.RestPart
 import com.yonizilber.flownics.domain.workout.RestStep
 import com.yonizilber.flownics.domain.workout.Side
 import com.yonizilber.flownics.domain.workout.WorkStep
@@ -24,9 +25,10 @@ class SessionMappersTest {
             blockTitles = listOf("Warm-up", ""),
             steps = listOf(
                 WorkStep(1, 0, 11, 1, 3, 1, 1, SetTarget(reps = 8, weightKg = 62.5), null, null),
-                RestStep(1, 90, activeExerciseId = 12),
+                RestStep(1, 90, listOf(RestPart(12, SetTarget(seconds = 30)), RestPart(13, SetTarget(reps = 8)))),
                 WorkStep(1, 1, 13, 1, 1, 2, 3, SetTarget(seconds = 30), Side.LEFT, 30),
-                RestStep(1, 60, activeExerciseId = null),
+                RestStep(1, 60),
+                WorkStep(2, 0, 13, 1, 1, 1, 1, SetTarget(seconds = 30), null, 30, fromRests = true, restPart = 1),
             ),
             status = SessionStatus.IN_PROGRESS,
             startedAtMillis = 1_000,

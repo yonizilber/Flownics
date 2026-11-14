@@ -10,6 +10,7 @@ import com.yonizilber.flownics.domain.model.SessionStatus
 import com.yonizilber.flownics.domain.model.SetLog
 import com.yonizilber.flownics.domain.model.SetTarget
 import com.yonizilber.flownics.domain.model.WorkoutSession
+import com.yonizilber.flownics.domain.workout.RestPart
 import com.yonizilber.flownics.domain.workout.RestStep
 import com.yonizilber.flownics.domain.workout.Side
 import com.yonizilber.flownics.domain.workout.WorkStep
@@ -58,10 +59,14 @@ fun StepJson.toDomain(): WorkoutStep = when (this) {
         durationSeconds = durationSeconds,
         holdAtEnd = holdAtEnd,
         fromRests = fromRests,
+        restPart = restPart,
     )
     is StepJson.Rest -> RestStep(
-        blockIndex, durationSeconds, activeExerciseId, holdAtEnd, slot,
-        activeTarget = if (listOf(activeReps, activeSeconds, activeWeightKg, activeDistanceMeters).all { it == null }) null else SetTarget(activeReps, activeSeconds, activeWeightKg, activeDistanceMeters),
+        blockIndex, durationSeconds,
+        active = listOfNotNull(activeExerciseId?.let { RestPart(it, targetOrNull(activeReps, activeSeconds, activeWeightKg, activeDistanceMeters)) }) +
+            moreActive.map { RestPart(it.exerciseId, targetOrNull(it.reps, it.seconds, it.weightKg, it.distanceMeters)) },
+        holdAtEnd = holdAtEnd,
+        slot = slot,
     )
 }
 
@@ -82,12 +87,19 @@ fun WorkoutStep.toJson(): StepJson = when (this) {
         durationSeconds = durationSeconds,
         holdAtEnd = holdAtEnd,
         fromRests = fromRests,
+        restPart = restPart,
     )
-    is RestStep -> StepJson.Rest(
-        blockIndex, durationSeconds, activeExerciseId, holdAtEnd, slot,
-        activeTarget?.reps, activeTarget?.seconds, activeTarget?.weightKg, activeTarget?.distanceMeters,
-    )
+    is RestStep -> active.firstOrNull()?.target.let { first ->
+        StepJson.Rest(
+            blockIndex, durationSeconds, activeExerciseId, holdAtEnd, slot,
+            first?.reps, first?.seconds, first?.weightKg, first?.distanceMeters,
+            moreActive = active.drop(1).map { StepJson.RestPartJson(it.exerciseId, it.target?.reps, it.target?.seconds, it.target?.weightKg, it.target?.distanceMeters) },
+        )
+    }
 }
+
+private fun targetOrNull(reps: Int?, seconds: Int?, weightKg: Double?, distanceMeters: Int?): SetTarget? =
+    if (listOf(reps, seconds, weightKg, distanceMeters).all { it == null }) null else SetTarget(reps, seconds, weightKg, distanceMeters)
 
 fun SetLogEntity.toDomain(): SetLog = SetLog(
     sessionId = sessionId,

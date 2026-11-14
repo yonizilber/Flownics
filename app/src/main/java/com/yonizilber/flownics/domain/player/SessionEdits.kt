@@ -28,7 +28,7 @@ object SessionEdits {
         val group = (first..last).map { steps[it] as WorkStep }
         val rest = steps.getOrNull(last + 1) as? RestStep
         val after = last + 1 + if (rest != null) 1 else 0
-        val added = group.map { it.copy(set = it.set + 1, totalSets = it.totalSets + 1) } + listOfNotNull(rest?.copy(activeExerciseId = null, holdAtEnd = false))
+        val added = group.map { it.copy(set = it.set + 1, totalSets = it.totalSets + 1) } + listOfNotNull(rest?.plain())
         val result = insert(steps, maxOf(after, index + 1), added)
         // The exercise has one set more: every set of it says so, and the later ones move up one.
         fun same(s: WorkStep) = s.exerciseId == work.exerciseId && s.blockIndex == work.blockIndex && s.itemIndex == work.itemIndex && s.round == work.round
@@ -50,7 +50,7 @@ object SessionEdits {
         return (1..sets.coerceAtLeast(1)).flatMap { set ->
             sides.map { side ->
                 WorkStep(blockIndex, 0, exercise.id, set, sets, 1, 1, target, side, if (timed) target.seconds else null)
-            } + listOfNotNull(if (restSeconds > 0) RestStep(blockIndex, restSeconds, null) else null)
+            } + listOfNotNull(if (restSeconds > 0) RestStep(blockIndex, restSeconds) else null)
         }
     }
 

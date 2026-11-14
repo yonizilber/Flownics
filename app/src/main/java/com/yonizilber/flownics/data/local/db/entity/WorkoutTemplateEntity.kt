@@ -20,6 +20,8 @@ data class WorkoutTemplateEntity(
     @androidx.room.ColumnInfo(defaultValue = "0") val restFillerRepeatSets: Boolean = false,
     // v14: active rests wait for the user at zero.
     @androidx.room.ColumnInfo(defaultValue = "1") val confirmActiveRest: Boolean = true,
+    // v15: a superset or circuit of the filler workout goes into a rest as a whole round.
+    @androidx.room.ColumnInfo(defaultValue = "1") val restFillerRoundsTogether: Boolean = true,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
 )

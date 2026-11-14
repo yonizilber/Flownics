@@ -92,6 +92,8 @@ sealed interface StepJson {
         val durationSeconds: Int? = null,
         val holdAtEnd: Boolean = false,
         val fromRests: Boolean = false,
+        /** Its place in a round of rest exercises done together (0 for the first, or alone). */
+        val restPart: Int = 0,
     ) : StepJson
 
     @Serializable
@@ -107,5 +109,16 @@ sealed interface StepJson {
         val activeSeconds: Int? = null,
         val activeWeightKg: Double? = null,
         val activeDistanceMeters: Int? = null,
+        /** After the first: the other exercises of a round done together in this rest. */
+        val moreActive: List<RestPartJson> = emptyList(),
     ) : StepJson
+
+    @Serializable
+    data class RestPartJson(
+        val exerciseId: Long,
+        val reps: Int? = null,
+        val seconds: Int? = null,
+        val weightKg: Double? = null,
+        val distanceMeters: Int? = null,
+    )
 }

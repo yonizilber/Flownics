@@ -453,7 +453,9 @@ private fun RestContent(
         if (step.activeExerciseId != null && active == null) {
             Text(stringResource(R.string.player_active_rest_missing), color = MaterialTheme.colorScheme.error)
         }
-        if (active != null) {
+        if (step.active.size > 1) {
+            RoundInRest(step, library, onOpenExercise)
+        } else if (active != null) {
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -470,6 +472,32 @@ private fun RestContent(
             }
         }
         lane?.let { LaneRow(it, hasExercise = active != null || step.activeExerciseId != null) }
+    }
+}
+
+/** A round of the combined workout's superset in this rest: its exercises one after the other. */
+@Composable
+private fun RoundInRest(step: RestStep, library: Map<Long, Exercise>, onOpenExercise: (Long) -> Unit) {
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.player_round_in_rest, step.active.size), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            step.active.forEachIndexed { k, part ->
+                val exercise = library[part.exerciseId]
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("${k + 1}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (exercise != null) CategoryAvatar(exercise.category, size = 32.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(exercise?.name ?: stringResource(R.string.player_active_rest_missing), style = MaterialTheme.typography.titleMedium, color = if (exercise == null) MaterialTheme.colorScheme.error else Color.Unspecified)
+                        part.target?.let { t -> Text(formatTarget(t, exercise), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
+                    if (exercise != null) {
+                        IconButton(onClick = { onOpenExercise(exercise.id) }) {
+                            Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.player_details))
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

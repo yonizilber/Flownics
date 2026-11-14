@@ -98,6 +98,7 @@ internal fun WorkoutTemplateEntity.toDto(json: Json) = WorkoutDto(
     restFillerWorkoutId = restFillerWorkoutId,
     restFillerLeftovers = restFillerLeftovers,
     restFillerRepeatSets = restFillerRepeatSets,
+    restFillerRoundsTogether = restFillerRoundsTogether,
     confirmActiveRest = confirmActiveRest,
 )
 
@@ -116,6 +117,7 @@ internal fun WorkoutDto.toEntity(
         restFillerWorkoutId = restFillerWorkoutId,
         restFillerLeftovers = restFillerLeftovers,
         restFillerRepeatSets = restFillerRepeatSets,
+        restFillerRoundsTogether = restFillerRoundsTogether,
         confirmActiveRest = confirmActiveRest,
         createdAtMillis = createdAtMillis,
         updatedAtMillis = updatedAtMillis,

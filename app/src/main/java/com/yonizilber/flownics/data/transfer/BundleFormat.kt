@@ -180,6 +180,7 @@ data class WorkoutDto(
     val restFillerWorkoutId: Long? = null,
     val restFillerLeftovers: Boolean = true,
     val restFillerRepeatSets: Boolean = false,
+    val restFillerRoundsTogether: Boolean = true,
     val confirmActiveRest: Boolean = true,
 )
 

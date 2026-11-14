@@ -4,6 +4,7 @@ import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.ExerciseCategory
 import com.yonizilber.flownics.domain.model.MeasureMode
 import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.domain.workout.RestPart
 import com.yonizilber.flownics.domain.workout.RestStep
 import com.yonizilber.flownics.domain.workout.Side
 import com.yonizilber.flownics.domain.workout.WorkStep
@@ -18,7 +19,7 @@ class SessionEditsTest {
     private fun work(set: Int, total: Int = 3, ex: Long = 1, seconds: Int? = null, hold: Boolean = false, side: Side? = null) =
         WorkStep(0, 0, ex, set, total, 1, 1, SetTarget(reps = 8, seconds = seconds), side, seconds, hold)
 
-    private fun rest(active: Long? = null, hold: Boolean = false, seconds: Int = 90) = RestStep(0, seconds, active, hold)
+    private fun rest(active: Long? = null, hold: Boolean = false, seconds: Int = 90) = RestStep(0, seconds, listOfNotNull(active?.let { RestPart(it) }), hold)
 
     @Test
     fun aHoldingStepCountsOvertimeUntilConfirmed() {
@@ -50,7 +51,7 @@ class SessionEditsTest {
         val e2 = checkNotNull(SessionEdits.addSet(holds, 1))
         assertEquals(listOf(Side.LEFT, Side.RIGHT, Side.LEFT, Side.RIGHT), e2.steps.filterIsInstance<WorkStep>().map { it.side })
         // In a superset the short rest after it stays one that never takes a rest exercise.
-        val superset = listOf<WorkoutStep>(work(1), RestStep(0, 15, null, slot = false), work(1, ex = 2), rest(active = 10))
+        val superset = listOf<WorkoutStep>(work(1), RestStep(0, 15, slot = false), work(1, ex = 2), rest(active = 10))
         val e3 = checkNotNull(SessionEdits.addSet(superset, 0))
         assertEquals(false, (e3.steps[3] as RestStep).slot)
     }

@@ -36,25 +36,35 @@ data class WorkStep(
     override val holdAtEnd: Boolean = false,
     /** A rest exercise that didn't fit in the rests, done at the end ([RestStep.slot]'s queue goes on here). */
     val fromRests: Boolean = false,
+    /** With [fromRests]: its place in a round of rest exercises done together; 0 starts one. */
+    val restPart: Int = 0,
 ) : WorkoutStep
 
+/** One exercise done in a rest, with the target it has in the workout it came from. */
+data class RestPart(val exerciseId: Long, val target: SetTarget? = null)
+
 /**
- * A rest period; with [activeExerciseId] it is active rest (do that exercise while resting). With
- * [holdAtEnd] it waits for the user at zero, counting the extra time, instead of moving on.
+ * A rest period; with [active] it is active rest: do that exercise while resting, or that round of
+ * exercises one after the other (a superset of the combined workout). With [holdAtEnd] it waits
+ * for the user at zero, counting the extra time, instead of moving on.
  */
 data class RestStep(
     override val blockIndex: Int,
     override val durationSeconds: Int,
-    val activeExerciseId: Long?,
+    val active: List<RestPart> = emptyList(),
     override val holdAtEnd: Boolean = false,
     /**
      * A rest between sets or rounds, where active rest may go. False for the short rest between
      * the exercises of a round (a superset or circuit), which stays plain whatever is changed.
      */
     val slot: Boolean = true,
-    /** The rest exercise's own target (from the combined workout), kept should it move to the end. */
-    val activeTarget: SetTarget? = null,
-) : WorkoutStep
+) : WorkoutStep {
+    /** The (first) exercise done in this rest. */
+    val activeExerciseId: Long? get() = active.firstOrNull()?.exerciseId
+
+    /** A plain rest again: nothing done in it, nor waiting at zero. */
+    fun plain(): RestStep = copy(active = emptyList(), holdAtEnd = false)
+}
 
 /** Problems are reported, never silently patched: the builder shows each one to the user. */
 sealed interface CompileWarning {
@@ -160,7 +170,16 @@ object WorkoutCompiler {
             }
             // The other workout as it would run on its own (its own filler ignored), one entry per exercise.
             fillerSource?.let { source ->
-                filler += units(Compilation(library).run(source.copy(restFiller = null)).steps, eachOnce = template.restFiller?.repeatSets != true)
+                val f = checkNotNull(template.restFiller)
+                // Supersets and circuits of two or more exercises, whose rounds go into a rest whole.
+                val together = if (f.roundsTogether) {
+                    source.blocks.indices.filter { b ->
+                        source.blocks[b].structure == BlockStructure.CIRCUIT && source.blocks[b].items.count { library[it.exerciseId] != null } > 1
+                    }.toSet()
+                } else {
+                    emptySet()
+                }
+                filler += units(Compilation(library).run(source.copy(restFiller = null)).steps, eachOnce = !f.repeatSets, together)
             }
             val fillerTotal = filler.size
             template.blocks.forEachIndexed { blockIndex, block ->
@@ -219,11 +238,17 @@ object WorkoutCompiler {
                 // What didn't fit in the rests is done at the end, as its own block.
                 extraTitle = fillerSource.name
                 val extraBlock = template.blocks.size
-                filler.flatten().forEach { step ->
-                    steps += when (step) {
-                        is WorkStep -> step.copy(blockIndex = extraBlock, fromRests = true)
-                        // The rests between them are their own, not rests to fill.
-                        is RestStep -> step.copy(blockIndex = extraBlock, slot = false, activeExerciseId = null, holdAtEnd = false)
+                filler.forEach { unit ->
+                    var part = -1
+                    unit.forEach { step ->
+                        steps += when (step) {
+                            is WorkStep -> {
+                                if (step.side != Side.RIGHT) part++
+                                step.copy(blockIndex = extraBlock, fromRests = true, restPart = part)
+                            }
+                            // The rests between them are their own, not rests to fill.
+                            is RestStep -> step.plain().copy(blockIndex = extraBlock, slot = false)
+                        }
                     }
                 }
                 filler.clear()
@@ -242,13 +267,17 @@ object WorkoutCompiler {
 
         /**
          * The other workout's exercises in its order, each a set (both sides of a timed one-sided
-         * hold) with the rest after it. With [eachOnce], only the first set of each: unlike sets, a
-         * filler exercise isn't repeated, so three rounds of a superset take three different ones.
+         * hold) with the rest after it; in the blocks of [together], a whole round of the superset
+         * or circuit is one. With [eachOnce], only the first set of each (the first round of a
+         * superset): unlike sets, a filler exercise isn't repeated.
          */
-        private fun units(source: List<WorkoutStep>, eachOnce: Boolean): List<List<WorkoutStep>> {
+        private fun units(source: List<WorkoutStep>, eachOnce: Boolean, together: Set<Int> = emptySet()): List<List<WorkoutStep>> {
             val units = mutableListOf<MutableList<WorkoutStep>>()
             source.forEach { step ->
-                val startsNew = step is WorkStep && step.side != Side.RIGHT
+                val first = units.lastOrNull()?.first() as? WorkStep
+                val sameRound = step is WorkStep && first != null && step.blockIndex in together &&
+                    first.blockIndex == step.blockIndex && first.round == step.round
+                val startsNew = step is WorkStep && step.side != Side.RIGHT && !sameRound
                 if (startsNew || units.isEmpty()) units += mutableListOf(step) else units.last() += step
             }
             val sets = units.filter { it.first() is WorkStep }
@@ -257,6 +286,10 @@ object WorkoutCompiler {
                 .filter { unit -> (unit.first() as WorkStep).let { it.set == 1 && it.round == 1 } }
                 .distinctBy { unit -> (unit.first() as WorkStep).let { it.blockIndex to it.itemIndex } }
         }
+
+        /** The exercises of a unit of the other workout, each once (one-sided holds have two steps). */
+        private fun partsOf(unit: List<WorkoutStep>): List<RestPart> =
+            unit.filterIsInstance<WorkStep>().filter { it.side != Side.RIGHT }.map { RestPart(it.exerciseId, it.target) }
 
         private fun worked(exerciseId: Long): Set<Muscle> =
             library[exerciseId]?.let { it.primaryMuscles + it.secondaryMuscles }.orEmpty()
@@ -309,20 +342,21 @@ object WorkoutCompiler {
             // With a rest-filler workout, its next exercise fills the rest, in place of any active
             // rest set here: combining the workouts is the choice that counts.
             lastFillerUnit = null
-            var target: SetTarget? = null
-            val activeId = if (fill && filler.isNotEmpty()) {
-                filler.removeFirst().also { lastFillerUnit = it }.let { (it.first() as WorkStep).also { w -> target = w.target }.exerciseId }
+            val parts = if (fill && filler.isNotEmpty()) {
+                partsOf(filler.removeFirst().also { lastFillerUnit = it })
             } else {
-                resolve(activeRest, blockIndex, itemIndex, workedMuscles)
+                listOfNotNull(resolve(activeRest, blockIndex, itemIndex, workedMuscles)?.let { RestPart(it) })
             }
-            if (activeId != null) {
-                val needed = activeRestSeconds(library.getValue(activeId))
+            if (parts.isNotEmpty()) {
+                // A round of several needs the time of each of them.
+                val each = parts.map { p -> activeRestSeconds(library.getValue(p.exerciseId)) ?: p.target?.seconds?.times(if (library.getValue(p.exerciseId).unilateral) 2 else 1) }
+                val needed = if (each.all { it == null }) null else each.sumOf { it ?: 0 }
                 if (needed != null && needed > seconds) {
-                    warnings += CompileWarning.ActiveRestTooLong(blockIndex, itemIndex, activeId, needed, seconds)
+                    warnings += CompileWarning.ActiveRestTooLong(blockIndex, itemIndex, parts.first().exerciseId, needed, seconds)
                 }
             }
             // Active rest waits at zero for the user (when the workout says so): a stretch may need longer.
-            steps += RestStep(blockIndex, seconds, activeId, holdAtEnd = activeId != null && confirmActiveRest, slot = fill, activeTarget = target)
+            steps += RestStep(blockIndex, seconds, parts, holdAtEnd = parts.isNotEmpty() && confirmActiveRest, slot = fill)
         }
 
         private fun resolve(activeRest: ActiveRest, blockIndex: Int, itemIndex: Int?, workedMuscles: Set<Muscle>): Long? =

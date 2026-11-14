@@ -25,7 +25,7 @@ class WorkoutPlayerTest {
         target = SetTarget(seconds = seconds), side = side, durationSeconds = seconds,
     )
 
-    private fun rest(seconds: Int) = RestStep(blockIndex = 0, durationSeconds = seconds, activeExerciseId = null)
+    private fun rest(seconds: Int) = RestStep(blockIndex = 0, durationSeconds = seconds)
 
     @Test
     fun openEndedSetWaitsForTheUser() {

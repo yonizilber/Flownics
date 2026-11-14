@@ -81,7 +81,7 @@ fun StepRow(step: WorkoutStep, library: Map<Long, Exercise>, modifier: Modifier 
                 val clock = formatClock(step.durationSeconds)
                 Text(
                     if (active != null) {
-                        "${stringResource(R.string.step_active_rest, clock)} · ${active.name}"
+                        "${stringResource(R.string.step_active_rest, clock)} · ${step.active.joinToString(" + ") { library[it.exerciseId]?.name ?: "?" }}"
                     } else {
                         stringResource(R.string.step_rest, clock)
                     },

@@ -9,6 +9,7 @@ import com.yonizilber.flownics.domain.model.SetTarget
 import com.yonizilber.flownics.domain.model.WorkoutBlock
 import com.yonizilber.flownics.domain.model.WorkoutItem
 import com.yonizilber.flownics.domain.model.WorkoutTemplate
+import com.yonizilber.flownics.domain.workout.RestPart
 import com.yonizilber.flownics.domain.workout.RestStep
 import com.yonizilber.flownics.domain.workout.WorkStep
 import com.yonizilber.flownics.domain.workout.WorkoutCompiler
@@ -26,7 +27,7 @@ class RestLaneTest {
     private val library = (listOf(squat, row) + (10L..14L).map(::stretch)).associateBy { it.id }
 
     private fun work(ex: Long, set: Int = 1) = WorkStep(0, 0, ex, set, 3, 1, 1, SetTarget(reps = 8), null, null)
-    private fun rest(active: Long?) = RestStep(0, 60, active, holdAtEnd = active != null, activeTarget = active?.let { SetTarget(seconds = 30) })
+    private fun rest(active: Long?) = RestStep(0, 60, listOfNotNull(active?.let { RestPart(it, SetTarget(seconds = 30)) }), holdAtEnd = active != null)
     private fun atEnd(ex: Long) = WorkStep(1, 0, ex, 1, 1, 1, 1, SetTarget(seconds = 40), null, 40, fromRests = true)
 
     /**
@@ -34,8 +35,8 @@ class RestLaneTest {
      * the round. Stretches 10–12 are in the rests, 13 and 14 wait at the end.
      */
     private val steps = listOf<WorkoutStep>(
-        work(1), rest(10), work(1, 2), RestStep(0, 15, null, slot = false), work(2), rest(11), work(1, 3), rest(12), work(2, 2),
-        atEnd(13), RestStep(1, 10, null, slot = false), atEnd(14),
+        work(1), rest(10), work(1, 2), RestStep(0, 15, slot = false), work(2), rest(11), work(1, 3), rest(12), work(2, 2),
+        atEnd(13), RestStep(1, 10, slot = false), atEnd(14),
     )
 
     private fun active(s: List<WorkoutStep>) = s.mapIndexedNotNull { i, x -> (x as? RestStep)?.activeExerciseId?.let { i to it } }.toMap()
@@ -133,11 +134,79 @@ class RestLaneTest {
         val rests = compiled.steps.filterIsInstance<RestStep>().filter { it.blockIndex == 0 }
         assertTrue(rests.filter { !it.slot }.all { it.activeExerciseId == null && it.durationSeconds == 15 })
         assertEquals(listOf(10L, 11L), rests.filter { it.slot }.map { it.activeExerciseId })
-        assertEquals(45, rests.first { it.slot }.activeTarget?.seconds)
+        assertEquals(45, rests.first { it.slot }.active.first().target?.seconds)
         // Doing one again from the first round rest never touches the superset's short rests.
         val index = compiled.steps.indexOfFirst { it is RestStep && it.slot }
         val out = checkNotNull(RestLane.again(compiled.steps, index, library, emptySet(), newBlock = 2))
         assertTrue(out.steps.filterIsInstance<RestStep>().filter { !it.slot }.all { it.activeExerciseId == null })
         assertEquals(listOf(11L, 12L, 13L, 14L), endIds(out.steps))
+    }
+
+    /** Strength with three rests to fill; the other workout is a superset of two stretches, three rounds. */
+    private fun withSupersetFiller(together: Boolean, repeat: Boolean = true): List<WorkoutStep> {
+        val strength = WorkoutTemplate(
+            id = 1, name = "Strength",
+            blocks = listOf(WorkoutBlock(items = listOf(WorkoutItem(squat.id, sets = 4, target = SetTarget(reps = 8), restSeconds = 90)))),
+            restFiller = RestFiller(workoutId = 2, repeatSets = repeat, roundsTogether = together),
+        )
+        val pair = WorkoutTemplate(
+            id = 2, name = "Mobility",
+            blocks = listOf(
+                WorkoutBlock(
+                    structure = BlockStructure.CIRCUIT, rounds = 3, roundRestSeconds = 20,
+                    items = listOf(WorkoutItem(10, sets = 1, target = SetTarget(seconds = 30), restSeconds = 5), WorkoutItem(11, sets = 1, target = SetTarget(seconds = 30), restSeconds = 5)),
+                ),
+                WorkoutBlock(items = listOf(WorkoutItem(12, sets = 2, target = SetTarget(seconds = 40), restSeconds = 10))),
+            ),
+        )
+        return WorkoutCompiler.compile(strength, library, mapOf(1L to strength, 2L to pair)).steps
+    }
+
+    @Test
+    fun aSupersetOfTheOtherWorkoutGoesIntoEachRestAsARound() {
+        val steps = withSupersetFiller(together = true)
+        val rests = steps.filterIsInstance<RestStep>().filter { it.slot }
+        // Three rests between four sets: a round of the pair in each.
+        assertEquals(listOf(listOf(10L, 11L), listOf(10L, 11L), listOf(10L, 11L)), rests.map { r -> r.active.map { it.exerciseId } })
+        assertEquals(30, rests.first().active[1].target?.seconds)
+        // Then stretch 12's two sets at the end, one by one.
+        assertEquals(listOf(12L, 12L), endIds(steps))
+        // The lane shows a round as one entry.
+        assertEquals(listOf(10L, 11L), RestLane.entries(steps, 0).first().exerciseIds)
+    }
+
+    @Test
+    fun oneExerciseARestWhenSupersetsAreNotKeptTogether() {
+        val rests = withSupersetFiller(together = false).filterIsInstance<RestStep>().filter { it.slot }
+        assertEquals(listOf(10L, 11L, 10L), rests.map { it.activeExerciseId })
+        assertTrue(rests.all { it.active.size == 1 })
+    }
+
+    @Test
+    fun aRoundThatGoesToTheEndStaysARound() {
+        val steps = withSupersetFiller(together = true)
+        val first = steps.indexOfFirst { it is RestStep && it.slot }
+        val out = checkNotNull(RestLane.again(steps, first, library, emptySet(), newBlock = 2))
+        // One more round in the rests pushes the last round out: it is done at the end, both together, before stretch 12.
+        val end = out.steps.filterIsInstance<WorkStep>().filter { it.fromRests }
+        assertEquals(listOf(10L, 11L, 12L, 12L), end.map { it.exerciseId })
+        assertEquals(listOf(0, 1, 0, 0), end.map { it.restPart })
+        val atEnd = RestLane.entries(out.steps, 0).filter { it.status == LaneStatus.AT_END }
+        assertEquals(listOf(listOf(10L, 11L), listOf(12L), listOf(12L)), atEnd.map { it.exerciseIds })
+        // Brought back into a rest, it comes back whole.
+        val back = checkNotNull(RestLane.pick(out.steps, first, atEnd.first(), library, emptySet(), newBlock = 2))
+        assertEquals(listOf(10L, 11L), (back.steps[first] as RestStep).active.map { it.exerciseId })
+    }
+
+    @Test
+    fun aRoundSkippedThenNotNowMovesOnWhole() {
+        val steps = withSupersetFiller(together = true, repeat = false)
+        // Without repeats: one round of the pair, then stretch 12 once.
+        val rests = steps.filterIsInstance<RestStep>().filter { it.slot }
+        assertEquals(listOf(listOf(10L, 11L), listOf(12L)), rests.filter { it.active.isNotEmpty() }.map { r -> r.active.map { it.exerciseId } })
+        val first = steps.indexOfFirst { it is RestStep && it.slot }
+        val out = checkNotNull(RestLane.postpone(steps, first, library, emptySet(), newBlock = 2))
+        val after = out.steps.filterIsInstance<RestStep>().filter { it.slot }.map { r -> r.active.map { it.exerciseId } }
+        assertEquals(listOf(emptyList(), listOf(10L, 11L), listOf(12L)), after)
     }
 }

@@ -585,7 +585,7 @@ private fun RestFillerCard(
                     others.forEach { w ->
                         DropdownMenuItem(
                             text = { Text(w.name) },
-                            onClick = { onChange(RestFiller(w.id, filler?.leftoversAtEnd ?: true, filler?.repeatSets ?: false)); menu = false },
+                            onClick = { onChange(filler?.copy(workoutId = w.id) ?: RestFiller(w.id)); menu = false },
                         )
                     }
                 }
@@ -605,6 +605,20 @@ private fun RestFillerCard(
                         )
                     }
                     Switch(checked = filler.repeatSets, onCheckedChange = { onChange(filler.copy(repeatSets = it)) })
+                }
+                // Only when the other workout has a superset or circuit to keep together.
+                if (others.firstOrNull { it.id == filler.workoutId }?.blocks?.any { it.structure == BlockStructure.CIRCUIT && it.items.size > 1 } == true) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.wedit_filler_rounds), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                stringResource(if (filler.roundsTogether) R.string.wedit_filler_rounds_on else R.string.wedit_filler_rounds_off),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(checked = filler.roundsTogether, onCheckedChange = { onChange(filler.copy(roundsTogether = it)) })
+                    }
                 }
                 compiled?.takeIf { it.fillerTotal > 0 }?.let { c ->
                     val atEnd = if (filler.leftoversAtEnd) c.fillerTotal - c.fillerUsed else 0

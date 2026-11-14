@@ -89,4 +89,6 @@
     <string name="settings_cue_voice_hint">מכריזה על כל תרגיל ומנוחה, בשפת האפליקציה</string>
     <string name="settings_cue_vibrate">רטט</string>
     <string name="settings_cue_vibrate_hint">רטט בתחילת כל צעד</string>
+    <string name="player_round_in_rest">סבב של %1$d, אחד אחרי השני</string>
+    <string name="say_then">" ואז "</string>
 </resources>

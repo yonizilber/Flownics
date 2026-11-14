@@ -89,4 +89,6 @@
     <string name="settings_cue_voice_hint">Announces each exercise and rest, in the app\'s language</string>
     <string name="settings_cue_vibrate">Vibration</string>
     <string name="settings_cue_vibrate_hint">Vibrates when each step starts</string>
+    <string name="player_round_in_rest">A round of %1$d, one after the other</string>
+    <string name="say_then">" then "</string>
 </resources>

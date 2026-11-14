@@ -154,4 +154,7 @@
     <string name="player_hold_all_hint">כשטיימר מגיע לאפס הוא ממשיך לספור במינוס, ועובר לשלב הבא רק כשלוחצים ״הבא״. לכל השלבים שעל זמן באימון הזה.</string>
     <string name="player_map_added">נוסף עכשיו</string>
     <string name="player_add_set_none">אין כאן סט להוסיף אליו עוד אחד.</string>
+    <string name="wedit_filler_rounds">סופר-סט נכנס שלם</string>
+    <string name="wedit_filler_rounds_on">בכל מנוחה נכנס סבב שלם של הסופר-סט או הסבב, התרגילים אחד אחרי השני</string>
+    <string name="wedit_filler_rounds_off">תרגיל אחד בכל מנוחה, גם מתוך סופר-סט</string>
 </resources>
