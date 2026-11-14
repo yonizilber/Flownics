@@ -62,5 +62,8 @@ object DatabaseModule {
     fun providePlanDao(database: FlownicsDatabase): PlanDao = database.planDao()
 
     @Provides
+    fun provideRunStructureDao(database: FlownicsDatabase): com.yonizilber.flownics.data.local.db.dao.RunStructureDao = database.runStructureDao()
+
+    @Provides
     fun provideWellnessDao(database: FlownicsDatabase): com.yonizilber.flownics.data.local.db.dao.WellnessDao = database.wellnessDao()
 }

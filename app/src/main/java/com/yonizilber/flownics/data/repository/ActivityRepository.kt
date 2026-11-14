@@ -25,6 +25,7 @@ class ActivityRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dao: ActivityDao,
     private val json: Json,
+    private val structures: com.yonizilber.flownics.data.local.db.dao.RunStructureDao,
 ) {
     /** Activities on their own: recordings attached to a workout are shown with that workout instead. */
     fun observeAll(): Flow<List<Activity>> = dao.observeAll().map { rows -> rows.filter { it.attachedSessionId == null }.map { it.toDomain(json) } }
@@ -51,6 +52,7 @@ class ActivityRepository @Inject constructor(
     /** Also deletes the recording kept for it, if any. */
     suspend fun delete(id: Long) {
         dao.delete(id)
+        structures.delete(id)
         File(context.filesDir, "fit/$id.fit").delete()
         File(context.filesDir, "hr/$id.csv").delete()
     }

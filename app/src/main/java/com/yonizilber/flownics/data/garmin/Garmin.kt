@@ -66,6 +66,7 @@ class FitImporter @Inject constructor(
     @ApplicationContext private val context: Context,
     private val activities: ActivityRepository,
     private val linker: RecordingLinker,
+    private val structures: com.yonizilber.flownics.data.run.RunStructures,
 ) {
     suspend fun import(bytes: ByteArray): ImportOutcome = withContext(Dispatchers.IO) {
         val fit = unwrap(bytes)
@@ -79,6 +80,8 @@ class FitImporter @Inject constructor(
         File(context.filesDir, FIT_DIR).apply { mkdirs() }.resolve("$id.fit").writeBytes(fit)
         // Recorded during a workout in the app? Then it joins that workout.
         linker.link()
+        // A run's structure is made once, now, for the coach and the activity screen.
+        activities.get(id)?.let { structures.get(it) }
         ImportOutcome(id, alreadyThere = false)
     }
 

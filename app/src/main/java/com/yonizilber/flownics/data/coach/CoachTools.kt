@@ -48,6 +48,8 @@ object CoachToolNames {
     const val PROPOSE_ACTIVITY = "propose_activity"
     const val PLAN_LIST = "plan_list"
     const val WELLNESS = "sleep_recovery"
+    const val RUN_STRUCTURE = "run_structure"
+    const val RUN_DETAIL = "run_detail"
     const val PROPOSE_PLAN = "propose_plan"
     const val MEMORY_SAVE = "memory_save"
     const val MEMORY_DELETE = "memory_delete"
@@ -77,6 +79,7 @@ class CoachTools @Inject constructor(
     private val store: CoachStore,
     private val zones: com.yonizilber.flownics.data.garmin.Zones,
     private val wellness: com.yonizilber.flownics.data.garmin.WellnessSync,
+    private val runs: com.yonizilber.flownics.data.run.RunStructures,
 ) {
     val specs: List<AiToolSpec> = listOf(
         AiToolSpec(
@@ -91,6 +94,27 @@ class CoachTools @Inject constructor(
                     "from_date" to AiSchema.Str(description = "YYYY-MM-DD, inclusive."),
                     "to_date" to AiSchema.Str(description = "YYYY-MM-DD, inclusive."),
                     "exercise_id" to AiSchema.Integer(description = "One exercise's id, or 0 for all."),
+                ),
+            ),
+        ),
+        AiToolSpec(
+            CoachToolNames.RUN_STRUCTURE,
+            "One recorded run (or walk, hike) by its activity id, as its structure: each stretch the pace was even (or rising, " +
+                "falling) is a segment with its pace from start to end, grade-adjusted pace, climb, heart rate (start, end, peak; and for a " +
+                "long enough segment the level it settled at and its drift) and how far the data is from the line; repeats rep by rep. " +
+                "Worked out by the app from the watch's second-by-second recording. Use it to judge a run's intervals, build-up or drift.",
+            AiSchema.Obj(mapOf("activity_id" to AiSchema.Integer())),
+        ),
+        AiToolSpec(
+            CoachToolNames.RUN_DETAIL,
+            "The readings of a recorded run between two times, binned: time, pace, grade-adjusted pace, heart rate, cadence, altitude " +
+                "and grade per step. For looking closer at one stretch (a rep, the last kilometres); ask for a short range, at most 150 rows.",
+            AiSchema.Obj(
+                mapOf(
+                    "activity_id" to AiSchema.Integer(),
+                    "from_minute" to AiSchema.Integer(description = "Minutes from the start of the recording."),
+                    "to_minute" to AiSchema.Integer(description = "Minutes from the start, after from_minute."),
+                    "step_seconds" to AiSchema.Integer(description = "Seconds per row: 5, 10, 15, 30 or 60."),
                 ),
             ),
         ),
@@ -204,8 +228,24 @@ class CoachTools @Inject constructor(
                         activities = activities.observeAll().first(),
                         watch = activities.observeAttached().first(),
                         zones = zones.info.value?.zones,
+                        runSummaries = runSummaries(from, to, zone),
                     ),
                 )
+            }
+            CoachToolNames.RUN_STRUCTURE -> {
+                val a = runActivity(call.args)
+                val s = runs.get(a) ?: bad("Activity ${a.id} has no second-by-second recording to read (only watch recordings kept on the phone do).")
+                Read(com.yonizilber.flownics.domain.run.RunFormat.structure(s, "Activity ${a.id}, ${CoachFormat.day(a.startedAtMillis, zone)}, ${a.type.name.lowercase()}:"))
+            }
+            CoachToolNames.RUN_DETAIL -> {
+                val a = runActivity(call.args)
+                val samples = runs.samples(a) ?: bad("Activity ${a.id} has no second-by-second recording to read.")
+                val from = (call.args.long("from_minute") ?: 0L).toInt().coerceAtLeast(0) * 60
+                val to = (call.args.long("to_minute") ?: bad("to_minute is required")).toInt() * 60
+                if (to <= from) bad("to_minute must be after from_minute")
+                val step = (call.args.long("step_seconds") ?: 30L).toInt().coerceIn(5, 300).let { it - it % 5 }
+                if ((to - from) / step > MAX_DETAIL_ROWS) bad("That is ${(to - from) / step} rows; ask for a shorter range or a longer step (at most $MAX_DETAIL_ROWS rows).")
+                Read(com.yonizilber.flownics.domain.run.RunFormat.detail(com.yonizilber.flownics.domain.run.RunAnalysis.detail(samples, from, to, step), step))
             }
             CoachToolNames.WELLNESS -> {
                 val (from, to) = range(call.args)
@@ -343,6 +383,21 @@ class CoachTools @Inject constructor(
         return from to to
     }
 
+    /** The structure of each recorded run in the range, in a few words. */
+    private suspend fun runSummaries(from: LocalDate, to: LocalDate, zone: ZoneId): Map<Long, String> {
+        val start = from.atStartOfDay(zone).toInstant().toEpochMilli()
+        val end = to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        return activities.observeAll().first()
+            .filter { it.startedAtMillis in start until end && runs.applies(it) }
+            .mapNotNull { a -> runs.get(a)?.let { a.id to com.yonizilber.flownics.domain.run.RunFormat.summary(it) } }
+            .toMap()
+    }
+
+    private suspend fun runActivity(args: JsonObject): com.yonizilber.flownics.domain.model.Activity {
+        val id = args.long("activity_id") ?: bad("activity_id is required")
+        return activities.get(id) ?: bad("There is no activity $id. training_log lists them with their ids.")
+    }
+
     private fun date(args: JsonObject, key: String): LocalDate = try {
         LocalDate.parse(args.string(key).orEmpty().trim())
     } catch (e: DateTimeParseException) {
@@ -360,6 +415,7 @@ class CoachTools @Inject constructor(
         const val MAX_SEARCH = 60
         // Not an empty string: Gemini may refuse an empty enum value.
         const val ANY = "ANY"
+        const val MAX_DETAIL_ROWS = 150
     }
 }
 

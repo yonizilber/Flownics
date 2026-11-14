@@ -65,7 +65,12 @@ class ActivityEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: ActivityRepository,
     zones: Zones,
+    private val runs: com.yonizilber.flownics.data.run.RunStructures,
 ) : ViewModel() {
+
+    /** A recorded run's structure, and its readings every 10 s for the chart. */
+    private val _structure = MutableStateFlow<Pair<com.yonizilber.flownics.domain.run.RunStructure, List<com.yonizilber.flownics.domain.run.RunAnalysis.DetailRow>>?>(null)
+    val structure: StateFlow<Pair<com.yonizilber.flownics.domain.run.RunStructure, List<com.yonizilber.flownics.domain.run.RunAnalysis.DetailRow>>?> = _structure.asStateFlow()
 
     val zonesInfo: StateFlow<ZonesInfo?> = zones.info
 
@@ -83,6 +88,11 @@ class ActivityEditViewModel @Inject constructor(
             val existing = if (activityId > 0) repository.get(activityId) else null
             original = existing
             _state.value = existing?.toState() ?: ActivityEditorState(loading = false)
+            existing?.let { a ->
+                val s = runs.get(a) ?: return@let
+                val rows = runs.samples(a)?.let { com.yonizilber.flownics.domain.run.RunAnalysis.detail(it, 0, s.durationS, CHART_STEP) }.orEmpty()
+                _structure.value = s to rows
+            }
         }
     }
 
@@ -204,6 +214,7 @@ class ActivityEditViewModel @Inject constructor(
     }
 
     private companion object {
+        const val CHART_STEP = 10
         val HR_RANGE = 30..250
         const val MAX_REPEATS = 50
     }

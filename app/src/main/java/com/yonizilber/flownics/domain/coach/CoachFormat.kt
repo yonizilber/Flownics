@@ -126,6 +126,8 @@ object CoachFormat {
         /** Watch recordings made during workouts, by session id. */
         watch: Map<Long, Activity> = emptyMap(),
         zones: HeartZones? = null,
+        /** A few words on each recorded run's structure, by activity id (RunFormat.summary). */
+        runSummaries: Map<Long, String> = emptyMap(),
     ): String = buildString {
         val start = from.atStartOfDay(zone).toInstant().toEpochMilli()
         val end = to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -151,6 +153,7 @@ object CoachFormat {
             appendLine()
             // Kilometre splits only when few activities are shown: a long range stays readable.
             append(activityDetail(a, zone, withSplits = shownActivities.size <= SPLITS_UP_TO, zones = zones))
+            runSummaries[a.id]?.let { appendLine().append("  Structure: $it; run_structure(activity_id=${a.id}) has every segment, run_detail the readings.") }
             appendLine()
         }
         shownSessions.forEach { s ->

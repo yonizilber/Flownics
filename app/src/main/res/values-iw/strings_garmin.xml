@@ -81,4 +81,20 @@
     <string name="sensor_selected">נבחר</string>
     <string name="sensor_bluetooth_off">ה-Bluetooth כבוי.</string>
     <string name="sensor_denied">בלי הרשאת Bluetooth האפליקציה לא יכולה לחפש את החיישן. אפשר לאשר בהגדרות האפליקציה של אנדרואיד.</string>
+    <string name="run_structure_title">מבנה</string>
+    <string name="run_type_steady">קבועה</string>
+    <string name="run_type_progressive">מתגברת</string>
+    <string name="run_type_intervals">אינטרוולים</string>
+    <string name="run_type_variable">משתנה</string>
+    <string name="run_structure_caption">למעלה: הקצב כל 10 שניות (קו דק, מהיר יותר למעלה) והמקטעים שהאפליקציה מצאה בו (קווים עבים; פס מוצלל איפה שמקטע לא אחיד מספיק לקו, מהאחוזון ה-10 עד ה-90 שלו). למטה: הדופק, בסולם משלו. הזמן רץ משמאל לימין. זה מה שהמאמן קורא במקום כל שנייה.</string>
+    <string name="run_structure_error">הקווים של המקטעים רחוקים מהקצב של כל 5 שניות ב-±%1$.1f שנ׳/ק״מ (שורש ממוצע הריבועים).</string>
+    <string name="run_structure_uneven_time">%1$s לא אחידים מספיק לקו.</string>
+    <string name="run_structure_all_uneven">לא אחיד לאורך כל הדרך; כל מקטע מתואר בפיזור שלו.</string>
+    <string name="run_segment_uneven">לא אחיד %1$s–%2$s</string>
+    <string name="run_segment_settled">התייצב על %1$d, %2$+.1f לדקה</string>
+    <string name="run_structure_all">כל %1$d המקטעים</string>
+    <string name="run_structure_fewer">פחות (מתוך %1$d)</string>
+    <string name="run_repeats_title">%1$d חזרות, אחת אחת</string>
+    <string name="run_pace_chart_description">קצב עם %1$d מקטעים, מ-%2$s עד %3$s לק״מ</string>
+    <string name="run_heart_chart_description">דופק מ-%1$d עד %2$d</string>
 </resources>

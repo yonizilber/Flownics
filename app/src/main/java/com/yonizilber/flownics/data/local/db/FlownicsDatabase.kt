@@ -14,6 +14,8 @@ import com.yonizilber.flownics.data.local.db.dao.SessionDao
 import com.yonizilber.flownics.data.local.db.dao.TransferDao
 import com.yonizilber.flownics.data.local.db.dao.WorkoutTemplateDao
 import com.yonizilber.flownics.data.local.db.dao.WellnessDao
+import com.yonizilber.flownics.data.local.db.dao.RunStructureDao
+import com.yonizilber.flownics.data.local.db.entity.RunStructureEntity
 import com.yonizilber.flownics.data.local.db.entity.GarminRawEntity
 import com.yonizilber.flownics.data.local.db.entity.WellnessDayEntity
 import com.yonizilber.flownics.data.local.db.entity.ActivityEntity
@@ -47,8 +49,9 @@ import com.yonizilber.flownics.data.local.db.entity.WorkoutTemplateEntity
         CalendarLinkEntity::class,
         GarminRawEntity::class,
         WellnessDayEntity::class,
+        RunStructureEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = true,
 )
 abstract class FlownicsDatabase : RoomDatabase() {
@@ -71,6 +74,8 @@ abstract class FlownicsDatabase : RoomDatabase() {
     abstract fun planDao(): PlanDao
 
     abstract fun wellnessDao(): WellnessDao
+
+    abstract fun runStructureDao(): RunStructureDao
 }
 
 // v1 → v2: workout templates. The SQL must match app/schemas/…/2.json exactly; the migration test
@@ -341,8 +346,15 @@ val MIGRATION_15_16 = object : Migration(15, 16) {
     }
 }
 
+// v16 → v17: each recorded run's structure (segments, repeats), made from its FIT file.
+val MIGRATION_16_17 = object : Migration(16, 17) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `run_structures` (`activityId` INTEGER NOT NULL, `externalId` TEXT NOT NULL, `version` INTEGER NOT NULL, `json` TEXT NOT NULL, PRIMARY KEY(`activityId`))")
+    }
+}
+
 // Every schema change gets a real Migration here. See DatabaseModule.
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
-    MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
+    MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17,
 )

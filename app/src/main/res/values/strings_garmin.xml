@@ -80,4 +80,20 @@
     <string name="sensor_selected">chosen</string>
     <string name="sensor_bluetooth_off">Bluetooth is off.</string>
     <string name="sensor_denied">Without Bluetooth permission the app can\'t look for the sensor. You can allow it in the app\'s Android settings.</string>
+    <string name="run_structure_title">Structure</string>
+    <string name="run_type_steady">Steady</string>
+    <string name="run_type_progressive">Building up</string>
+    <string name="run_type_intervals">Intervals</string>
+    <string name="run_type_variable">Varied</string>
+    <string name="run_structure_caption">Top: pace every 10 seconds (thin line, faster higher) and the segments the app found in it (thick lines; a shaded band where a segment is too uneven for a line, from its 10th to its 90th percentile). Below: heart rate on its own scale. Time runs left to right. This is what the coach reads instead of every second.</string>
+    <string name="run_structure_error">The segments\' lines are off the 5-second pace by ±%1$.1f s/km (root mean square).</string>
+    <string name="run_structure_uneven_time">%1$s too uneven for a line.</string>
+    <string name="run_structure_all_uneven">Too uneven throughout for lines; each segment is told by its spread.</string>
+    <string name="run_segment_uneven">uneven %1$s–%2$s</string>
+    <string name="run_segment_settled">settled %1$d, %2$+.1f/min</string>
+    <string name="run_structure_all">All %1$d segments</string>
+    <string name="run_structure_fewer">Fewer (of %1$d)</string>
+    <string name="run_repeats_title">%1$d repeats, rep by rep</string>
+    <string name="run_pace_chart_description">Pace with %1$d segments, from %2$s to %3$s per km</string>
+    <string name="run_heart_chart_description">Heart rate from %1$d to %2$d</string>
 </resources>

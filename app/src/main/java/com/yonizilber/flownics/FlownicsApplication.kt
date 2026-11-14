@@ -7,6 +7,7 @@ import com.yonizilber.flownics.data.di.ApplicationScope
 import com.yonizilber.flownics.data.garmin.RecordingLinker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import com.yonizilber.flownics.calendar.CalendarSync
 import javax.inject.Inject
 import android.app.Application
@@ -30,6 +31,12 @@ class FlownicsApplication : Application() {
     lateinit var wellness: com.yonizilber.flownics.data.garmin.WellnessSync
 
     @Inject
+    lateinit var runStructures: com.yonizilber.flownics.data.run.RunStructures
+
+    @Inject
+    lateinit var activities: com.yonizilber.flownics.data.repository.ActivityRepository
+
+    @Inject
     @ApplicationScope
     lateinit var scope: CoroutineScope
 
@@ -42,6 +49,10 @@ class FlownicsApplication : Application() {
         scope.launch { linker.link() }
         // Days kept from Garmin are read again when this version reads them differently.
         scope.launch { wellness.rebuildIfReaderChanged() }
+        // Runs imported before structures existed (or made by an older version) get theirs.
+        scope.launch {
+            runStructures.backfill(activities.observeAll().first() + activities.observeAttached().first().values)
+        }
         GarminSyncWorker.schedule(this, garmin.settings.value.hasKey)
     }
 }

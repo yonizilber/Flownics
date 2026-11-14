@@ -75,6 +75,7 @@ import java.time.format.FormatStyle
 @Composable
 fun ActivityEditScreen(onClose: () -> Unit, onSaved: () -> Unit, viewModel: ActivityEditViewModel = hiltViewModel()) {
     val s by viewModel.state.collectAsStateWithLifecycle()
+    val structure by viewModel.structure.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var pickDate by rememberSaveable { mutableStateOf(false) }
     var pickTime by rememberSaveable { mutableStateOf(false) }
@@ -113,6 +114,7 @@ fun ActivityEditScreen(onClose: () -> Unit, onSaved: () -> Unit, viewModel: Acti
             val zonesInfo by viewModel.zonesInfo.collectAsStateWithLifecycle()
             viewModel.saved?.metrics?.let { m ->
                 RecordingCard(m)
+                structure?.let { (s, rows) -> RunStructureCard(s, rows) }
                 zonesInfo?.let { z -> ZonesBar(m.hrHistogram, z.zones, z.maxFromRecordings) }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
