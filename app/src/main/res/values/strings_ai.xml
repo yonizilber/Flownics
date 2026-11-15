@@ -89,7 +89,8 @@
     <string name="ai_error_invalid_key">%1$s rejected the key. Check it in AI settings.</string>
     <string name="ai_error_no_access">This key can\'t use the chosen model: %1$s</string>
     <string name="ai_error_rate_limited">Too many requests for this key right now. Wait a minute and try again.</string>
-    <string name="ai_error_overloaded">%1$s is overloaded at the moment. Try again shortly.</string>
+    <string name="ai_error_daily_quota">This key\'s daily quota for the model is used up. It renews tomorrow; meanwhile another model or provider (Settings → AI) may still work.</string>
+    <string name="ai_error_overloaded">%1$s is overloaded at the moment (the app already retried several times). Try again shortly, or pick another model in Settings → AI.</string>
     <string name="ai_error_network">No connection. Check the internet and try again.</string>
     <string name="ai_error_timeout">The answer was still coming after several minutes, so the app stopped waiting. Try again, or pick a faster model in the settings. The attempt is in the activity log.</string>
     <string name="ai_error_refused">The model declined to answer this.</string>

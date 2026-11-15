@@ -164,29 +164,31 @@ class GeminiAiClient @Inject constructor(
         }
     }
 
-    /** Starts the stream. Only a refusal before anything was sent is retried: nothing is lost then. */
+    /**
+     * Starts the stream. Only a refusal before anything was sent is retried (nothing is lost
+     * then): overloads and short rate limits, with growing waits, each shown on the waiting card.
+     */
     private suspend fun open(onProgress: (AiProgress) -> Unit, request: suspend () -> ResponseBody): ResponseBody {
-        // 503 is almost always a short overload on Google's side (Lectura measured this); two
-        // spaced retries absorb most of it, and a lasting one is reported rather than waited out.
-        for ((attempt, delayMs) in (OVERLOAD_RETRY_DELAYS_MS + null).withIndex()) {
+        var attempt = 0
+        while (true) {
             try {
                 return request()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: HttpException) {
-                if (e.code() == 503 && delayMs != null) {
-                    onProgress(AiProgress.Retrying(attempt + 1))
-                    delay(delayMs)
-                    continue
-                }
-                throw toAiException(e)
+                val error = runCatching {
+                    json.decodeFromString<GeminiErrorEnvelope>(e.response()?.errorBody()?.string().orEmpty()).error
+                }.getOrNull()
+                val wait = GeminiErrors.waitBeforeRetry(attempt, e.code(), error) ?: throw GeminiErrors.toException(e.code(), error)
+                attempt++
+                onProgress(AiProgress.Retrying(attempt))
+                delay(wait)
             } catch (e: InterruptedIOException) {
                 throw AiException.Timeout(e, stalled = true)
             } catch (e: IOException) {
                 throw AiException.Network(e)
             }
         }
-        error("unreachable")
     }
 
     /**
@@ -203,23 +205,7 @@ class GeminiAiClient @Inject constructor(
         }
     }
 
-    private fun toAiException(e: HttpException): AiException {
-        val error = runCatching {
-            json.decodeFromString<GeminiErrorEnvelope>(e.response()?.errorBody()?.string().orEmpty()).error
-        }.getOrNull()
-        val message = error?.message.orEmpty()
-        return when {
-            // Google answers a bad key with 400 INVALID_ARGUMENT, not 401.
-            e.code() == 401 || "API key not valid" in message || "API_KEY_INVALID" in message -> AiException.InvalidKey(provider)
-            e.code() == 403 -> AiException.NoAccess(provider, message)
-            e.code() == 429 -> AiException.RateLimited(provider)
-            e.code() == 503 -> AiException.Overloaded(provider)
-            else -> AiException.Service(provider, e.code(), message.ifBlank { e.message() })
-        }
-    }
-
     private companion object {
-        val OVERLOAD_RETRY_DELAYS_MS = listOf(2_000L, 5_000L)
         const val DATA = "data:"
     }
 }

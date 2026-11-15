@@ -120,8 +120,9 @@ sealed class AiException(message: String, cause: Throwable? = null, val usage: A
     class NoKey(val provider: AiProvider) : AiException("No API key for $provider")
     class InvalidKey(val provider: AiProvider) : AiException("The $provider key was rejected")
     class NoAccess(val provider: AiProvider, val detail: String) : AiException(detail)
-    class RateLimited(val provider: AiProvider) : AiException("Rate limited by $provider")
-    class Overloaded(val provider: AiProvider) : AiException("$provider is overloaded")
+    /** [detail] is the provider's own words (which quota, for how long), for the activity log. [daily]: a per-day quota, not worth waiting for. */
+    class RateLimited(val provider: AiProvider, val detail: String = "", val daily: Boolean = false) : AiException("Rate limited by $provider")
+    class Overloaded(val provider: AiProvider, val detail: String = "") : AiException("$provider is overloaded")
     class Network(cause: Throwable) : AiException("Network error", cause)
 
     /** [stalled]: the provider stopped sending anything mid-answer; otherwise the overall limit was hit. */
@@ -136,14 +137,14 @@ sealed class AiException(message: String, cause: Throwable? = null, val usage: A
 /** A short, key-free reason for the activity log, so a failure there says what actually happened. */
 fun AiException.logDetail(): String = when (this) {
     is AiException.Service -> "HTTP $status: $detail"
-    is AiException.Overloaded -> "Overloaded (503/529)"
-    is AiException.RateLimited -> "Rate limited (429)"
+    is AiException.Overloaded -> "Overloaded (503/529)" + detail.takeIf { it.isNotBlank() }?.let { ": $it" }.orEmpty()
+    is AiException.RateLimited -> (if (daily) "Daily quota used up (429)" else "Rate limited (429)") + detail.takeIf { it.isNotBlank() }?.let { ": $it" }.orEmpty()
     is AiException.Timeout -> if (stalled) "Stalled: nothing received for a while" else "Overall time limit"
     is AiException.Truncated -> "Cut off at the output limit"
     is AiException.Refused -> "Declined" + (detail?.let { ": $it" } ?: "")
     is AiException.Network -> "Network: " + (cause?.javaClass?.simpleName ?: "?")
     else -> message.orEmpty()
-}.take(200)
+}.take(300)
 
 /**
  * What a running call is doing, reported as the answer streams in. Each report also tells the

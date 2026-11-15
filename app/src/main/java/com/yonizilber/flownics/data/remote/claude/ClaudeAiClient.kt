@@ -80,7 +80,7 @@ class ClaudeAiClient @Inject constructor() : AiClient {
                     .request(Duration.ofMinutes(10))
                     .build(),
             )
-            .maxRetries(2)
+            .maxRetries(4)
             .build()
             .also { cached = apiKey to it }
     }

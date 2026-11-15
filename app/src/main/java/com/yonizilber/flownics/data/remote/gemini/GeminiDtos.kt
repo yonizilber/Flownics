@@ -143,4 +143,10 @@ data class GeminiUsage(
 data class GeminiErrorEnvelope(val error: GeminiError? = null)
 
 @Serializable
-data class GeminiError(val code: Int = 0, val message: String = "", val status: String = "")
+data class GeminiError(
+    val code: Int = 0,
+    val message: String = "",
+    val status: String = "",
+    // google.rpc details: RetryInfo { retryDelay: "17s" }, QuotaFailure { violations: [{ quotaId }] }.
+    val details: List<kotlinx.serialization.json.JsonObject> = emptyList(),
+)

@@ -92,7 +92,7 @@ fun aiErrorText(res: Resources, e: AiException): String = when (e) {
     is AiException.NoKey -> res.getString(R.string.ai_error_no_key, res.getString(e.provider.labelRes))
     is AiException.InvalidKey -> res.getString(R.string.ai_error_invalid_key, res.getString(e.provider.labelRes))
     is AiException.NoAccess -> res.getString(R.string.ai_error_no_access, e.detail)
-    is AiException.RateLimited -> res.getString(R.string.ai_error_rate_limited)
+    is AiException.RateLimited -> res.getString(if (e.daily) R.string.ai_error_daily_quota else R.string.ai_error_rate_limited)
     is AiException.Overloaded -> res.getString(R.string.ai_error_overloaded, res.getString(e.provider.labelRes))
     is AiException.Network -> res.getString(R.string.ai_error_network)
     is AiException.Timeout -> res.getString(if (e.stalled) R.string.ai_error_stalled else R.string.ai_error_timeout)

@@ -5,7 +5,6 @@ import com.yonizilber.flownics.domain.ai.AgentToolCall
 import com.yonizilber.flownics.domain.ai.AiException
 import com.yonizilber.flownics.domain.ai.AiModel
 import com.yonizilber.flownics.domain.ai.AiProgress
-import com.yonizilber.flownics.domain.ai.AiProvider
 import com.yonizilber.flownics.domain.ai.AiReply
 import com.yonizilber.flownics.domain.ai.AiSource
 import com.yonizilber.flownics.domain.ai.AiUsage
@@ -33,13 +32,7 @@ class GeminiStream(private val freeText: Boolean, private val onProgress: (AiPro
 
     /** [raw] is the same chunk undecoded, when the caller needs [rawParts]. */
     fun add(chunk: GeminiResponse, raw: JsonObject? = null) {
-        chunk.error?.let {
-            throw when (it.code) {
-                503 -> AiException.Overloaded(AiProvider.GEMINI)
-                429 -> AiException.RateLimited(AiProvider.GEMINI)
-                else -> AiException.Service(AiProvider.GEMINI, it.code, it.message.ifBlank { it.status })
-            }
-        }
+        chunk.error?.let { throw GeminiErrors.toException(it.code, it) }
         raw?.let { rawParts += partsOf(it) }
         chunk.usageMetadata?.let { usage = it }
         chunk.promptFeedback?.blockReason?.let { blockReason = it }

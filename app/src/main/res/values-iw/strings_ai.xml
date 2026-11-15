@@ -89,7 +89,8 @@
     <string name="ai_error_invalid_key">‏%1$s דחה את המפתח. כדאי לבדוק אותו בהגדרות ה-AI.</string>
     <string name="ai_error_no_access">המפתח הזה לא יכול להשתמש במודל שנבחר: %1$s</string>
     <string name="ai_error_rate_limited">יותר מדי בקשות למפתח הזה כרגע. כדאי לחכות דקה ולנסות שוב.</string>
-    <string name="ai_error_overloaded">‏%1$s עמוס כרגע. כדאי לנסות שוב בעוד רגע.</string>
+    <string name="ai_error_daily_quota">המכסה היומית של המפתח הזה למודל נגמרה. היא מתחדשת מחר. בינתיים אפשר לנסות מודל או ספק אחר (הגדרות ← AI).</string>
+    <string name="ai_error_overloaded">‏%1$s עמוס כרגע (האפליקציה כבר ניסתה שוב כמה פעמים). כדאי לנסות שוב בעוד רגע, או לבחור מודל אחר בהגדרות ← AI.</string>
     <string name="ai_error_network">אין חיבור. כדאי לבדוק את האינטרנט ולנסות שוב.</string>
     <string name="ai_error_timeout">התשובה עדיין הגיעה אחרי כמה דקות, אז האפליקציה הפסיקה לחכות. אפשר לנסות שוב, או לבחור מודל מהיר יותר בהגדרות. הניסיון מופיע ביומן הפעילות.</string>
     <string name="ai_error_refused">המודל סירב לענות על זה.</string>

@@ -108,6 +108,7 @@ class GeminiStreamTest {
         val busy = runCatching { failing.add(chunk("""{"error":{"code":503,"message":"overloaded","status":"UNAVAILABLE"}}""")) }.exceptionOrNull()
         assertTrue(busy is AiException.Overloaded)
         val other = runCatching { failing.add(chunk("""{"error":{"code":500,"message":"","status":"INTERNAL"}}""")) }.exceptionOrNull()
-        assertTrue(other is AiException.Service && other.status == 500 && other.detail == "INTERNAL")
+        // A 500 is a passing server fault, told like an overload (Google: retry it), with what Google said.
+        assertTrue(other is AiException.Overloaded && "HTTP 500" in other.detail && "INTERNAL" in other.detail)
     }
 }
