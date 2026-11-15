@@ -32,17 +32,24 @@ data class RunSample(
  *    penalised cost, here a straight line fitted to the grade-adjusted speed: so a build-up is one
  *    segment with a slope, not ten steps. The penalty is the noise level (median absolute
  *    difference) squared × ln n; neighbours whose lines stay within 8 s/km of one line are merged.
- * 3. Each segment's pace is told by its line and how far the data is from it; a segment too uneven
+ * 3. The data is continuous, so the lines are too unless the data says otherwise: neighbouring
+ *    lines are fitted as one continuous piecewise-linear line (a linear spline with its knots at
+ *    the boundaries), and a boundary keeps a jump only where the jump pays for itself in fit, by
+ *    the same penalised-fit rule (BIC) used to find the boundaries. A build-up after a steady part
+ *    bends; a rep starting jumps. Pauses always break the line.
+ * 4. Each segment's pace is told by its line and how far the data is from it; a segment too uneven
  *    for a line is marked variable and told by percentiles. Heart rate is fitted with first-order
- *    kinetics (HR = A + B·e^(−t/τ) + D·t), as in the heart-rate dynamics studies (Hunt et al. 2015:
- *    τ about a minute), so a long segment gets the level it settled at and its drift; a short rep,
- *    where the heart rate never settles, gets its end and peak instead of a misleading mean.
- * 4. Levels of effort by gaps between the segments' paces, repeats by a search for a pattern of
+ *    kinetics, as in the heart-rate dynamics studies (Hunt et al. 2015: τ about a minute), starting
+ *    from where the heart rate was when the segment began (HR = A + (H0 − A)·e^(−t/τ) + D·t, H0 the
+ *    previous segment's fitted end), so heart rate too is one continuous curve through the run. A
+ *    long segment gets the level it settled at and its drift; a short rep, where the heart rate
+ *    never settles, gets its end and peak instead of a misleading mean.
+ * 5. Levels of effort by gaps between the segments' paces, repeats by a search for a pattern of
  *    two to four segments done at least three times, and the run's type from those.
  */
 object RunAnalysis {
     /** Raise whenever the result for the same recording changes, so stored structures are made again. */
-    const val VERSION = 1
+    const val VERSION = 2
     const val BIN = 5
 
     private const val RECORD = 20
@@ -55,6 +62,8 @@ object RunAnalysis {
     private const val SHORT_BINS = 12
     /** Only a segment this long (3 min) has a slope worth keeping apart from a neighbour's. */
     private const val SLOPE_BINS = 36
+    /** How far (bins: a minute) a bend may sit from the boundary found for lines that jump. */
+    private const val BEND_SHIFT = 12
     private const val VARIABLE_PACE = 15.0
     private const val LEVEL_GAP_PACE = 20.0
     /** A new level of effort where one segment is this much faster than the next slower one (8 %: about 20 s/km at 4:00). */
@@ -111,7 +120,7 @@ object RunAnalysis {
         val gapY = bins.gap
         val sigma = robustSigma(moving.map { gapY[it] })
         val beta = 4 * sigma * sigma * ln(moving.size.toDouble())
-        val pieces = spans.flatMap { span ->
+        val found = spans.flatMap { span ->
             val x = DoubleArray(span.size) { span[it].toDouble() }
             val y = DoubleArray(span.size) { gapY[span[it]] }
             val starts = pelt(x, y, beta, MIN_POINTS)
@@ -119,14 +128,22 @@ object RunAnalysis {
             absorbShort(merge((0 until starts.size).map { k -> span.subList(bounds[k], bounds[k + 1]) }, bins), bins)
         }
 
-        var segments = pieces.map { describe(it, bins) }
+        val (pieces, lines) = continuousLines(found, bins)
+        var hrBefore: Double? = null
+        var segments = pieces.mapIndexed { k, p ->
+            // Heart rate carries on from the previous segment's curve when the two touch.
+            val touching = k > 0 && p.first() == pieces[k - 1].last() + 1
+            val (segment, hrEnd) = describe(p, bins, lines[k], if (touching) hrBefore else null)
+            hrBefore = hrEnd
+            segment
+        }
         val levels = levels(segments)
         segments = segments.map { s -> s.copy(level = levels.indexOfLevel(paceOf(s.gapMean))) }
         val repeats = repeats(segments)
         val movingS = moving.size * BIN
         // The error of the lines, over the segments a line tells (the uneven ones are told by percentiles).
-        val told = pieces.zip(segments).filter { !it.second.variable }.map { it.first }
-        val rms = sqrt(told.sumOf { p -> paceResiduals(p, bins).sumOf { it * it } } / max(1, told.sumOf { it.size }))
+        val told = pieces.indices.filter { !segments[it].variable }
+        val rms = sqrt(told.sumOf { k -> paceResiduals(pieces[k], bins, lines[k]).sumOf { it * it } } / max(1, told.sumOf { pieces[it].size }))
         return RunStructure(
             version = VERSION,
             type = type(segments, repeats, movingS),
@@ -422,12 +439,99 @@ object RunAnalysis {
         return out
     }
 
+    // --- One continuous line ---
+
+    /** A segment's speed line (m/s at bin x: [intercept] + [slope]·x), and whether it continues the previous one. */
+    internal class SegmentLine(val intercept: Double, val slope: Double, val joined: Boolean) {
+        fun at(x: Double) = intercept + slope * x
+    }
+
+    /**
+     * The speed lines of all segments, continuous where the data is, and the segments with their
+     * bends put where the data bends. At each boundary between neighbours that touch (no pause
+     * between), one continuous line through both (bending once, at the best place within a minute
+     * of the boundary: the boundary was found for lines that may jump, and a bend can sit a little
+     * elsewhere) is weighed against two free lines; the jump is kept only when it lowers the fit
+     * error by more than 2σ²·ln n, the price of one more number (BIC, as conservative as the
+     * segmentation's own penalty per number). Then each run of joined segments gets one continuous
+     * line. Deterministic: left to right, ties to the earlier place.
+     */
+    internal fun continuousLines(input: List<List<Int>>, bins: Bins): Pair<List<List<Int>>, List<SegmentLine>> {
+        if (input.isEmpty()) return emptyList<List<Int>>() to emptyList()
+        val pieces = input.map { it.toList() }.toMutableList()
+        val all = pieces.flatten()
+        val sigma = robustSigma(all.map { bins.speed[it] })
+        val penalty = 2 * sigma * sigma * ln(all.size.toDouble().coerceAtLeast(2.0))
+        val joined = BooleanArray(pieces.size)
+        for (k in 1 until pieces.size) {
+            val a = pieces[k - 1]
+            val b = pieces[k]
+            if (b.first() != a.last() + 1) continue
+            val apart = (spline(listOf(a), bins)?.sse ?: continue) + (spline(listOf(b), bins)?.sse ?: continue)
+            val both = a + b
+            var best: Pair<Int, Double>? = null
+            for (cut in a.size - BEND_SHIFT..a.size + BEND_SHIFT) {
+                if (cut < MIN_POINTS || both.size - cut < MIN_POINTS) continue
+                val sse = spline(listOf(both.subList(0, cut), both.subList(cut, both.size)), bins)?.sse ?: continue
+                if (best == null || sse < best.second) best = cut to sse
+            }
+            val (cut, sse) = best ?: continue
+            if (sse - apart < penalty) {
+                joined[k] = true
+                pieces[k - 1] = both.subList(0, cut)
+                pieces[k] = both.subList(cut, both.size)
+            }
+        }
+        val lines = arrayOfNulls<SegmentLine>(pieces.size)
+        var start = 0
+        while (start < pieces.size) {
+            var end = start + 1
+            while (end < pieces.size && joined[end]) end++
+            val fit = spline(pieces.subList(start, end), bins)
+            for (k in start until end) {
+                lines[k] = fit?.lines?.get(k - start)?.let { (i0, s0) -> SegmentLine(i0, s0, joined = k > start) }
+                    ?: line(pieces[k].map { it.toDouble() }, pieces[k].map { bins.speed[it] }).let { (i0, s0) -> SegmentLine(i0, s0, joined = false) }
+            }
+            start = end
+        }
+        return pieces to lines.map { it!! }
+    }
+
+    private class Spline(val lines: List<Pair<Double, Double>>, val sse: Double)
+
+    /**
+     * One continuous piecewise-linear least-squares line through consecutive [parts], bending at
+     * each part's start: speed = a + b·x + Σ cⱼ·(x − κⱼ)₊. Each part's own line follows from it.
+     */
+    private fun spline(parts: List<List<Int>>, bins: Bins): Spline? {
+        val x0 = parts.first().first().toDouble()
+        val knots = parts.drop(1).map { it.first() - 0.5 - x0 }
+        val points = parts.flatten()
+        val rows = points.map { b ->
+            val x = b - x0
+            DoubleArray(2 + knots.size) { c -> if (c == 0) 1.0 else if (c == 1) x else max(0.0, x - knots[c - 2]) }
+        }
+        val y = points.map { bins.speed[it] }
+        val coef = leastSquares(rows, y) ?: return null
+        val sse = rows.indices.sumOf { r -> val e = y[r] - rows[r].indices.sumOf { rows[r][it] * coef[it] }; e * e }
+        // Within part j the line is a + b·x + Σ_{i<j} cᵢ·(x − κᵢ): its slope and intercept, back in bin numbers.
+        val lines = parts.indices.map { j ->
+            var a = coef[0]
+            var b = coef[1]
+            for (i in 0 until j) {
+                b += coef[2 + i]
+                a -= coef[2 + i] * knots[i]
+            }
+            (a - b * x0) to b
+        }
+        return Spline(lines, sse)
+    }
+
     // --- Describing a segment ---
 
-    private fun describe(p: List<Int>, bins: Bins): RunSegment {
-        val x = p.map { it.toDouble() }
-        val (i0, slope) = line(x, p.map { bins.speed[it] })
-        val residuals = paceResiduals(p, bins)
+    /** The segment, and its heart-rate curve's value at its end (for the next one to start from). */
+    private fun describe(p: List<Int>, bins: Bins, fit: SegmentLine, hrBefore: Double?): Pair<RunSegment, Double?> {
+        val residuals = paceResiduals(p, bins, fit)
         val rms = sqrt(residuals.sumOf { it * it } / residuals.size.coerceAtLeast(1))
         val abs90 = percentile(residuals.map { abs(it) }, 0.9)
         val paces = p.map { paceOf(bins.speed[it]) }
@@ -439,13 +543,14 @@ object RunAnalysis {
         val descent = alts.zipWithNext { a, b -> max(0.0, a - b) }.sum()
         val hr = p.map { bins.hr[it] }
         val hrKnown = hr.filter { !it.isNaN() }
-        val kinetics = kinetics(p, bins)
+        val kinetics = kinetics(p, bins, hrBefore)
         return RunSegment(
             startS = p.first() * BIN,
             endS = (p.last() + 1) * BIN,
             distanceM = distance.roundToInt(),
-            speedStart = round3(i0 + slope * p.first()),
-            speedEnd = round3(i0 + slope * p.last()),
+            speedStart = round3(fit.at(p.first().toDouble())),
+            speedEnd = round3(fit.at(p.last().toDouble())),
+            joined = fit.joined,
             speedMean = round3(distance / time),
             gapMean = round3(p.map { bins.gap[it] }.average()),
             paceErrorRms = round1(rms),
@@ -467,7 +572,7 @@ object RunAnalysis {
             hrFitRms = kinetics?.rms,
             cadence = p.map { bins.cadence[it] }.filter { !it.isNaN() }.takeIf { it.isNotEmpty() }?.average()?.roundToInt(),
             powerW = p.map { bins.power[it] }.filter { !it.isNaN() }.takeIf { it.isNotEmpty() }?.average()?.roundToInt(),
-        )
+        ) to kinetics?.end
     }
 
     private fun distanceOf(p: List<Int>, bins: Bins): Double {
@@ -477,40 +582,46 @@ object RunAnalysis {
     }
 
     /** Each bin's pace against its segment's line, s/km. */
-    private fun paceResiduals(p: List<Int>, bins: Bins): List<Double> {
-        val (i0, slope) = line(p.map { it.toDouble() }, p.map { bins.speed[it] })
-        return p.map { paceOf(bins.speed[it]) - paceOf(i0 + slope * it) }
-    }
+    private fun paceResiduals(p: List<Int>, bins: Bins, fit: SegmentLine): List<Double> =
+        p.map { paceOf(bins.speed[it]) - paceOf(fit.at(it.toDouble())) }
 
-    private class Kinetics(val settled: Int, val drift: Double, val tau: Int, val rms: Double)
+    /** [end]: the fitted curve's value at the segment's end, where the next segment's curve starts. */
+    private class Kinetics(val settled: Int, val drift: Double, val tau: Int, val rms: Double, val end: Double)
 
     /**
-     * HR(t) = A + B·e^(−t/τ) + D·t over the segment, τ from a fixed grid, A, B, D by least squares.
-     * Reported only when the segment lasts at least 2τ and two minutes (before that, the heart
-     * rate is still on its way and there is no level to tell), and only when the fitted level lies
-     * within the segment's own readings and the drift is under 3 a minute.
+     * HR(t) = A + (H0 − A)·e^(−t/τ) + D·t over the segment: from H0, where the heart rate was as
+     * the segment began, towards A, drifting D a minute. H0 is [hrBefore], the previous segment's
+     * fitted end, when the two touch (so the curve is continuous), else the first 10 s of readings.
+     * τ from a fixed grid, A and D by least squares. Reported only when the segment lasts at least
+     * 2τ and two minutes (before that, the heart rate is still on its way and there is no level to
+     * tell), and only when the fitted level lies within the segment's own readings and the drift is
+     * under 3 a minute.
      */
-    private fun kinetics(p: List<Int>, bins: Bins): Kinetics? {
+    private fun kinetics(p: List<Int>, bins: Bins, hrBefore: Double?): Kinetics? {
         val points = p.mapNotNull { b -> bins.hr[b].takeIf { !it.isNaN() }?.let { ((b - p.first()) * BIN + BIN / 2.0) to it } }
         if (points.size < 12) return null
         val duration = p.size * BIN
+        val h0 = hrBefore ?: points.takeWhile { it.first < 10 }.map { it.second }.ifEmpty { listOf(points.first().second) }.average()
         var best: Triple<DoubleArray, Int, Double>? = null
         for (tau in TAUS) {
             if (duration < max(2 * tau, 120)) continue
-            val rows = points.map { (t, _) -> doubleArrayOf(1.0, exp(-t / tau), t / 60.0) }
-            val coef = leastSquares(rows, points.map { it.second }) ?: continue
-            val sse = points.indices.sumOf { k -> val e = points[k].second - rows[k].indices.sumOf { rows[k][it] * coef[it] }; e * e }
+            // HR − H0·e^(−t/τ) = A·(1 − e^(−t/τ)) + D·t
+            val rows = points.map { (t, _) -> doubleArrayOf(1 - exp(-t / tau), t / 60.0) }
+            val y = points.map { (t, hr) -> hr - h0 * exp(-t / tau) }
+            val coef = leastSquares(rows, y) ?: continue
+            val sse = points.indices.sumOf { k -> val e = y[k] - rows[k][0] * coef[0] - rows[k][1] * coef[1]; e * e }
             if (best == null || sse < best.third) best = Triple(coef, tau, sse)
         }
         val (coef, tau, sse) = best ?: return null
+        val (a, d) = coef[0] to coef[1]
+        fun curve(t: Double) = a + (h0 - a) * exp(-t / tau) + d * t / 60
         // The level reached once the change is over (at 3τ, or the end), and the drift after it.
-        val tSettle = minOf(3.0 * tau, duration.toDouble())
-        val settled = coef[0] + coef[1] * exp(-tSettle / tau) + coef[2] * tSettle / 60
+        val settled = curve(minOf(3.0 * tau, duration.toDouble()))
         val lo = points.minOf { it.second }
         val hi = points.maxOf { it.second }
         // A fit can match the curve with numbers no heart does; then it isn't told at all.
-        if (settled < lo - 3 || settled > hi + 3 || abs(coef[2]) > MAX_DRIFT) return null
-        return Kinetics(settled.roundToInt(), round1(coef[2]), tau, round1(sqrt(sse / points.size)))
+        if (settled < lo - 3 || settled > hi + 3 || abs(d) > MAX_DRIFT) return null
+        return Kinetics(settled.roundToInt(), round1(d), tau, round1(sqrt(sse / points.size)), curve(duration.toDouble()))
     }
 
     /** Normal equations for a few unknowns; null when they have no single answer. */

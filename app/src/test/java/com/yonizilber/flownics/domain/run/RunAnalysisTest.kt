@@ -76,6 +76,22 @@ class RunAnalysisTest {
     }
 
     @Test
+    fun aBendIsContinuousAndAStepIsAJump() {
+        // 15 min even, then a build-up from the same pace: the lines meet where the build-up starts.
+        val bend = checkNotNull(RunAnalysis.analyze(run({ t -> if (t < 900) 3.0 else 3.0 + 0.8 * (t - 900) / 1200.0 }, 2100)))
+        val k = bend.segments.indexOfFirst { it.speedEnd > it.speedStart + 0.3 }
+        assertTrue("segments: ${bend.segments}", k > 0)
+        val ramp = bend.segments[k]
+        assertTrue(bend.segments.joinToString("\n") { "${it.startS}-${it.endS} ${it.speedStart}->${it.speedEnd} j=${it.joined} rms=${it.paceErrorRms}" }, ramp.joined)
+        assertEquals(bend.segments[k - 1].speedEnd, ramp.speedStart, 0.03)
+        // An even pace, then a clearly faster one: a jump, kept.
+        val step = checkNotNull(RunAnalysis.analyze(run({ t -> if (t < 900) 3.0 else 3.6 }, 1800)))
+        assertEquals(2, step.segments.size)
+        assertTrue(!step.segments[1].joined)
+        assertEquals(0.6, step.segments[1].speedStart - step.segments[0].speedEnd, 0.08)
+    }
+
+    @Test
     fun intervalsAreFoundRepByRep() {
         // 10 min easy, 8 × (90 s fast, 60 s easy), 10 min easy.
         val speed = { t: Int ->
@@ -91,6 +107,8 @@ class RunAnalysisTest {
         reps.forEach { rep ->
             assertEquals(90.0, (rep.endS - rep.startS).toDouble(), 15.0)
             assertEquals(222.2, RunAnalysis.paceOf(rep.speedMean), 10.0)
+            // A rep starts with a jump in pace, not a bend.
+            assertTrue(!rep.joined)
             // Too short for the heart rate to settle: no settled level, but its end and peak.
             assertNull(rep.hrSettled)
             assertNotNull(rep.hrEnd)

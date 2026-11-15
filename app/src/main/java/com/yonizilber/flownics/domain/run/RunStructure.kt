@@ -21,6 +21,8 @@ data class RunSegment(
     /** The fitted line's speed at the start and at the end (equal for an even pace). */
     val speedStart: Double,
     val speedEnd: Double,
+    /** Its line carries on from the previous segment's (a change of trend, no jump): it starts where that one ended. */
+    val joined: Boolean = false,
     /** Distance over time. */
     val speedMean: Double,
     /** Grade-adjusted speed (Minetti 2002): the flat-ground speed of the same effort. */
@@ -40,7 +42,10 @@ data class RunSegment(
     val hrMax: Int? = null,
     val hrStart: Int? = null,
     val hrEnd: Int? = null,
-    /** From the heart-rate fit, only when the segment is long enough to settle (≥ 2 τ): the level it settles at, and its drift. */
+    /**
+     * From the heart-rate fit, which starts from where the previous segment's curve ended, only
+     * when the segment is long enough to settle (≥ 2 τ): the level it settles at, and its drift.
+     */
     val hrSettled: Int? = null,
     val hrDriftPerMin: Double? = null,
     val hrTauS: Int? = null,

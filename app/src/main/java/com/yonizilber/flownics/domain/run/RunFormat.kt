@@ -46,6 +46,7 @@ object RunFormat {
                 (if (s.unevenS >= s.movingS - s.binSeconds) "all of it too uneven for a line, told by percentiles."
                 else "the segments' lines are off the data by ±${s.paceErrorRms} s/km (RMS)" + (if (s.unevenS > 0) "; ${clock(s.unevenS)} too uneven for a line, told by percentiles." else ".")),
         )
+        appendLine("Lines are continuous through the run where the data is (a bend, not a jump); a pace marked '=' starts where the previous segment's line ended. Heart rate is fitted as one curve too, each segment starting from the previous one's end.")
         appendLine("Columns: # | from-to | km | pace start→end (mean) | grade-adj pace | grade %, climb m | HR start→end, peak | HR settled, drift/min | cadence | fit ±s/km | level")
         s.segments.forEachIndexed { i, g -> appendLine(row(i + 1, g)) }
         s.repeats.forEach { r ->
@@ -63,7 +64,7 @@ object RunFormat {
         val paceText = if (g.variable) {
             "uneven: p10 ${g.pace10?.let(::secs)} / median ${g.pace50?.let(::secs)} / p90 ${g.pace90?.let(::secs)} (mean ${pace(g.speedMean)})"
         } else {
-            "${pace(g.speedStart)}→${pace(g.speedEnd)} (${pace(g.speedMean)})"
+            (if (g.joined) "=" else "") + "${pace(g.speedStart)}→${pace(g.speedEnd)} (${pace(g.speedMean)})"
         }
         val hr = if (g.hrStart != null) "${g.hrStart}→${g.hrEnd}, ${g.hrMax}" else "-"
         val settled = g.hrSettled?.let { "$it, ${signed(g.hrDriftPerMin ?: 0.0)} (τ ${g.hrTauS}s, ±${g.hrFitRms})" } ?: "-"
