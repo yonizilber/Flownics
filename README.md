@@ -12,6 +12,30 @@ week, and proposes changes. Nothing changes until you accept it.
 Kotlin · Jetpack Compose · Material 3 · Hilt · Room · Coroutines/Flow · kotlinx.serialization ·
 WorkManager · Hebrew and English with full right-to-left support.
 
+## Screenshots
+
+<p align="center"><img src="docs/screenshots/tour.gif" width="280" alt="A short tour: the exercise library, an exercise page, the journal week, planned against done, a run's structure, My data, sleep, the coach and the workout player"></p>
+
+| Exercise library | Exercise page | Progress |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/library.png" width="240" alt="Exercise library with kinds, muscles and tags"> | <img src="docs/screenshots/exercise.png" width="240" alt="Exercise page with tags, muscles and a body map"> | <img src="docs/screenshots/progress.png" width="240" alt="Personal records and a chart of the heaviest set per workout"> |
+| **A workout** | **Building it** | **Player: active rest** |
+| <img src="docs/screenshots/workout.png" width="240" alt="A workout's steps, with stretches filling the rests"> | <img src="docs/screenshots/editor.png" width="240" alt="Workout editor with blocks and a superset"> | <img src="docs/screenshots/player_active_rest.png" width="240" alt="Player during a rest, with a mobility exercise to do"> |
+| **Journal week** | **Planned and done** | **A run's structure** |
+| <img src="docs/screenshots/journal_week.png" width="240" alt="A week of plans: done, not done, and training load"> | <img src="docs/screenshots/plan_vs_actual.png" width="240" alt="Each planned interval beside what was run"> | <img src="docs/screenshots/run.png" width="240" alt="A recorded run: cadence, kilometre splits and the segments found in it"> |
+| **My data** | **Sleep and recovery** | **Coach** |
+| <img src="docs/screenshots/me.png" width="240" alt="Resting heart rate and HRV trends"> | <img src="docs/screenshots/sleep.png" width="240" alt="A night's sleep stages and the day's recovery numbers"> | <img src="docs/screenshots/coach.png" width="240" alt="The coach answering from the run's own data"> |
+
+In Hebrew, right to left:
+
+| | | |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/he_library.png" width="240" alt="Exercise library in Hebrew"> | <img src="docs/screenshots/he_journal.png" width="240" alt="Journal week in Hebrew"> | <img src="docs/screenshots/he_coach.png" width="240" alt="Coach in Hebrew"> |
+
+All names, workouts, runs, sleep and heart-rate data in these pictures are made up (see
+[Demo data](#demo-data)); the coach's answer was written from the demo run's numbers, not by a
+model.
+
 ## What it does
 
 **Library and workouts**
@@ -118,6 +142,21 @@ line:
 
 The AI features need your own Gemini or Claude API key, entered in the app. Garmin sync is
 optional and needs a personal API key from Garmin Connect. Importing `.fit` files needs neither.
+
+### Demo data
+
+Debug builds include a demo-data seeder for screenshots (`app/src/debug/.../demo`). It fills an
+**empty** app with made-up data: a library with tags and families, three workouts, six weeks of
+sessions, runs written as FIT files and imported through the app's own importer, a week of plans,
+six months of watch data and a coach conversation. Only adb can trigger it (the receiver needs
+the `DUMP` permission, which the shell has and apps don't), and it refuses an app that already has
+exercises. It also stores a placeholder Gemini key (`DEMO-NOT-A-REAL-KEY`) so the coach screen
+shows its message box; any call made with it fails. It is not in release builds.
+
+```
+adb shell am broadcast -a com.yonizilber.flownics.DEMO_SEED -p com.yonizilber.flownics
+# Hebrew names: add  --ez hebrew true
+```
 
 ## Disclaimer
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only. Demo data for screenshots: only adb (the shell holds DUMP) can send it. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name=".demo.DemoSeedReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="com.yonizilber.flownics.DEMO_SEED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
