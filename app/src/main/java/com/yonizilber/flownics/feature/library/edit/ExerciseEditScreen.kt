@@ -232,6 +232,17 @@ fun ExerciseEditScreen(
                 Switch(checked = state.unilateral, onCheckedChange = viewModel::onUnilateralChange)
             }
 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.edit_general))
+                    Text(stringResource(R.string.edit_general_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = state.general, onCheckedChange = viewModel::onGeneralChange)
+            }
+
+            val knownTags by viewModel.knownTags.collectAsStateWithLifecycle()
+            TagsEditor(state.tags, knownTags, viewModel::onAddTag, viewModel::onRemoveTag, viewModel::onTagNote)
+
             MusclePicker(state, viewModel::onMuscleTap)
 
             OutlinedTextField(

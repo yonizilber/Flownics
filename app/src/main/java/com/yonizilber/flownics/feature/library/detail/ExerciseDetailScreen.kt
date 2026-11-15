@@ -92,6 +92,7 @@ fun ExerciseDetailScreen(
     onVariations: (Long) -> Unit,
     onShare: (Long) -> Unit,
     onOpenMuscle: (Muscle) -> Unit,
+    onOpenTag: (String) -> Unit = {},
     viewModel: ExerciseDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -191,6 +192,7 @@ fun ExerciseDetailScreen(
                     onOpenSession = onOpenSession,
                     onOpenExercise = onOpenExercise,
                     onOpenMuscle = onOpenMuscle,
+                    onOpenTag = onOpenTag,
                     onVariations = { onVariations(s.exercise.id) },
                 )
             }
@@ -232,6 +234,7 @@ private fun ExerciseDetailContent(
     onOpenSession: (Long) -> Unit,
     onOpenExercise: (Long) -> Unit,
     onOpenMuscle: (Muscle) -> Unit,
+    onOpenTag: (String) -> Unit,
     onVariations: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -275,6 +278,13 @@ private fun ExerciseDetailContent(
                     )
                 }
             }
+            if (exercise.general) {
+                Text(stringResource(R.string.detail_general), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (exercise.quickAdded) {
+                Text(stringResource(R.string.detail_quick_added), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
+            }
+            TagSection(exercise.tags, onOpenTag)
             MuscleSection(R.string.detail_muscles_primary, exercise.primaryMuscles, onOpenMuscle)
             MuscleSection(R.string.detail_muscles_secondary, exercise.secondaryMuscles, onOpenMuscle)
             if (exercise.primaryMuscles.isNotEmpty() || exercise.secondaryMuscles.isNotEmpty()) {
@@ -477,6 +487,22 @@ private fun MuscleSection(titleRes: Int, muscles: Set<Muscle>, onOpenMuscle: (Mu
             muscles.sortedBy { it.ordinal }.forEach { muscle ->
                 // Opens every exercise that works this muscle.
                 AssistChip(onClick = { onOpenMuscle(muscle) }, label = { Text(stringResource(muscle.labelRes)) })
+            }
+        }
+    }
+}
+
+/** The exercise's tags, each with what it does for it; a tag opens all its exercises. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagSection(tags: List<com.yonizilber.flownics.domain.model.ExerciseTag>, onOpenTag: (String) -> Unit) {
+    if (tags.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(R.string.edit_tags), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        tags.forEach { tag ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AssistChip(onClick = { onOpenTag(tag.name) }, label = { Text("# " + tag.name) })
+                if (tag.note.isNotBlank()) Text(tag.note, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             }
         }
     }

@@ -6,6 +6,13 @@ import com.yonizilber.flownics.feature.garmin.GarminSettingsScreen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material3.Icon
+import com.yonizilber.flownics.R
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -67,6 +74,7 @@ fun FlownicsApp(
     MainScaffold(openPlayerRequest = openPlayerRequest, modifier = modifier)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScaffold(
     openPlayerRequest: Int,
@@ -83,6 +91,7 @@ private fun MainScaffold(
     val openWorkout = { id: Long -> navController.navigate(Destination.WorkoutOverview.createRoute(id)) }
     val openExercise = { id: Long -> navController.navigate(Destination.ExerciseDetail.createRoute(id)) }
     val openMuscle = { muscle: Muscle -> navController.navigate(Destination.MuscleExercises.createRoute(muscle.name)) }
+    val openTag = { tag: String -> navController.navigate(Destination.TagExercises.createRoute(tag)) }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -188,6 +197,7 @@ private fun MainScaffold(
                     onVariations = { id -> navController.navigate(Destination.AiExerciseVariations.createRoute(id)) },
                     onShare = { id -> navController.navigate(Destination.Share.exercise(id)) },
                     onOpenMuscle = openMuscle,
+                    onOpenTag = openTag,
                 )
             }
             composable(
@@ -283,7 +293,24 @@ private fun MainScaffold(
                     onOpenActivity = { id -> navController.navigate(Destination.ActivityEdit.createRoute(id)) },
                 )
             }
+            composable(Destination.Me.route) {
+                com.yonizilber.flownics.feature.me.MeScreen(
+                    onOpenSleep = { navController.navigate(Destination.Wellness.route) },
+                    onOpenGarmin = { navController.navigate(Destination.GarminSettings.route) },
+                    onOpenSettings = { navController.navigate(Destination.Settings.route) },
+                )
+            }
             composable(Destination.Settings.route) {
+                // No longer a tab of its own: it opens from "Me", with a way back.
+                Column {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.nav_settings)) },
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                            }
+                        },
+                    )
                 SettingsScreen(
                     onOpenAi = openAiSettings,
                     onAskAi = {
@@ -299,6 +326,7 @@ private fun MainScaffold(
                     onOpenSensor = { navController.navigate(Destination.HeartRateSensor.route) },
                     onOpenDefaults = { navController.navigate(Destination.WorkoutDefaults.route) },
                 )
+                }
             }
             composable(Destination.Data.route) {
                 DataScreen(onBack = { navController.popBackStack() }, onOpenShare = { navController.navigate(Destination.Share.choose()) })
@@ -356,6 +384,12 @@ private fun MainScaffold(
                 arguments = listOf(navArgument(Destination.ARG_MUSCLE) { type = NavType.StringType }),
             ) {
                 MuscleExercisesScreen(onBack = { navController.popBackStack() }, onOpenExercise = openExercise)
+            }
+            composable(
+                Destination.TagExercises.route,
+                arguments = listOf(navArgument(Destination.ARG_TAG) { type = NavType.StringType }),
+            ) {
+                com.yonizilber.flownics.feature.library.tag.TagExercisesScreen(onBack = { navController.popBackStack() }, onOpenExercise = openExercise)
             }
             composable(
                 Destination.AiWorkoutGenerate.route,

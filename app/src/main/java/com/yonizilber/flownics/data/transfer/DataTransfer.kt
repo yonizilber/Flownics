@@ -15,6 +15,8 @@ import com.yonizilber.flownics.data.local.db.dao.TransferDao
 import com.yonizilber.flownics.data.local.db.entity.MediaJson
 import com.yonizilber.flownics.data.local.media.MediaStorage
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.yonizilber.flownics.data.local.db.entity.TagInfoEntity
+import com.yonizilber.flownics.domain.model.Tags
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -96,6 +98,7 @@ class DataTransfer @Inject constructor(
             coachNotes = dao.coachNotes().map { CoachNoteDto(it.id, it.text, it.createdAtMillis) },
             coachProfile = coach.profile.value.let { CoachProfileDto(it.goals, it.limitations, it.equipment, it.schedule, it.maxHeartRate, it.restingHeartRate) },
             plans = dao.plans().map { it.toDto(json) },
+            tagInfos = dao.tagInfos().map { TagInfoDto(it.name, it.description) },
         )
         write(out, BundleKind.BACKUP, data, includeMedia = true)
     }
@@ -166,6 +169,9 @@ class DataTransfer @Inject constructor(
             },
             aiNotes = dao.aiNotes().filter { it.exerciseId in ids }.map { it.toDto(json) },
             workouts = workouts,
+            tagInfos = exercises.flatMap { e -> e.tags.map { Tags.key(it.name) } }.toSet().let { used ->
+                dao.tagInfos().filter { it.key in used }.map { TagInfoDto(it.name, it.description) }
+            },
         )
     }
 
@@ -264,6 +270,9 @@ class DataTransfer @Inject constructor(
                 plan.workouts.forEach { w ->
                     w.restFillerWorkoutId?.let(workoutIds::get)?.let { filler -> dao.setRestFiller(workoutIds.getValue(w.id), filler) }
                 }
+                // A friend's word on a tag fills in only a tag this phone hasn't described.
+                val described = dao.tagInfos().map { it.key }.toSet()
+                dao.insertTagInfos(data.tagInfos.filter { Tags.key(it.name) !in described && Tags.key(it.name).isNotEmpty() }.distinctBy { Tags.key(it.name) }.map { TagInfoEntity(Tags.key(it.name), it.name.trim(), it.description) })
             }
         } catch (e: Exception) {
             media.delete(created)
@@ -293,6 +302,8 @@ class DataTransfer @Inject constructor(
                 // Calendar links stay: the next sync updates each event to what its item is now,
                 // and deletes the events of items the backup doesn't have.
                 dao.deletePlans()
+                dao.deleteTagInfos()
+                dao.insertTagInfos(data.tagInfos.filter { Tags.key(it.name).isNotEmpty() }.distinctBy { Tags.key(it.name) }.map { TagInfoEntity(Tags.key(it.name), it.name.trim(), it.description) })
                 dao.insertExercises(exercises)
                 dao.insertVariations(data.variations.map { it.toEntity() })
                 dao.insertNotes(data.aiNotes.map { it.toEntity(json) })

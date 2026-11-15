@@ -69,7 +69,7 @@ private fun BlockDraft.toBlock() = block.copy(items = items.map { it.item })
 class WorkoutEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val workoutRepository: WorkoutRepository,
-    exerciseRepository: ExerciseRepository,
+    private val exerciseRepository: ExerciseRepository,
     private val prefs: AppPreferences,
 ) : ViewModel() {
 
@@ -164,6 +164,23 @@ class WorkoutEditViewModel @Inject constructor(
         draft.update { it.copy(expandedItemKey = added.first().key) }
     }
 
+    /**
+     * A general step (warm-up, easy jog): no specific exercise. Saved to the library as one, so it
+     * can be used again; it runs [minutes] or, with none, until the user moves on.
+     */
+    fun onAddGeneralStep(blockKey: Long, name: String, minutes: Int?, description: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val id = exerciseRepository.save(
+                Exercise(name = name.trim(), category = ExerciseCategory.WARMUP, measureMode = MeasureMode.TIME, general = true, notes = description.trim()),
+            )
+            val item = WorkoutItem(exerciseId = id, sets = 1, target = SetTarget(seconds = minutes?.takeIf { it > 0 }?.times(60)), restSeconds = 0)
+            val added = ItemDraft(newKey(), item)
+            editBlock(blockKey) { it.copy(items = it.items + added) }
+            draft.update { it.copy(expandedItemKey = added.key) }
+        }
+    }
+
     fun onRemoveItem(blockKey: Long, itemKey: Long) = editBlock(blockKey) { b -> b.copy(items = b.items.filterNot { it.key == itemKey }) }
     fun onMoveItem(blockKey: Long, from: Int, to: Int) = editBlock(blockKey) { it.copy(items = it.items.move(from, to)) }
     fun onUpdateItem(itemKey: Long, transform: (WorkoutItem) -> WorkoutItem) = edit { d ->
@@ -206,6 +223,8 @@ class WorkoutEditViewModel @Inject constructor(
     private fun newKey(): Long = nextKey++
 
     private fun defaultItemFor(exercise: Exercise, circuit: Boolean): WorkoutItem {
+        // A general step runs once, until the user moves on.
+        if (exercise.general) return WorkoutItem(exerciseId = exercise.id, sets = 1, target = SetTarget(), restSeconds = 0)
         val target = when (exercise.measureMode) {
             MeasureMode.REPS, MeasureMode.REPS_WEIGHT -> SetTarget(reps = 10)
             MeasureMode.TIME -> SetTarget(seconds = 30)

@@ -3,13 +3,16 @@ package com.yonizilber.flownics.domain.library
 import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.ExerciseCategory
 import com.yonizilber.flownics.domain.model.Muscle
+import com.yonizilber.flownics.domain.model.Tags
 
 data class ExerciseFilter(
     val query: String = "",
     val categories: Set<ExerciseCategory> = emptySet(),
     val muscle: Muscle? = null,
+    /** Only exercises carrying this tag (matched ignoring case). */
+    val tag: String? = null,
 ) {
-    val isActive: Boolean get() = query.isNotBlank() || categories.isNotEmpty() || muscle != null
+    val isActive: Boolean get() = query.isNotBlank() || categories.isNotEmpty() || muscle != null || tag != null
 }
 
 /**
@@ -27,11 +30,13 @@ fun List<Exercise>.applyFilter(
         val muscleOk = filter.muscle == null ||
             filter.muscle in exercise.primaryMuscles ||
             filter.muscle in exercise.secondaryMuscles
-        categoryOk && muscleOk && terms.all { term -> exercise.matches(term, muscleLabel) }
+        val tagOk = filter.tag == null || exercise.tags.any { Tags.key(it.name) == Tags.key(filter.tag) }
+        categoryOk && muscleOk && tagOk && terms.all { term -> exercise.matches(term, muscleLabel) }
     }.sortedBy { it.name.lowercase() }
 }
 
 private fun Exercise.matches(term: String, muscleLabel: (Muscle) -> String): Boolean =
     name.lowercase().contains(term) ||
         equipment.lowercase().contains(term) ||
+        tags.any { it.name.lowercase().contains(term) || it.note.lowercase().contains(term) } ||
         (primaryMuscles + secondaryMuscles).any { muscleLabel(it).lowercase().contains(term) }

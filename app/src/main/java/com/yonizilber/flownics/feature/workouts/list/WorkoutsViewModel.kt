@@ -47,7 +47,8 @@ class WorkoutsViewModel @Inject constructor(
 
     /** A workout without a plan, starting with [first]; more is added from the player as it goes. */
     fun startFree(first: AddedExercise, onStarted: () -> Unit) = viewModelScope.launch {
-        if (player.startFree(listOf(Triple(first.exerciseId, first.sets, first.target)), first.restSeconds) == StartResult.Started) onStarted()
+        val id = first.newName?.let { player.createQuick(it, first.newMode, first.newGeneral) } ?: first.exerciseId
+        if (player.startFree(listOf(Triple(id, first.sets, first.target)), first.restSeconds) == StartResult.Started) onStarted()
     }
 
 

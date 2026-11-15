@@ -8,6 +8,9 @@ import com.yonizilber.flownics.data.mapper.toEntity
 import com.yonizilber.flownics.domain.library.Families
 import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.MediaKind
+import com.yonizilber.flownics.domain.model.TagInfo
+import com.yonizilber.flownics.domain.model.Tags
+import com.yonizilber.flownics.data.local.db.entity.TagInfoEntity
 import com.yonizilber.flownics.domain.repository.ExerciseRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -83,6 +86,40 @@ class ExerciseRepositoryImpl @Inject constructor(
         if (family.base.id == id) return
         dao.setVariationOf(family.members.filter { it.id != id }.map { it.id }, id)
         dao.setVariationOf(listOf(id), null)
+    }
+
+    override fun observeTagInfos(): Flow<List<TagInfo>> =
+        dao.observeTagInfos().map { rows -> rows.map { TagInfo(it.name, it.description) } }
+
+    override suspend fun setTagDescription(name: String, description: String) {
+        val key = Tags.key(name)
+        if (key.isEmpty()) return
+        if (description.isBlank()) dao.deleteTagInfo(key) else dao.upsertTagInfo(TagInfoEntity(key, name.trim(), description.trim()))
+    }
+
+    override suspend fun renameTag(from: String, to: String) {
+        val fromKey = Tags.key(from)
+        val name = to.trim()
+        if (fromKey.isEmpty() || name.isEmpty() || fromKey == Tags.key(name) && from.trim() == name) return
+        val toKey = Tags.key(name)
+        dao.getAllEntities().map { it.toDomain(json) }.forEach { e ->
+            val old = e.tags.firstOrNull { Tags.key(it.name) == fromKey } ?: return@forEach
+            // Already carries the new name: the two become one, with both notes.
+            val other = e.tags.firstOrNull { Tags.key(it.name) == toKey && toKey != fromKey }
+            val tags = if (other != null) {
+                e.tags.filter { it !== old }.map { t -> if (t === other) t.copy(note = listOf(t.note, old.note).filter { it.isNotBlank() }.joinToString("; ")) else t }
+            } else {
+                e.tags.map { t -> if (t === old) t.copy(name = name) else t }
+            }
+            dao.update(e.copy(tags = tags).toEntity(json))
+        }
+        val info = dao.getTagInfos().firstOrNull { it.key == fromKey }
+        if (info != null) {
+            dao.deleteTagInfo(fromKey)
+            val target = dao.getTagInfos().firstOrNull { it.key == Tags.key(name) }
+            val description = listOfNotNull(target?.description, info.description).filter { it.isNotBlank() }.joinToString("\n")
+            dao.upsertTagInfo(TagInfoEntity(Tags.key(name), name, description))
+        }
     }
 
     private suspend fun deleteUnreferenced(candidates: Set<String>) {

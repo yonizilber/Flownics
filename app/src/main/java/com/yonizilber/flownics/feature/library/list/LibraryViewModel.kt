@@ -31,6 +31,8 @@ data class LibraryUiState(
     /** For a style shown on its own (while filtering): its family's default. */
     val baseNames: Map<Long, String> = emptyMap(),
     val filter: ExerciseFilter = ExerciseFilter(),
+    /** Every tag in the library, most used first. */
+    val tags: List<String> = emptyList(),
 )
 
 @HiltViewModel
@@ -43,7 +45,7 @@ class LibraryViewModel @Inject constructor(
 
     val uiState: StateFlow<LibraryUiState> =
         combine(repository.observeAll(), filter) { all, currentFilter ->
-            val filtering = currentFilter.query.isNotBlank() || currentFilter.categories.isNotEmpty() || currentFilter.muscle != null
+            val filtering = currentFilter.isActive
             val byId = all.associateBy { it.id }
             LibraryUiState(
                 loading = false,
@@ -52,6 +54,7 @@ class LibraryViewModel @Inject constructor(
                 families = if (filtering) null else Families.group(all),
                 baseNames = all.mapNotNull { e -> Families.baseOf(e, byId).takeIf { it.id != e.id }?.let { e.id to it.name } }.toMap(),
                 filter = currentFilter,
+                tags = com.yonizilber.flownics.domain.model.Tags.all(all).map { it.first },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
 
@@ -62,6 +65,8 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun onMuscleSelected(muscle: Muscle?) = filter.update { it.copy(muscle = muscle) }
+
+    fun onTagSelected(tag: String?) = filter.update { it.copy(tag = tag) }
 
     fun onClearFilters() = filter.update { ExerciseFilter() }
 }

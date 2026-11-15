@@ -2,6 +2,7 @@ package com.yonizilber.flownics.data.local.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.yonizilber.flownics.data.local.db.entity.ActivityEntity
 import com.yonizilber.flownics.data.local.db.entity.AiUsageEntity
@@ -11,6 +12,7 @@ import com.yonizilber.flownics.data.local.db.entity.CoachMessageEntity
 import com.yonizilber.flownics.data.local.db.entity.CoachNoteEntity
 import com.yonizilber.flownics.data.local.db.entity.ExerciseAiNoteEntity
 import com.yonizilber.flownics.data.local.db.entity.ExerciseEntity
+import com.yonizilber.flownics.data.local.db.entity.TagInfoEntity
 import com.yonizilber.flownics.data.local.db.entity.ExerciseVariationEntity
 import com.yonizilber.flownics.data.local.db.entity.SetLogEntity
 import com.yonizilber.flownics.data.local.db.entity.WorkoutSessionEntity
@@ -21,6 +23,15 @@ import com.yonizilber.flownics.data.local.db.entity.WorkoutTemplateEntity
 interface TransferDao {
     @Query("SELECT * FROM exercises ORDER BY id")
     suspend fun exercises(): List<ExerciseEntity>
+
+    @Query("SELECT * FROM tag_infos")
+    suspend fun tagInfos(): List<TagInfoEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTagInfos(entities: List<TagInfoEntity>)
+
+    @Query("DELETE FROM tag_infos")
+    suspend fun deleteTagInfos()
 
     @Query("SELECT * FROM exercise_variations ORDER BY id")
     suspend fun variations(): List<ExerciseVariationEntity>

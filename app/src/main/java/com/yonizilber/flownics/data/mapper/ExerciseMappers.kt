@@ -3,6 +3,8 @@ package com.yonizilber.flownics.data.mapper
 import com.yonizilber.flownics.data.local.db.entity.ExerciseEntity
 import com.yonizilber.flownics.data.local.db.entity.MediaJson
 import com.yonizilber.flownics.data.local.db.entity.StageJson
+import com.yonizilber.flownics.data.local.db.entity.TagJson
+import com.yonizilber.flownics.domain.model.ExerciseTag
 import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.ExerciseCategory
 import com.yonizilber.flownics.domain.model.ExerciseLevel
@@ -35,6 +37,9 @@ fun ExerciseEntity.toDomain(json: Json): Exercise = Exercise(
     level = level,
     variationOf = variationOf,
     notes = notes,
+    tags = json.decodeFromString(ListSerializer(TagJson.serializer()), tagsJson).map { ExerciseTag(it.name, it.note) },
+    general = general,
+    quickAdded = quickAdded,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -62,6 +67,12 @@ fun Exercise.toEntity(json: Json): ExerciseEntity = ExerciseEntity(
     level = level?.coerceIn(ExerciseLevel.RANGE),
     variationOf = variationOf,
     notes = notes,
+    tagsJson = json.encodeToString(
+        ListSerializer(TagJson.serializer()),
+        tags.filter { it.name.isNotBlank() }.distinctBy { it.name.trim().lowercase() }.map { TagJson(it.name.trim(), it.note.trim()) },
+    ),
+    general = general,
+    quickAdded = quickAdded,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )

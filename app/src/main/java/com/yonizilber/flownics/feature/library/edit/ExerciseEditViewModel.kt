@@ -16,6 +16,8 @@ import com.yonizilber.flownics.domain.ai.FitnessPrompts
 import com.yonizilber.flownics.domain.library.MuscleSelection
 import com.yonizilber.flownics.domain.library.move
 import com.yonizilber.flownics.domain.model.Exercise
+import com.yonizilber.flownics.domain.model.ExerciseTag
+import com.yonizilber.flownics.domain.model.Tags
 import com.yonizilber.flownics.domain.model.ExerciseCategory
 import com.yonizilber.flownics.domain.model.ExerciseMedia
 import com.yonizilber.flownics.domain.model.ExerciseStage
@@ -68,6 +70,10 @@ data class ExerciseEditorState(
     val stages: List<StageDraft> = emptyList(),
     val media: List<ExerciseMedia> = emptyList(),
     val notes: String = "",
+    /** Free labels, each with what this exercise does for it. */
+    val tags: List<ExerciseTag> = emptyList(),
+    /** A general step (warm-up, easy jog): no specific exercise, no reps; timed or until "next". */
+    val general: Boolean = false,
     val importing: Boolean = false,
     val saving: Boolean = false,
     val dirty: Boolean = false,
@@ -109,6 +115,10 @@ class ExerciseEditViewModel @Inject constructor(
     val aiReady: StateFlow<Boolean> = ai.settings.map { it.ready }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ai.settings.value.ready)
     val aiModel get() = ai.settings.value.model
+
+    /** Every tag already in the library, most used first, to pick from. */
+    val knownTags: StateFlow<List<String>> = repository.observeAll().map { all -> Tags.all(all).map { it.first } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _fill = MutableStateFlow<AiCall<AiResult<ExerciseSuggestion>>>(AiCall.Idle)
     val fill: StateFlow<AiCall<AiResult<ExerciseSuggestion>>> = _fill.asStateFlow()
@@ -251,6 +261,16 @@ class ExerciseEditViewModel @Inject constructor(
     fun onEquipmentChange(value: String) = edit { it.copy(equipment = value) }
     fun onNotesChange(value: String) = edit { it.copy(notes = value) }
 
+    fun onAddTag(name: String) = edit { s ->
+        val clean = name.trim()
+        if (clean.isEmpty() || s.tags.any { Tags.key(it.name) == Tags.key(clean) }) s else s.copy(tags = s.tags + ExerciseTag(clean))
+    }
+    fun onRemoveTag(name: String) = edit { s -> s.copy(tags = s.tags.filterNot { Tags.key(it.name) == Tags.key(name) }) }
+    fun onTagNote(name: String, note: String) = edit { s -> s.copy(tags = s.tags.map { if (Tags.key(it.name) == Tags.key(name)) it.copy(note = note) else it }) }
+
+    /** A general step is told by time (or "until next"), never by reps. */
+    fun onGeneralChange(value: Boolean) = edit { it.copy(general = value, measureMode = if (value) MeasureMode.TIME else it.measureMode) }
+
     fun onAddStep() = edit { it.copy(instructions = it.instructions + CueDraft(newKey(), "")) }
     fun onStepChange(key: Long, text: String) = edit { s ->
         s.copy(instructions = s.instructions.map { if (it.key == key) it.copy(text = text) else it })
@@ -358,6 +378,8 @@ class ExerciseEditViewModel @Inject constructor(
         stages = stages.map { StageDraft(newKey(), it.name, it.description, it.durationSeconds?.toString().orEmpty()) },
         media = media,
         notes = notes,
+        tags = tags,
+        general = general,
     )
 
     private fun ExerciseEditorState.toExercise() = Exercise(
@@ -379,6 +401,10 @@ class ExerciseEditViewModel @Inject constructor(
         level = level,
         variationOf = variationOf,
         notes = notes.trim(),
+        tags = tags.map { it.copy(name = it.name.trim(), note = it.note.trim()) },
+        general = general,
+        // Saved from the editor: its details are no longer pending.
+        quickAdded = false,
         createdAtMillis = original?.createdAtMillis ?: 0,
     )
 }

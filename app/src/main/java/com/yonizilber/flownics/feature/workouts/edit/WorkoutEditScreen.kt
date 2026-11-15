@@ -212,6 +212,10 @@ fun WorkoutEditScreen(
                 viewModel.onAddExercises(blockKey, ids)
                 pickerForBlock = null
             },
+            onNewGeneral = { name, minutes, description ->
+                viewModel.onAddGeneralStep(blockKey, name, minutes, description)
+                pickerForBlock = null
+            },
         )
     }
 

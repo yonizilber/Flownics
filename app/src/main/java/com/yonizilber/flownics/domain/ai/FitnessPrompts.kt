@@ -309,6 +309,9 @@ object FitnessPrompts {
         if (exercise.cues.isNotEmpty()) appendLine("Cues: ${exercise.cues.joinToString(" | ")}")
         exercise.stages.forEachIndexed { i, s -> appendLine("Stage ${i + 1}: ${s.name} ${s.description}".trimEnd()) }
         if (exercise.notes.isNotBlank()) appendLine("Notes: ${exercise.notes}")
+        if (exercise.general) appendLine("A general step (not a specific exercise): timed or until the user moves on, nothing logged but its time.")
+        if (exercise.quickAdded) appendLine("Added by name during a workout; its details are not filled in yet.")
+        exercise.tags.forEach { t -> appendLine("Tag (user's own): ${t.name}" + if (t.note.isNotBlank()) " — ${t.note}" else "") }
     }.trimEnd()
 
     fun describeLibrary(library: Collection<Exercise>): String = library.sortedBy { it.id }.joinToString("\n") { e ->
@@ -319,6 +322,8 @@ object FitnessPrompts {
             if (e.primaryMuscles.isNotEmpty()) append(" | primary: ${e.primaryMuscles.joinToString()}")
             if (e.secondaryMuscles.isNotEmpty()) append(" | secondary: ${e.secondaryMuscles.joinToString()}")
             if (e.equipment.isNotBlank()) append(" | equipment: ${e.equipment}")
+            if (e.general) append(" | general step")
+            if (e.tags.isNotEmpty()) append(" | tags: ${e.tags.joinToString { it.name }}")
         }
     }
 

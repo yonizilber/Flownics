@@ -5,6 +5,8 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.yonizilber.flownics.data.local.db.entity.ExerciseEntity
+import com.yonizilber.flownics.data.local.db.entity.TagInfoEntity
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -38,4 +40,19 @@ interface ExerciseDao {
 
     @Query("SELECT id FROM exercises WHERE variationOf = :id")
     suspend fun stylesOf(id: Long): List<Long>
+
+    @Query("SELECT * FROM tag_infos")
+    fun observeTagInfos(): Flow<List<TagInfoEntity>>
+
+    @Query("SELECT * FROM tag_infos")
+    suspend fun getTagInfos(): List<TagInfoEntity>
+
+    @Upsert
+    suspend fun upsertTagInfo(entity: TagInfoEntity)
+
+    @Query("DELETE FROM tag_infos WHERE `key` = :key")
+    suspend fun deleteTagInfo(key: String)
+
+    @Query("DELETE FROM tag_infos")
+    suspend fun deleteAllTagInfos()
 }

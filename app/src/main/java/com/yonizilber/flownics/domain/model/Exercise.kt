@@ -26,11 +26,38 @@ data class Exercise(
      */
     val variationOf: Long? = null,
     val notes: String = "",
+    /** The user's own labels ("side split", "knee rehab"), each with what this exercise does for it. */
+    val tags: List<ExerciseTag> = emptyList(),
+    /**
+     * A general step rather than a specific exercise ("general warm-up", "easy jog"): told by its
+     * name and notes, timed or until the user moves on, with no reps to log.
+     */
+    val general: Boolean = false,
+    /** Made from just a name during a workout; its details are still to be filled in. */
+    val quickAdded: Boolean = false,
     val createdAtMillis: Long = 0,
     val updatedAtMillis: Long = 0,
 ) {
     /** Every kind it is, the main one first. Filters and pools match on any of them. */
     val categories: List<ExerciseCategory> get() = listOf(category) + (extraCategories - category).sortedBy { it.ordinal }
+}
+
+/** A free label on an exercise; [note] says what this exercise does for it ("opens the adductors"). */
+data class ExerciseTag(val name: String, val note: String = "")
+
+/** What a tag is for, written once for all its exercises ("side split: the goal is the floor by summer"). */
+data class TagInfo(val name: String, val description: String = "")
+
+object Tags {
+    /** Tags are matched ignoring case and spaces at the ends. */
+    fun key(name: String) = name.trim().lowercase()
+
+    /** Every tag in the library, by how many exercises carry it, then by name. */
+    fun all(exercises: Collection<Exercise>): List<Pair<String, Int>> =
+        exercises.flatMap { e -> e.tags.map { it.name.trim() }.distinctBy(::key) }
+            .groupBy(::key)
+            .map { (_, names) -> names.first() to names.size }
+            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { it.first.lowercase() })
 }
 
 // A distinct phase of one exercise (e.g. "lower slowly" → "pause" → "explode up"), or a progression

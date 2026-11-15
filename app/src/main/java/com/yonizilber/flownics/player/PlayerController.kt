@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import com.yonizilber.flownics.data.di.ApplicationScope
 import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.MeasureMode
+import com.yonizilber.flownics.domain.model.ExerciseCategory
 import com.yonizilber.flownics.domain.model.SessionStatus
 import com.yonizilber.flownics.domain.model.SetLog
 import com.yonizilber.flownics.domain.model.SetTarget
@@ -55,6 +56,12 @@ data class ActiveWorkout(
     val restored: Boolean = false,
     /** Set during the workout: every timed step waits at zero for the user. */
     val holdAll: Boolean = false,
+    /**
+     * What the user has dialed in for a set not yet logged, by step index. Kept with the steps
+     * (and moved with them when the workout is edited), so a value never shows on another set,
+     * and "done" from the notification logs it too.
+     */
+    val drafts: Map<Int, SetTarget> = emptyMap(),
 ) {
     /** The current timed step is past zero, waiting for the user. */
     fun overtimeMs(nowMs: Long): Long = step?.takeIf { WorkoutPlayer.holds(it, holdAll) }?.let { WorkoutPlayer.overtimeMs(player.phase, nowMs) } ?: 0
@@ -159,7 +166,7 @@ class PlayerController @Inject constructor(
     fun done(actual: SetTarget? = null) = transition { w, now ->
         val step = w.step
         val logged = if (step is WorkStep) {
-            val chosen = actual ?: SetDefaults.forStep(step, w.player.index, w.logs, w.lastTime[step.exerciseId])
+            val chosen = actual ?: w.drafts[w.player.index] ?: SetDefaults.forStep(step, w.player.index, w.logs, w.lastTime[step.exerciseId])
             log(w, w.player.index, withTimeDone(w, step, chosen, now), skipped = false)
         } else {
             w
@@ -192,6 +199,9 @@ class PlayerController @Inject constructor(
     // ---- Changing the workout while it runs ----------------------------------------------------
 
     /** Every timed step waits at zero for the user (or not), for the rest of this workout. */
+    /** The user changed the reps, weight or distance shown for set [index]. */
+    fun setDraft(index: Int, value: SetTarget) = transition { w, _ -> w.copy(drafts = w.drafts + (index to value)) }
+
     fun setHoldAll(on: Boolean) {
         transition { w, _ -> w.copy(holdAll = on) }
         ensureTicker()
@@ -261,6 +271,24 @@ class PlayerController @Inject constructor(
         }
     }
 
+    /**
+     * An exercise made from just a name during a workout, saved to the library (marked to fill in
+     * later) so its sets have an exercise in the history. Returns once the library has it.
+     */
+    suspend fun createQuick(name: String, mode: MeasureMode, general: Boolean = false): Long {
+        val id = exercises.save(
+            Exercise(
+                name = name.trim(),
+                category = if (general) ExerciseCategory.WARMUP else ExerciseCategory.STRENGTH,
+                measureMode = if (general) MeasureMode.TIME else mode,
+                general = general,
+                quickAdded = true,
+            ),
+        )
+        library.first { id in it }
+        return id
+    }
+
     /** A workout without a plan: starts with the exercises chosen, and more can be added as it goes. */
     suspend fun startFree(first: List<Triple<Long, Int, SetTarget>>, restSeconds: Int): StartResult {
         if (_state.value != null || sessions.inProgress() != null) return StartResult.AnotherInProgress
@@ -299,8 +327,9 @@ class PlayerController @Inject constructor(
         val session = w.session.copy(steps = steps, blockTitles = titles)
         val logs = w.logs.mapKeys { (i, _) -> if (i >= shiftFrom) i + shiftBy else i }
             .mapValues { (i, log) -> log.copy(stepIndex = i) }
+        val drafts = w.drafts.mapKeys { (i, _) -> if (i >= shiftFrom) i + shiftBy else i }
         val index = if (w.player.index >= shiftFrom) w.player.index + shiftBy else w.player.index
-        _state.value = w.copy(session = session, logs = logs, player = WorkoutPlayer.reindex(w.player, index))
+        _state.value = w.copy(session = session, logs = logs, drafts = drafts, player = WorkoutPlayer.reindex(w.player, index))
         scope.launch { sessions.updatePlan(session, shiftFrom, shiftBy) }
         ensureTicker()
     }
@@ -430,7 +459,8 @@ class PlayerController @Inject constructor(
             startedAtMillis = startedAtWall(w, index),
         )
         scope.launch { sessions.saveLog(entry) }
-        return w.copy(logs = w.logs + (index to entry))
+        // Logged: the log now holds the value, so going back shows what was saved.
+        return w.copy(logs = w.logs + (index to entry), drafts = w.drafts - index)
     }
 
     /**

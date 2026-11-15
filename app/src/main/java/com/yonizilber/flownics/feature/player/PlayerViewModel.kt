@@ -15,10 +15,7 @@ import com.yonizilber.flownics.player.CueProblem
 import com.yonizilber.flownics.player.PlayerController
 import com.yonizilber.flownics.player.WorkoutCues
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -36,7 +33,12 @@ class PlayerViewModel @Inject constructor(
 
     fun setHoldAll(on: Boolean) = controller.setHoldAll(on)
     fun addSet(): Int? = controller.addSet()
-    fun addExercise(a: AddedExercise) = controller.addExercise(a.exerciseId, a.sets, a.target, a.restSeconds)
+    fun addExercise(a: AddedExercise) {
+        viewModelScope.launch {
+            val id = a.newName?.let { controller.createQuick(it, a.newMode, a.newGeneral) } ?: a.exerciseId
+            controller.addExercise(id, a.sets, a.target, a.restSeconds)
+        }
+    }
     fun restAgain() = controller.restAgain()
     fun restNotNow() = controller.restNotNow()
     fun restSkip() = controller.restSkip()
@@ -55,12 +57,8 @@ class PlayerViewModel @Inject constructor(
     val library: StateFlow<Map<Long, Exercise>> = controller.library
     val cueProblems: StateFlow<Set<CueProblem>> = cues.problems
 
-    // What the user has dialed in for a set, by step index, until it is logged. Kept here rather
-    // than in the screen so a rotation doesn't reset it.
-    private val _entries = MutableStateFlow<Map<Int, SetTarget>>(emptyMap())
-    val entries: StateFlow<Map<Int, SetTarget>> = _entries.asStateFlow()
-
-    fun setEntry(index: Int, value: SetTarget) = _entries.update { it + (index to value) }
+    /** What the user dialed in for set [index]; the controller keeps it with the step. */
+    fun setEntry(index: Int, value: SetTarget) = controller.setDraft(index, value)
 
     fun done(actual: SetTarget?) = controller.done(actual)
 

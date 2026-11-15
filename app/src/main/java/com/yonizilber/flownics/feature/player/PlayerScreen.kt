@@ -125,7 +125,6 @@ fun PlayerScreen(
     val workout by viewModel.workout.collectAsStateWithLifecycle()
     val library by viewModel.library.collectAsStateWithLifecycle()
     val problems by viewModel.cueProblems.collectAsStateWithLifecycle()
-    val entries by viewModel.entries.collectAsStateWithLifecycle()
     val sensor by viewModel.sensor.collectAsStateWithLifecycle()
     val defaults by viewModel.defaults.collectAsStateWithLifecycle()
     var mapTab by remember { mutableStateOf<MapTab?>(null) }
@@ -196,7 +195,7 @@ fun PlayerScreen(
 
         val step = w.step
         val entry = (step as? WorkStep)?.let {
-            entries[w.player.index] ?: SetDefaults.forStep(it, w.player.index, w.logs, w.lastTime[it.exerciseId])
+            w.drafts[w.player.index] ?: SetDefaults.forStep(it, w.player.index, w.logs, w.lastTime[it.exerciseId])
         }
         Column(Modifier.padding(innerPadding).fillMaxSize()) {
             LinearProgressIndicator(
@@ -388,6 +387,12 @@ private fun WorkContent(
                     .height(180.dp)
                     .clip(RoundedCornerShape(16.dp)),
             )
+        }
+        // A general step is told by its own words: what to do.
+        if (exercise?.general == true) {
+            (exercise.instructions + listOf(exercise.notes)).filter { it.isNotBlank() }.forEach {
+                Text(it, style = MaterialTheme.typography.bodyLarge)
+            }
         }
         if (step.durationSeconds != null) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

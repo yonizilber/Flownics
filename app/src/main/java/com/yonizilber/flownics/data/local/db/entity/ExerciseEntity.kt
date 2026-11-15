@@ -29,8 +29,23 @@ data class ExerciseEntity(
     val level: Int?,
     val variationOf: Long?,
     val notes: String,
+    // Added in v18: free tags with a note each ([{"name","note"}]), general steps, quick-added ones.
+    @ColumnInfo(defaultValue = "[]") val tagsJson: String = "[]",
+    @ColumnInfo(defaultValue = "0") val general: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val quickAdded: Boolean = false,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
+)
+
+@Serializable
+data class TagJson(val name: String, val note: String = "")
+
+/** What a tag is for. Keyed by the tag's lower-case name, so "Side split" and "side split" are one. */
+@Entity(tableName = "tag_infos")
+data class TagInfoEntity(
+    @PrimaryKey val key: String,
+    val name: String,
+    val description: String,
 )
 
 @Serializable

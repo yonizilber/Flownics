@@ -7,7 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Sports
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.yonizilber.flownics.R
@@ -17,6 +17,7 @@ sealed class Destination(val route: String) {
     data object Library : Destination("library")
     data object History : Destination("history")
     data object Settings : Destination("settings")
+    data object Me : Destination("me")
 
     data object ExerciseDetail : Destination("exercise/{$ARG_EXERCISE_ID}") {
         fun createRoute(id: Long) = "exercise/$id"
@@ -42,6 +43,11 @@ sealed class Destination(val route: String) {
         ) = "exercise/edit/0?$ARG_PREFILL_NAME=${Uri.encode(name)}&$ARG_PREFILL_NOTES=${Uri.encode(notes)}" +
             "&$ARG_PREFILL_EQUIPMENT=${Uri.encode(equipment)}&$ARG_PREFILL_CATEGORY=${Uri.encode(category.orEmpty())}" +
             "&$ARG_PREFILL_LEVEL=${level ?: 0}&$ARG_VARIATION_OF=$variationOf&$ARG_VARIATION_ID=$variationId"
+    }
+
+    // Every exercise carrying one tag, and what the tag is for.
+    data object TagExercises : Destination("tag/{$ARG_TAG}") {
+        fun createRoute(tag: String) = "tag/${Uri.encode(tag)}"
     }
 
     // Every exercise that works one muscle.
@@ -147,6 +153,7 @@ sealed class Destination(val route: String) {
         const val ARG_VARIATION_OF = "variationOf"
         const val ARG_VARIATION_ID = "variationId"
         const val ARG_MUSCLE = "muscle"
+        const val ARG_TAG = "tag"
     }
 }
 
@@ -161,5 +168,6 @@ enum class TopLevelTab(
     LIBRARY(Destination.Library, R.string.nav_library, Icons.Outlined.FitnessCenter),
     COACH(Destination.Coach, R.string.nav_coach, Icons.Outlined.Sports, Destination.Coach.TAB),
     HISTORY(Destination.History, R.string.nav_journal, Icons.Outlined.CalendarMonth),
-    SETTINGS(Destination.Settings, R.string.nav_settings, Icons.Outlined.Settings),
+    // Data about the user (Garmin, load, later the scale); settings open from its top bar.
+    ME(Destination.Me, R.string.nav_me, Icons.Outlined.Person),
 }

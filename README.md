@@ -18,6 +18,8 @@ WorkManager · Hebrew and English with full right-to-left support.
 - Exercises with several kinds at once (say, strength and balance), primary and secondary
   muscles, instructions, cues, stages, photos and videos. Styles of one exercise are grouped in a
   family (a rope, band or single-arm face pull) under one default.
+- Free **tags** of your own (a goal like "side split"), each with what the exercise does for
+  it, and a page per tag. **General steps** ("general warm-up") that need no specific exercise.
 - A workout builder with blocks, supersets and circuits, rests, and **active rest**: a stretch or
   a rotating pool of mobility exercises in the rests.
 - **Two workouts as one.** A stretching routine can fill the rests of a strength workout, one
@@ -48,6 +50,15 @@ WorkManager · Hebrew and English with full right-to-left support.
 - A watch recording made during an app workout **joins that workout**. You get one entry, with
   heart rate set by set and a chart.
 - Heart-rate zones (Karvonen) and training load (Edwards TRIMP) over 7 against 28 days.
+- **Sleep and recovery** from the same key: sleep stages, overnight HRV, resting heart rate,
+  Body Battery, stress, steps, VO2max. Garmin's answers are kept as they came, so a better
+  reader rebuilds every day, and a data explorer shows them raw. A "My data" screen charts each
+  metric against the user's own averages.
+- **Runs compressed into their structure**, deterministically, for the coach and the run screen.
+  The samples go into 5-second bins, with grade-adjusted pace (Minetti 2002). Change points come
+  from PELT, with one continuous piecewise-linear line: a bend where the pace bends, a jump only
+  where the data jumps. Heart rate is fitted as first-order kinetics from where it was. From
+  these come the levels, the repeats rep by rep, and the run's type.
 
 **The coach (AI agent)**
 - A provider-neutral tool loop over Gemini and Claude:

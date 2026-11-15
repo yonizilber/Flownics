@@ -107,6 +107,9 @@ fun LibraryScreen(
                 selectedMuscle = state.filter.muscle,
                 onToggleCategory = viewModel::onToggleCategory,
                 onMuscleSelected = viewModel::onMuscleSelected,
+                tags = state.tags,
+                selectedTag = state.filter.tag,
+                onTagSelected = viewModel::onTagSelected,
             )
             if (state.exercises.isEmpty() && !state.loading) {
                 Column(
@@ -142,8 +145,12 @@ private fun FilterRow(
     selectedMuscle: Muscle?,
     onToggleCategory: (ExerciseCategory) -> Unit,
     onMuscleSelected: (Muscle?) -> Unit,
+    tags: List<String>,
+    selectedTag: String?,
+    onTagSelected: (String?) -> Unit,
 ) {
     var muscleMenuOpen by remember { mutableStateOf(false) }
+    var tagMenuOpen by remember { mutableStateOf(false) }
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -171,6 +178,24 @@ private fun FilterRow(
                             text = { Text(stringResource(muscle.labelRes)) },
                             onClick = { onMuscleSelected(muscle); muscleMenuOpen = false },
                         )
+                    }
+                }
+            }
+        }
+        if (tags.isNotEmpty()) {
+            item {
+                Box {
+                    FilterChip(
+                        selected = selectedTag != null,
+                        onClick = { tagMenuOpen = true },
+                        label = { Text(selectedTag?.let { "# $it" } ?: stringResource(R.string.library_tags)) },
+                        trailingIcon = { Icon(Icons.Outlined.ArrowDropDown, contentDescription = null) },
+                    )
+                    DropdownMenu(expanded = tagMenuOpen, onDismissRequest = { tagMenuOpen = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.library_tag_any)) }, onClick = { onTagSelected(null); tagMenuOpen = false })
+                        tags.forEach { tag ->
+                            DropdownMenuItem(text = { Text("# $tag") }, onClick = { onTagSelected(tag); tagMenuOpen = false })
+                        }
                     }
                 }
             }
@@ -245,8 +270,11 @@ private fun ExerciseCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 val muscles = exercise.primaryMuscles.sortedBy { it.ordinal }.map { stringResource(it.labelRes) }
-                val subtitle = (listOfNotNull(styleOf?.let { stringResource(R.string.library_style_of, it) }) +
-                    exercise.categories.map { stringResource(it.labelRes) } + muscles).joinToString(" · ")
+                val subtitle = (listOfNotNull(
+                    styleOf?.let { stringResource(R.string.library_style_of, it) },
+                    stringResource(R.string.library_general).takeIf { exercise.general },
+                    stringResource(R.string.library_quick_added).takeIf { exercise.quickAdded },
+                ) + exercise.categories.map { stringResource(it.labelRes) } + muscles + exercise.tags.map { "#" + it.name }).joinToString(" · ")
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodyMedium,

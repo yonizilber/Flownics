@@ -6,6 +6,7 @@ import com.yonizilber.flownics.data.local.db.entity.BlockJson
 import com.yonizilber.flownics.data.local.db.entity.MediaJson
 import com.yonizilber.flownics.data.local.db.entity.SessionPlanJson
 import com.yonizilber.flownics.data.local.db.entity.StageJson
+import com.yonizilber.flownics.data.local.db.entity.TagJson
 import kotlinx.serialization.Serializable
 
 /*
@@ -47,6 +48,8 @@ data class BundleData(
     val coachProfile: CoachProfileDto? = null,
     // Added with DB v9. Calendar links are not here: they belong to this phone's calendar.
     val plans: List<PlanDto> = emptyList(),
+    // Added with DB v18: what the tags of these exercises are for (shared too: it explains them).
+    val tagInfos: List<TagInfoDto> = emptyList(),
 )
 
 @Serializable
@@ -136,9 +139,17 @@ data class ExerciseDto(
     val level: Int? = null,
     val variationOf: Long? = null,
     val notes: String = "",
+    // Added with DB v18; older files have none.
+    val tags: List<TagJson> = emptyList(),
+    val general: Boolean = false,
+    val quickAdded: Boolean = false,
     val createdAtMillis: Long = 0,
     val updatedAtMillis: Long = 0,
 )
+
+/** What a tag is for (DB v18). */
+@Serializable
+data class TagInfoDto(val name: String, val description: String)
 
 @Serializable
 data class VariationDto(

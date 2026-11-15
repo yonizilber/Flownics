@@ -11,6 +11,7 @@ import com.yonizilber.flownics.domain.coach.CoachEntryKind
 import com.yonizilber.flownics.data.local.db.entity.BlockJson
 import com.yonizilber.flownics.data.local.db.entity.ExerciseAiNoteEntity
 import com.yonizilber.flownics.data.local.db.entity.ExerciseEntity
+import com.yonizilber.flownics.data.local.db.entity.TagJson
 import com.yonizilber.flownics.data.local.db.entity.ExerciseVariationEntity
 import com.yonizilber.flownics.data.local.db.entity.MediaJson
 import com.yonizilber.flownics.data.local.db.entity.SessionPlanJson
@@ -57,6 +58,9 @@ internal fun ExerciseEntity.toDto(json: Json) = ExerciseDto(
     level = level,
     variationOf = variationOf,
     notes = notes,
+    tags = json.decodeFromString(ListSerializer(TagJson.serializer()), tagsJson),
+    general = general,
+    quickAdded = quickAdded,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -84,6 +88,9 @@ internal fun ExerciseDto.toEntity(
     level = level,
     variationOf = variationOf,
     notes = notes,
+    tagsJson = json.encodeToString(ListSerializer(TagJson.serializer()), tags),
+    general = general,
+    quickAdded = quickAdded,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )

@@ -1,6 +1,7 @@
 package com.yonizilber.flownics.domain.repository
 
 import com.yonizilber.flownics.domain.model.Exercise
+import com.yonizilber.flownics.domain.model.TagInfo
 import kotlinx.coroutines.flow.Flow
 
 interface ExerciseRepository {
@@ -27,4 +28,13 @@ interface ExerciseRepository {
 
     /** Makes [id] the default (base) of its family; the old base becomes one of its styles. */
     suspend fun makeFamilyDefault(id: Long)
+
+    /** What each tag is for, as the user wrote it. */
+    fun observeTagInfos(): Flow<List<TagInfo>>
+
+    /** Writes what [name] is for; a blank description removes it. */
+    suspend fun setTagDescription(name: String, description: String)
+
+    /** Renames a tag on every exercise carrying it (merging into an existing tag of that name). */
+    suspend fun renameTag(from: String, to: String)
 }

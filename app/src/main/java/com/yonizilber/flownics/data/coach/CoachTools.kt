@@ -143,7 +143,7 @@ class CoachTools @Inject constructor(
         ),
         AiToolSpec(
             CoachToolNames.EXERCISES_SEARCH,
-            "Find exercises in the user's library by words in the name or equipment, by muscle, and/or by category. " +
+            "Find exercises in the user's library by words in the name, equipment or the user's own tags (goals like a side split), by muscle, and/or by category. " +
                 "Returns id, name, category, how it is measured, level and muscles. An empty query with $ANY for both lists the whole library (up to 60).",
             AiSchema.Obj(
                 mapOf(
@@ -362,7 +362,7 @@ class CoachTools @Inject constructor(
         val category = args.string("category")?.let { c -> ExerciseCategory.entries.firstOrNull { it.name == c } }
         val words = query.split(' ').filter { it.isNotBlank() }
         val found = exercises.observeAll().first()
-            .filter { e -> words.all { w -> e.name.lowercase().contains(w) || e.equipment.lowercase().contains(w) } }
+            .filter { e -> words.all { w -> e.name.lowercase().contains(w) || e.equipment.lowercase().contains(w) || e.tags.any { it.name.lowercase().contains(w) } } }
             .filter { e -> muscle == null || muscle in e.primaryMuscles || muscle in e.secondaryMuscles }
             .filter { e -> category == null || category in e.categories }
             .sortedBy { it.name.lowercase() }

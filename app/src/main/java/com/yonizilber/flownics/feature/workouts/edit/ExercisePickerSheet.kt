@@ -27,6 +27,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -174,8 +180,14 @@ fun ExercisePickerSheet(
     library: Collection<Exercise>,
     onDismiss: () -> Unit,
     onConfirm: (List<Long>) -> Unit,
+    /** Adds a general step (name, minutes or none for "until next", description) instead of an exercise. */
+    onNewGeneral: ((String, Int?, String) -> Unit)? = null,
 ) {
     val selected = remember { mutableStateListOf<Long>() }
+    var generalOpen by remember { mutableStateOf(false) }
+    if (generalOpen && onNewGeneral != null) {
+        GeneralStepDialog(onDismiss = { generalOpen = false }, onAdd = { n, m, d -> generalOpen = false; onNewGeneral(n, m, d) })
+    }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxHeight(0.9f)) {
             Text(
@@ -183,6 +195,11 @@ fun ExercisePickerSheet(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
             )
+            if (onNewGeneral != null) {
+                OutlinedButton(onClick = { generalOpen = true }, modifier = Modifier.padding(horizontal = 16.dp)) {
+                    Text(stringResource(R.string.picker_new_general))
+                }
+            }
             ExercisePickerList(
                 library = library,
                 selected = selected,
@@ -197,4 +214,33 @@ fun ExercisePickerSheet(
             ) { Text(stringResource(R.string.picker_add, selected.size)) }
         }
     }
+}
+
+/** A general step: what it is, how long (empty: until "next"), and what to do. */
+@Composable
+private fun GeneralStepDialog(onDismiss: () -> Unit, onAdd: (String, Int?, String) -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var minutes by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.picker_new_general)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.edit_general_hint), style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(value = name, onValueChange = { name = it.take(60) }, label = { Text(stringResource(R.string.picker_general_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = minutes,
+                    onValueChange = { minutes = it.filter(Char::isDigit).take(3) },
+                    label = { Text(stringResource(R.string.player_add_minutes_open)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(stringResource(R.string.picker_general_what)) }, minLines = 2, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = { TextButton(onClick = { onAdd(name, minutes.toIntOrNull(), description) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.player_add_new_go)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }

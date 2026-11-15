@@ -28,6 +28,7 @@ import com.yonizilber.flownics.data.local.db.entity.CoachNoteEntity
 import com.yonizilber.flownics.data.local.db.entity.ExerciseAiNoteEntity
 import com.yonizilber.flownics.data.local.db.entity.ExerciseEntity
 import com.yonizilber.flownics.data.local.db.entity.ExerciseVariationEntity
+import com.yonizilber.flownics.data.local.db.entity.TagInfoEntity
 import com.yonizilber.flownics.data.local.db.entity.SetLogEntity
 import com.yonizilber.flownics.data.local.db.entity.WorkoutSessionEntity
 import com.yonizilber.flownics.data.local.db.entity.WorkoutTemplateEntity
@@ -50,8 +51,9 @@ import com.yonizilber.flownics.data.local.db.entity.WorkoutTemplateEntity
         GarminRawEntity::class,
         WellnessDayEntity::class,
         RunStructureEntity::class,
+        TagInfoEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
 )
 abstract class FlownicsDatabase : RoomDatabase() {
@@ -353,8 +355,18 @@ val MIGRATION_16_17 = object : Migration(16, 17) {
     }
 }
 
+// v17 → v18: free tags on exercises (with what each tag is for), general steps, quick-added exercises.
+val MIGRATION_17_18 = object : Migration(17, 18) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `exercises` ADD COLUMN `tagsJson` TEXT NOT NULL DEFAULT '[]'")
+        db.execSQL("ALTER TABLE `exercises` ADD COLUMN `general` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `exercises` ADD COLUMN `quickAdded` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `tag_infos` (`key` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, PRIMARY KEY(`key`))")
+    }
+}
+
 // Every schema change gets a real Migration here. See DatabaseModule.
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
-    MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17,
+    MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18,
 )
