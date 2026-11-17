@@ -335,9 +335,9 @@ class DemoSeeder @Inject constructor(
             add(PlannedStep(SegmentKind.WARMUP, durationSeconds = 15 * 60, maxHeartRate = 150))
             repeat(6) { i ->
                 add(PlannedStep(SegmentKind.WORK, durationSeconds = 180, paceFastSecondsPerKm = 265, paceSlowSecondsPerKm = 275))
-                if (i < 5) add(PlannedStep(SegmentKind.RECOVERY, durationSeconds = 120))
+                add(PlannedStep(SegmentKind.RECOVERY, durationSeconds = 120))
             }
-            add(PlannedStep(SegmentKind.COOLDOWN, durationSeconds = 10 * 60))
+            add(PlannedStep(SegmentKind.COOLDOWN, durationSeconds = 8 * 60))
         }
         fun day(offset: Int) = today.plusDays(offset.toLong())
         listOf(
@@ -452,11 +452,11 @@ class DemoSeeder @Inject constructor(
         val answer = if (!he) {
             "${if (inRange == paces.size) "All" else "$inRange of"} your ${paces.size} repeats landed inside the 4:25–4:35 target (${paces.joinToString(", ") { fmt(it) }}), and the last one was the fastest, so there was more in the tank.\n\n" +
                 "Heart rate climbed a little from rep to rep (${reps.first().maxHr} → ${reps.last().maxHr} bpm at the peak), normal drift for 6 × 3 minutes, and it fell by about $drop bpm in each 2-minute jog: a good recovery.\n\n" +
-                "Next time keep the same paces and add a seventh repeat. Tomorrow's easy run: stay under 150 bpm."
+                "Next time keep the same paces and add a seventh repeat. Your next easy run: stay under 150 bpm."
         } else {
             "${if (inRange == paces.size) "כל ${paces.size}" else "$inRange מתוך ${paces.size}"} החזרות נכנסו לטווח היעד 4:25–4:35 (${paces.joinToString(", ") { fmt(it) }}), והאחרונה הייתה המהירה ביותר, כלומר נשאר עוד כוח.\n\n" +
                 "הדופק עלה מעט מחזרה לחזרה (${reps.first().maxHr} → ${reps.last().maxHr} בשיא), סחיפה רגילה ב-6 × 3 דקות, וירד בכ-$drop פעימות בכל 2 דקות של ריצה קלה: התאוששות טובה.\n\n" +
-                "בפעם הבאה: אותם קצבים ועוד חזרה שביעית. הריצה הקלה מחר: מתחת ל-150 דופק."
+                "בפעם הבאה: אותם קצבים ועוד חזרה שביעית. הריצה הקלה הבאה: מתחת ל-150 דופק."
         }
         coach.addAssistant(conv, answer, AiModel.GEMINI_FLASH.id, 0.004, start + 15000)
         val note = t("Goal: flat side split by summer.", "מטרה: שפגט צד מלא עד הקיץ.")

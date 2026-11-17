@@ -38,9 +38,10 @@ object DemoRuns {
         add(Part(15 * 60, 375, 355, WARMUP))
         repeat(reps) { i ->
             add(Part(repSeconds, repPaces[i], repPaces[i], INTERVAL))
-            if (i < reps - 1) add(Part(recoverySeconds, 400, 395, RECOVERY))
+            // A recovery after every rep, the last too; the cool-down is that much shorter.
+            add(Part(recoverySeconds, 400, 395, RECOVERY))
         }
-        add(Part(10 * 60, 380, 395, COOLDOWN))
+        add(Part(10 * 60 - recoverySeconds, 380, 395, COOLDOWN))
     }
 
     /**
