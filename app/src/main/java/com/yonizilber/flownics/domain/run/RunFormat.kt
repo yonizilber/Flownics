@@ -33,7 +33,7 @@ object RunFormat {
 
     private fun repeatName(s: RunStructure, r: RunRepeat): String {
         val parts = s.segments.subList(r.first, r.first + r.period)
-        return "${r.count}×(" + parts.joinToString(" + ") { p -> "${clock(p.endS - p.startS)}/${p.distanceM} m @ ${pace(p.speedMean)}" } + ")"
+        return "${r.reps}×(" + parts.joinToString(" + ") { p -> "${clock(p.endS - p.startS)}/${p.distanceM} m @ ${pace(p.speedMean)}" } + ")"
     }
 
     /** Every segment as a row, then each repeat rep by rep. [heading] names the run (date, id). */
@@ -50,10 +50,11 @@ object RunFormat {
         appendLine("Columns: # | from-to | km | pace start→end (mean) | grade-adj pace | grade %, climb m | HR start→end, peak | HR settled, drift/min | cadence | fit ±s/km | level")
         s.segments.forEachIndexed { i, g -> appendLine(row(i + 1, g)) }
         s.repeats.forEach { r ->
-            appendLine("Repeats: segments ${r.first + 1}-${r.first + r.period * r.count} are ${repeatName(s, r)}.")
+            appendLine("Repeats: segments ${r.first + 1}-${r.first + r.length} are ${repeatName(s, r)}" +
+                (if (r.tail > 0) " (the last rep has only its first ${r.tail} of ${r.period} parts: nothing after it was a recovery)." else "."))
             appendLine("rep | " + (0 until r.period).joinToString(" | ") { "part ${it + 1}: time, pace, HR end/peak" })
-            for (k in 0 until r.count) {
-                val parts = s.segments.subList(r.first + k * r.period, r.first + (k + 1) * r.period)
+            for (k in 0 until r.reps) {
+                val parts = r.partsOf(k).map { s.segments[it] }
                 appendLine("${k + 1} | " + parts.joinToString(" | ") { p -> "${clock(p.endS - p.startS)}, ${pace(p.speedMean)}, ${p.hrEnd ?: "-"}/${p.hrMax ?: "-"}" })
             }
         }

@@ -49,7 +49,7 @@ data class RunSample(
  */
 object RunAnalysis {
     /** Raise whenever the result for the same recording changes, so stored structures are made again. */
-    const val VERSION = 2
+    const val VERSION = 3
     const val BIN = 5
 
     private const val RECORD = 20
@@ -672,7 +672,8 @@ object RunAnalysis {
     /**
      * A pattern of 2–4 segments at different levels done 3 or more times in a row, each segment of
      * a rep lasting (or covering) within ±40 % of the first rep's: the longest such run is taken,
-     * from left to right.
+     * from left to right. A last rep with its closing part missing (no recovery before the
+     * cool-down) still counts, as [RunRepeat.tail].
      */
     fun repeats(segments: List<RunSegment>): List<RunRepeat> {
         val out = mutableListOf<RunRepeat>()
@@ -690,11 +691,19 @@ object RunAnalysis {
                     if (!same) break
                     r++
                 }
-                if (r >= 3 && (best == null || p * r > best.period * best.count)) best = RunRepeat(i, p, r)
+                if (r < 3) continue
+                // A last rep cut short: its first parts match, the rest never came.
+                val after = i + r * p
+                var tail = 0
+                while (tail < p - 1 && after + tail < segments.size &&
+                    segments[after + tail].level == pattern[tail].level && similar(segments[after + tail], pattern[tail])
+                ) tail++
+                val covered = r * p + tail
+                if (best == null || covered > best.length) best = RunRepeat(i, p, r, tail)
             }
             if (best != null) {
                 out += best
-                i += best.period * best.count
+                i += best.length
             } else {
                 i++
             }
@@ -709,7 +718,7 @@ object RunAnalysis {
 
     private fun type(segments: List<RunSegment>, repeats: List<RunRepeat>, movingS: Int): RunType {
         fun dur(s: RunSegment) = s.endS - s.startS
-        val inRepeats = repeats.sumOf { r -> segments.subList(r.first, r.first + r.period * r.count).sumOf(::dur) }
+        val inRepeats = repeats.sumOf { r -> segments.subList(r.first, r.first + r.length).sumOf(::dur) }
         if (repeats.isNotEmpty() && inRepeats >= 0.3 * movingS) return RunType.INTERVALS
         // A build-up: the main segments get faster one after another (or one long one has a slope), by 20 s/km or more.
         val main = segments.filter { dur(it) >= 60 }

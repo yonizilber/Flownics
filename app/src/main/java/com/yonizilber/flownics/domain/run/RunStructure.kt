@@ -56,9 +56,23 @@ data class RunSegment(
     val level: Int = 0,
 )
 
-/** Segments [first] to [first] + [period] × [count] − 1 are [count] repeats of the same [period] segments. */
+/**
+ * Segments [first] to [first] + [period] × [count] − 1 are [count] repeats of the same [period]
+ * segments. [tail]: the [tail] segments right after them are one more rep cut short, its first
+ * parts without the rest (the last fast rep of a session has no recovery after it: a cool-down
+ * follows instead).
+ */
 @Serializable
-data class RunRepeat(val first: Int, val period: Int, val count: Int)
+data class RunRepeat(val first: Int, val period: Int, val count: Int, val tail: Int = 0) {
+    /** Reps in all, the cut-short one included. */
+    val reps: Int get() = count + if (tail > 0) 1 else 0
+
+    /** Segments covered. */
+    val length: Int get() = period * count + tail
+
+    /** The segments of rep [k] (0-based); the cut-short one has fewer than [period]. */
+    fun partsOf(k: Int): IntRange = (first + k * period) until (first + minOf((k + 1) * period, length))
+}
 
 /** A whole run, compressed: what the coach (and the activity screen) read instead of every second. */
 @Serializable

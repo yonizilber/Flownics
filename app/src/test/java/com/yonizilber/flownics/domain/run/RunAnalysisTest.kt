@@ -102,8 +102,8 @@ class RunAnalysisTest {
         assertEquals(RunType.INTERVALS, s.type)
         val r = s.repeats.single()
         assertEquals(2, r.period)
-        assertTrue("reps: ${r.count}", r.count >= 7)
-        val reps = s.segments.subList(r.first, r.first + r.period * r.count).filter { it.level == s.levels.lastIndex }
+        assertTrue("reps: ${r.reps}", r.reps >= 7)
+        val reps = s.segments.subList(r.first, r.first + r.length).filter { it.level == s.levels.lastIndex }
         reps.forEach { rep ->
             assertEquals(90.0, (rep.endS - rep.startS).toDouble(), 15.0)
             assertEquals(222.2, RunAnalysis.paceOf(rep.speedMean), 10.0)
@@ -113,6 +113,28 @@ class RunAnalysisTest {
             assertNull(rep.hrSettled)
             assertNotNull(rep.hrEnd)
         }
+    }
+
+    @Test
+    fun aLastRepWithNoRecoveryAfterItStillCounts() {
+        // 15 min easy, 6 × (3 min fast, 2 min recovery) but no recovery after the last, 10 min cool-down
+        // at about the recovery pace: the last fast rep has no closing part.
+        val speed = { t: Int ->
+            val k = t - 900
+            when {
+                k < 0 -> 2.7
+                k < 6 * 300 - 120 -> if (k % 300 < 180) 3.7 else 2.5
+                else -> 2.6
+            }
+        }
+        val s = checkNotNull(RunAnalysis.analyze(run(speed, 900 + 6 * 300 - 120 + 600)))
+        val r = s.repeats.single()
+        assertEquals(2, r.period)
+        assertEquals("reps ${r.count} + tail ${r.tail}", 6, r.reps)
+        assertEquals(1, r.tail)
+        // Rep 6 has one part, the others two.
+        assertEquals(1, r.partsOf(5).count())
+        assertEquals(2, r.partsOf(4).count())
     }
 
     @Test

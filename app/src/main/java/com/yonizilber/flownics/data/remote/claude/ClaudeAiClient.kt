@@ -166,13 +166,16 @@ class ClaudeAiClient @Inject constructor() : AiClient {
             request.history.forEach { turn -> if (turn.fromUser) builder.addUserMessage(turn.text) else builder.addAssistantMessage(turn.text) }
             builder.addUserMessage(request.userText)
             steps.forEach { it(builder) }
+            // Not strict: Claude compiles every strict tool's schema into one grammar and refuses a
+            // request when it is too large (the coach has 15 tools). Without strict the shape is
+            // no longer guaranteed, so the app checks each call's arguments itself and sends a
+            // problem back to the model as an error result (CoachTools), never filling in silently.
             request.tools.forEach { tool ->
                 builder.addTool(
                     Tool.builder()
                         .name(tool.name)
                         .description(tool.description)
                         .inputSchema(inputSchemaOf(tool.schema))
-                        .strict(true)
                         .build(),
                 )
             }

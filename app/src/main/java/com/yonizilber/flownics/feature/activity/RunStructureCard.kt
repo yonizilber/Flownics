@@ -48,7 +48,7 @@ fun RunStructureCard(s: RunStructure, rows: List<RunAnalysis.DetailRow>) {
             Text(stringResource(R.string.run_structure_title), style = MaterialTheme.typography.titleSmall)
             Text(typeName(s.type) + s.repeats.joinToString("") { r ->
                 val parts = s.segments.subList(r.first, r.first + r.period)
-                " · ${r.count} × (" + parts.joinToString(" + ") { p -> "${RunFormat.clock(p.endS - p.startS)} @ ${RunFormat.pace(p.speedMean)}" } + ")"
+                 " · ${r.reps} × (" + parts.joinToString(" + ") { p -> "${RunFormat.clock(p.endS - p.startS)} @ ${RunFormat.pace(p.speedMean)}" } + ")"
             }, style = MaterialTheme.typography.bodyLarge)
             if (rows.isNotEmpty()) {
                 PaceChart(s, rows)
@@ -88,9 +88,9 @@ fun RunStructureCard(s: RunStructure, rows: List<RunAnalysis.DetailRow>) {
                 }
             }
             s.repeats.forEach { r ->
-                Text(stringResource(R.string.run_repeats_title, r.count), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
-                for (k in 0 until r.count) {
-                    val parts = s.segments.subList(r.first + k * r.period, r.first + (k + 1) * r.period)
+                Text(stringResource(R.string.run_repeats_title, r.reps), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+                for (k in 0 until r.reps) {
+                    val parts = r.partsOf(k).map { s.segments[it] }
                     Text(
                         "${k + 1}. " + parts.joinToString(" | ") { p -> "${RunFormat.clock(p.endS - p.startS)} @ ${RunFormat.pace(p.speedMean)}" + (p.hrEnd?.let { " ♥$it" } ?: "") },
                         style = MaterialTheme.typography.bodySmall,
