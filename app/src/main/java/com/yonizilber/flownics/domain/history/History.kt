@@ -4,13 +4,19 @@ import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.Muscle
 import com.yonizilber.flownics.domain.model.SessionHeader
 import com.yonizilber.flownics.domain.model.SetLog
+import com.yonizilber.flownics.domain.model.SetTarget
 import com.yonizilber.flownics.domain.workout.CompiledWorkout
 import com.yonizilber.flownics.domain.workout.Side
 import com.yonizilber.flownics.domain.workout.WorkStep
 
-/** Σ reps × kg over the sets that were done. Sets missing either number add nothing. */
-fun Collection<SetLog>.volumeKg(): Double =
-    filterNot { it.skipped }.sumOf { (it.actual.reps ?: 0) * (it.actual.weightKg ?: 0.0) }
+/**
+ * Σ reps × kg over the sets that were done, reps continued at another weight included (without
+ * weight they add nothing). Sets missing either number add nothing.
+ */
+fun Collection<SetLog>.volumeKg(): Double = filterNot { it.skipped }.sumOf { it.actual.volumeKg() }
+
+/** reps × kg of one set, its continued parts included. */
+fun SetTarget.volumeKg(): Double = (reps ?: 0) * (weightKg ?: 0.0) + more.sumOf { it.reps * (it.weightKg ?: 0.0) }
 
 /** What one exercise's progress can be charted by. Each is a per-workout figure. */
 enum class ProgressMetric {
@@ -20,7 +26,7 @@ enum class ProgressMetric {
     /** Σ reps × kg in the workout. */
     VOLUME,
 
-    /** Most reps in one set. */
+    /** Most reps in one set: its main part (reps continued at a lower weight are another effort). */
     REPS,
 
     /** Longest set. */
@@ -35,7 +41,7 @@ enum class ProgressMetric {
         val done = sets.filterNot { it.skipped }.map { it.actual }
         return when (this) {
             WEIGHT -> done.mapNotNull { it.weightKg }.maxOrNull()
-            VOLUME -> done.sumOf { (it.reps ?: 0) * (it.weightKg ?: 0.0) }.takeIf { v -> v > 0 }
+            VOLUME -> done.sumOf { it.volumeKg() }.takeIf { v -> v > 0 }
             REPS -> done.mapNotNull { it.reps }.maxOrNull()?.toDouble()
             SECONDS -> done.mapNotNull { it.seconds }.maxOrNull()?.toDouble()
             DISTANCE -> done.mapNotNull { it.distanceMeters }.maxOrNull()?.toDouble()

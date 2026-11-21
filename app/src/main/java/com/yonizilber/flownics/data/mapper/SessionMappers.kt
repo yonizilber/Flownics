@@ -3,6 +3,9 @@ package com.yonizilber.flownics.data.mapper
 import com.yonizilber.flownics.data.local.db.entity.SessionHeaderRow
 import com.yonizilber.flownics.data.local.db.entity.SessionPlanJson
 import com.yonizilber.flownics.data.local.db.entity.SetLogEntity
+import com.yonizilber.flownics.data.local.db.entity.SetPartJson
+import com.yonizilber.flownics.data.local.db.entity.SetParts
+import com.yonizilber.flownics.domain.model.SetPart
 import com.yonizilber.flownics.data.local.db.entity.StepJson
 import com.yonizilber.flownics.data.local.db.entity.WorkoutSessionEntity
 import com.yonizilber.flownics.domain.model.SessionHeader
@@ -110,7 +113,7 @@ fun SetLogEntity.toDomain(): SetLog = SetLog(
     set = setNumber,
     round = round,
     side = side?.let(Side::valueOf),
-    actual = SetTarget(reps, seconds, weightKg, distanceMeters),
+    actual = SetTarget(reps, seconds, weightKg, distanceMeters, SetParts.decode(moreJson).map { SetPart(it.reps, it.weightKg) }),
     skipped = skipped,
     completedAtMillis = completedAtMillis,
     startedAtMillis = startedAtMillis,
@@ -129,6 +132,7 @@ fun SetLog.toEntity(): SetLogEntity = SetLogEntity(
     seconds = actual.seconds,
     weightKg = actual.weightKg,
     distanceMeters = actual.distanceMeters,
+    moreJson = SetParts.encode(actual.more.map { SetPartJson(it.reps, it.weightKg) }),
     skipped = skipped,
     completedAtMillis = completedAtMillis,
     startedAtMillis = startedAtMillis,

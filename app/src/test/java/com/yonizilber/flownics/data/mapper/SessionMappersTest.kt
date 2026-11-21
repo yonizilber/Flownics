@@ -3,6 +3,7 @@ package com.yonizilber.flownics.data.mapper
 import com.yonizilber.flownics.domain.model.SessionStatus
 import com.yonizilber.flownics.domain.model.SetLog
 import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.domain.model.SetPart
 import com.yonizilber.flownics.domain.model.WorkoutSession
 import com.yonizilber.flownics.domain.workout.RestPart
 import com.yonizilber.flownics.domain.workout.RestStep

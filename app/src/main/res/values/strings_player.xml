@@ -91,4 +91,12 @@
     <string name="settings_cue_vibrate_hint">Vibrates when each step starts</string>
     <string name="player_round_in_rest">A round of %1$d, one after the other</string>
     <string name="say_then">" then "</string>
+    <!-- A set continued at another weight (a drop set). -->
+    <string name="logged_more_none">+ %1$d reps without weight</string>
+    <string name="logged_more_weight">+ %1$d reps at %2$s kg</string>
+    <string name="player_more_add">+ More reps at another weight</string>
+    <string name="player_more_hint">Went on right after, lighter or without weight</string>
+    <string name="player_more_title">Then, at another weight</string>
+    <string name="player_more_remove">Remove this part</string>
+    <string name="player_more_no_weight">no weight</string>
 </resources>

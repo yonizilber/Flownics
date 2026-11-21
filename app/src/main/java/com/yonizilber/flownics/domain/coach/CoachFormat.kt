@@ -319,6 +319,8 @@ object CoachFormat {
             }
             t.seconds?.let { add("$it s") }
             t.distanceMeters?.let { add("$it m") }
+            // A drop set: on in the same set at another weight.
+            t.more.forEach { p -> add(if (p.weightKg != null && p.weightKg > 0) "+${p.reps}×${number(p.weightKg)} kg" else "+${p.reps} without weight") }
         }
         return parts.joinToString(" ").ifEmpty { "done" }
     }

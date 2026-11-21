@@ -7,6 +7,7 @@ import com.yonizilber.flownics.data.local.db.entity.MediaJson
 import com.yonizilber.flownics.data.local.db.entity.SessionPlanJson
 import com.yonizilber.flownics.data.local.db.entity.StageJson
 import com.yonizilber.flownics.data.local.db.entity.TagJson
+import com.yonizilber.flownics.data.local.db.entity.SetPartJson
 import kotlinx.serialization.Serializable
 
 /*
@@ -223,6 +224,8 @@ data class SetLogDto(
     val skipped: Boolean = false,
     val completedAtMillis: Long,
     val startedAtMillis: Long? = null,
+    // Added with DB v19: reps continued at another weight in the same set.
+    val more: List<SetPartJson> = emptyList(),
 )
 
 @Serializable

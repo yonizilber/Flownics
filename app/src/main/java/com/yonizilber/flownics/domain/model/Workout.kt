@@ -50,7 +50,15 @@ data class SetTarget(
     val seconds: Int? = null,
     val weightKg: Double? = null,
     val distanceMeters: Int? = null,
+    /**
+     * Logged sets only: reps done straight after the main part at another weight, in order (a
+     * drop set: as many as possible with the weight, then on with less or none). Never planned.
+     */
+    val more: List<SetPart> = emptyList(),
 )
+
+/** Reps continued within the same set at another weight; [weightKg] null is without weight. */
+data class SetPart(val reps: Int, val weightKg: Double? = null)
 
 /** What fills a rest period: nothing, one chosen exercise, or a rotation drawn from the library. */
 sealed interface ActiveRest {

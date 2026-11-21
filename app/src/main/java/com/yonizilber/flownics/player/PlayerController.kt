@@ -467,7 +467,8 @@ class PlayerController @Inject constructor(
             set = step.set,
             round = step.round,
             side = step.side,
-            actual = actual,
+            // A part added but left at 0 reps wasn't done.
+            actual = actual.copy(more = actual.more.filter { it.reps > 0 }),
             skipped = skipped,
             completedAtMillis = System.currentTimeMillis(),
             startedAtMillis = startedAtWall(w, index),

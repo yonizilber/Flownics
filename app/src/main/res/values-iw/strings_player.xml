@@ -91,4 +91,12 @@
     <string name="settings_cue_vibrate_hint">רטט בתחילת כל צעד</string>
     <string name="player_round_in_rest">סבב של %1$d, אחד אחרי השני</string>
     <string name="say_then">" ואז "</string>
+    <!-- A set continued at another weight (a drop set). -->
+    <string name="logged_more_none">+ %1$d חזרות בלי משקל</string>
+    <string name="logged_more_weight">+ %1$d חזרות ב-%2$s ק״ג</string>
+    <string name="player_more_add">+ עוד חזרות במשקל אחר</string>
+    <string name="player_more_hint">המשכת מיד, עם פחות משקל או בלי</string>
+    <string name="player_more_title">ואז, במשקל אחר</string>
+    <string name="player_more_remove">להסיר את החלק הזה</string>
+    <string name="player_more_no_weight">בלי משקל</string>
 </resources>

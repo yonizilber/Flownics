@@ -6,6 +6,7 @@ import com.yonizilber.flownics.domain.model.Muscle
 import com.yonizilber.flownics.domain.model.SessionHeader
 import com.yonizilber.flownics.domain.model.SetLog
 import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.domain.model.SetPart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -32,6 +33,16 @@ class HistoryTest {
     fun volumeCountsOnlyDoneSetsWithBothNumbers() {
         val logs = listOf(log(1, reps = 10, kg = 40.0), log(1, reps = 8, kg = 42.5), log(1, reps = 10), log(1, reps = 5, kg = 100.0, skipped = true))
         assertEquals(740.0, logs.volumeKg(), 1e-9)
+    }
+
+    @Test
+    fun aDropSetAddsItsWeightedPartsToVolumeButRecordsUseTheMainPart() {
+        val drop = log(1, reps = 8, kg = 20.0).let { it.copy(actual = it.actual.copy(more = listOf(SetPart(6, 12.0), SetPart(5)))) }
+        // 8 × 20 + 6 × 12 + 5 × nothing.
+        assertEquals(232.0, listOf(drop).volumeKg(), 1e-9)
+        assertEquals(232.0, ProgressMetric.VOLUME.of(listOf(drop))!!, 1e-9)
+        assertEquals(20.0, ProgressMetric.WEIGHT.of(listOf(drop))!!, 1e-9)
+        assertEquals(8.0, ProgressMetric.REPS.of(listOf(drop))!!, 1e-9)
     }
 
     @Test

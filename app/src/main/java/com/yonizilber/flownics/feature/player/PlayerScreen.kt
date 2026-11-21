@@ -90,6 +90,7 @@ import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.MeasureMode
 import com.yonizilber.flownics.domain.model.MediaKind
 import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.domain.model.SetPart
 import com.yonizilber.flownics.domain.player.Phase
 import com.yonizilber.flownics.domain.player.SetDefaults
 import com.yonizilber.flownics.domain.player.StageTimeline
@@ -649,6 +650,42 @@ private fun CueList(cues: List<String>) {
 @Composable
 private fun EntryFields(exercise: Exercise?, entry: SetTarget, onChange: (SetTarget) -> Unit) {
     val mode = exercise?.measureMode ?: MeasureMode.REPS
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        MainEntry(mode, entry, onChange)
+        // A drop set: as many as possible with the weight, then on at once with less or none.
+        if (mode == MeasureMode.REPS_WEIGHT) MoreParts(entry, onChange)
+    }
+}
+
+@Composable
+private fun MoreParts(entry: SetTarget, onChange: (SetTarget) -> Unit) {
+    fun change(i: Int, part: SetPart) = onChange(entry.copy(more = entry.more.toMutableList().also { it[i] = part }))
+    if (entry.more.isNotEmpty()) {
+        Text(stringResource(R.string.player_more_title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+    }
+    entry.more.forEachIndexed { i, part ->
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+            NumberStepper(
+                label = stringResource(R.string.wedit_reps),
+                value = part.reps,
+                onValueChange = { change(i, part.copy(reps = it)) },
+            )
+            WeightStepper(part.weightKg ?: 0.0, zeroText = stringResource(R.string.player_more_no_weight)) { kg -> change(i, part.copy(weightKg = kg.takeIf { it > 0 })) }
+            IconButton(onClick = { onChange(entry.copy(more = entry.more.filterIndexed { k, _ -> k != i })) }) {
+                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.player_more_remove))
+            }
+        }
+    }
+    TextButton(onClick = { onChange(entry.copy(more = entry.more + SetPart(reps = 0))) }) {
+        Text(stringResource(R.string.player_more_add))
+    }
+    if (entry.more.isEmpty()) {
+        Text(stringResource(R.string.player_more_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun MainEntry(mode: MeasureMode, entry: SetTarget, onChange: (SetTarget) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -677,7 +714,7 @@ private fun EntryFields(exercise: Exercise?, entry: SetTarget, onChange: (SetTar
 }
 
 @Composable
-private fun WeightStepper(value: Double, onValueChange: (Double) -> Unit) {
+private fun WeightStepper(value: Double, zeroText: String? = null, onValueChange: (Double) -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             stringResource(R.string.wedit_weight),
@@ -689,7 +726,7 @@ private fun WeightStepper(value: Double, onValueChange: (Double) -> Unit) {
                 onClick = { onValueChange((value - WEIGHT_STEP_KG).coerceAtLeast(0.0)) },
                 enabled = value > 0,
             ) { Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.wedit_decrease)) }
-            Text(formatWeight(value), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+            Text(if (value <= 0 && zeroText != null) zeroText else formatWeight(value), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             FilledTonalIconButton(onClick = { onValueChange(value + WEIGHT_STEP_KG) }) {
                 Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.wedit_increase))
             }

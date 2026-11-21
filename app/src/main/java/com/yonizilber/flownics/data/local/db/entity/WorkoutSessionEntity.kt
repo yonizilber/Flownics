@@ -64,7 +64,23 @@ data class SetLogEntity(
     val completedAtMillis: Long,
     // Added in v11.
     val startedAtMillis: Long? = null,
+    /** Added in v19: reps continued at another weight in the same set, as JSON ([SetParts]); empty when none. */
+    val moreJson: String = "",
 )
+
+/** One part of a set continued at another weight (see SetTarget.more). */
+@Serializable
+data class SetPartJson(val reps: Int, val weightKg: Double? = null)
+
+/** [SetLogEntity.moreJson] both ways. An unreadable value fails loudly rather than reading as "none". */
+object SetParts {
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+    private val serializer = kotlinx.serialization.builtins.ListSerializer(SetPartJson.serializer())
+
+    fun encode(parts: List<SetPartJson>): String = if (parts.isEmpty()) "" else json.encodeToString(serializer, parts)
+
+    fun decode(text: String): List<SetPartJson> = if (text.isBlank()) emptyList() else json.decodeFromString(serializer, text)
+}
 
 @Serializable
 data class SessionPlanJson(

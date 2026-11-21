@@ -62,7 +62,13 @@ fun targetText(res: Resources, target: SetTarget, exercise: Exercise?): String {
         }
         if (mode == MeasureMode.REPS_WEIGHT) target.weightKg?.let { add(res.getString(R.string.target_weight, formatWeight(it))) }
     }
-    return parts.joinToString(" · ").ifEmpty { res.getString(R.string.target_open) }
+    return parts.joinToString(" · ").ifEmpty { res.getString(R.string.target_open) } + moreText(res, target)
+}
+
+/** " + 5 reps without weight", for reps continued at another weight in a logged set; empty when none. */
+fun moreText(res: Resources, actual: SetTarget): String = actual.more.joinToString("") { part ->
+    " " + (part.weightKg?.takeIf { it > 0 }?.let { res.getString(R.string.logged_more_weight, part.reps, formatWeight(it)) }
+        ?: res.getString(R.string.logged_more_none, part.reps))
 }
 
 /**
@@ -77,7 +83,7 @@ fun loggedText(res: Resources, actual: SetTarget, skipped: Boolean): String {
         actual.weightKg?.let { add(res.getString(R.string.target_weight, formatWeight(it))) }
         actual.distanceMeters?.let { add(res.getString(R.string.target_distance, it)) }
     }
-    return parts.joinToString(" · ").ifEmpty { res.getString(R.string.logged_nothing) }
+    return parts.joinToString(" · ").ifEmpty { res.getString(R.string.logged_nothing) } + moreText(res, actual)
 }
 
 /** A metric's value with its unit: "62.5 kg", "2,400 kg", "12 reps", "1:30", "400 m". */

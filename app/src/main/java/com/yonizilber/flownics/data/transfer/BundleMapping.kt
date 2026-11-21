@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.data.transfer
 
+import com.yonizilber.flownics.data.local.db.entity.SetParts
+
 import com.yonizilber.flownics.data.local.db.entity.ActiveRestJson
 import com.yonizilber.flownics.data.local.db.entity.ActivityEntity
 import com.yonizilber.flownics.data.local.db.entity.AiUsageEntity
@@ -154,6 +156,7 @@ internal fun WorkoutSessionEntity.toDto(json: Json, logs: List<SetLogEntity>) = 
             skipped = it.skipped,
             completedAtMillis = it.completedAtMillis,
             startedAtMillis = it.startedAtMillis,
+            more = SetParts.decode(it.moreJson),
         )
     },
 )
@@ -187,6 +190,7 @@ internal fun SetLogDto.toEntity(sessionId: Long) = SetLogEntity(
     skipped = skipped,
     completedAtMillis = completedAtMillis,
     startedAtMillis = startedAtMillis,
+    moreJson = SetParts.encode(more),
 )
 
 internal fun ExerciseVariationEntity.toDto() =
