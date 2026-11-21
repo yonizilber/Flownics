@@ -48,7 +48,12 @@ import com.yonizilber.flownics.ui.component.levelText
 
 /**
  * Asks the AI about the exercise being edited, then lets the user tick which suggested parts go
- * into the form. Unchanged parts are not offered; muscles replace, cues and stages are added.
+ * into the form. Unchanged parts are not offered. Filling in a new one: muscles replace, cues and
+ * stages are added. [refining] one already in the library: its lists come back whole and replace
+ * the current ones, with every change listed and its reason.
+ *
+ * The user's [text] (a description, or what to change) lives in the view model, so a failed call
+ * keeps it, shown again to fix before trying again.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,14 +61,16 @@ fun AiFillSheet(
     state: ExerciseEditorState,
     fill: AiCall<AiResult<ExerciseSuggestion>>,
     model: AiModel,
-    onAsk: (hint: String, webSearch: Boolean, language: String) -> Unit,
+    refining: Boolean,
+    text: String,
+    onTextChange: (String) -> Unit,
+    onAsk: (webSearch: Boolean, language: String) -> Unit,
     onApply: (Set<FillField>) -> Unit,
     onCancel: () -> Unit,
     onDismiss: () -> Unit,
     onOpenAiSettings: () -> Unit,
 ) {
     val res = LocalResources.current
-    var hint by rememberSaveable { mutableStateOf("") }
     var webSearch by rememberSaveable { mutableStateOf(true) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
@@ -75,17 +82,20 @@ fun AiFillSheet(
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(R.string.ai_fill_title, state.name), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(if (refining) R.string.ai_refine_title else R.string.ai_fill_title, state.name), style = MaterialTheme.typography.titleLarge)
+            val textField: @Composable () -> Unit = {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    label = { Text(stringResource(if (refining) R.string.ai_refine_hint else R.string.ai_fill_hint)) },
+                    minLines = 4,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             when (fill) {
                 AiCall.Idle -> {
-                    Text(stringResource(R.string.ai_fill_intro), style = MaterialTheme.typography.bodyMedium)
-                    OutlinedTextField(
-                        value = hint,
-                        onValueChange = { hint = it },
-                        label = { Text(stringResource(R.string.ai_fill_hint)) },
-                        minLines = 2,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    Text(stringResource(if (refining) R.string.ai_refine_intro else R.string.ai_fill_intro), style = MaterialTheme.typography.bodyMedium)
+                    textField()
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -103,24 +113,29 @@ fun AiFillSheet(
                         Switch(checked = webSearch, onCheckedChange = null)
                     }
                     AiActionButton(
-                        text = stringResource(R.string.ai_fill_ask),
+                        text = stringResource(if (refining) R.string.ai_refine_ask else R.string.ai_fill_ask),
                         enabled = true,
-                        onClick = { onAsk(hint, webSearch, res.aiLanguage()) },
+                        onClick = { onAsk(webSearch, res.aiLanguage()) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 AiCall.Running -> AiRunningCard(model, webSearch, onCancel = onCancel)
-                is AiCall.Failed -> AiErrorCard(fill.error, onRetry = { onAsk(hint, webSearch, res.aiLanguage()) }, onOpenSettings = onOpenAiSettings)
-                is AiCall.Done -> Review(state, fill.value, onApply)
+                is AiCall.Failed -> {
+                    AiErrorCard(fill.error, onRetry = { onAsk(webSearch, res.aiLanguage()) }, onOpenSettings = onOpenAiSettings)
+                    // What the user wrote is still here, to fix before trying again.
+                    Text(stringResource(R.string.ai_fill_kept), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    textField()
+                }
+                is AiCall.Done -> Review(state, fill.value, refining, onApply)
             }
         }
     }
 }
 
 @Composable
-private fun Review(state: ExerciseEditorState, result: AiResult<ExerciseSuggestion>, onApply: (Set<FillField>) -> Unit) {
+private fun Review(state: ExerciseEditorState, result: AiResult<ExerciseSuggestion>, refining: Boolean, onApply: (Set<FillField>) -> Unit) {
     val s = result.value
-    val offers = remember(result) { offers(state, s) }
+    val offers = remember(result) { offers(state, s, refining) }
     var chosen by remember(result) { mutableStateOf(offers.filter { it.preselected }.map { it.field }.toSet()) }
 
     if (s.summary.isNotBlank()) Text(s.summary, style = MaterialTheme.typography.bodyMedium)
@@ -132,6 +147,10 @@ private fun Review(state: ExerciseEditorState, result: AiResult<ExerciseSuggesti
         )
     }
     if (s.caveats.isNotBlank()) Text(stringResource(R.string.ai_fill_caveats, s.caveats), style = MaterialTheme.typography.bodySmall)
+    if (s.changes.isNotEmpty()) {
+        Text(stringResource(R.string.ai_refine_changes), style = MaterialTheme.typography.titleSmall)
+        Text(s.changes.joinToString("\n") { "• $it" }, style = MaterialTheme.typography.bodyMedium)
+    }
     if (s.unknownValues.isNotEmpty()) {
         Text(
             stringResource(R.string.ai_fill_unknown, s.unknownValues.joinToString()),
@@ -182,7 +201,7 @@ private class Offer(
     val detail: @Composable () -> String? = { null },
 )
 
-private fun offers(state: ExerciseEditorState, s: ExerciseSuggestion): List<Offer> = buildList {
+private fun offers(state: ExerciseEditorState, s: ExerciseSuggestion, refining: Boolean): List<Offer> = buildList {
     s.category?.let { main -> (listOf(main) + s.extraCategories).distinct() }?.takeIf { it != state.categories }?.let { proposed ->
         add(Offer(FillField.CATEGORY, true, {
             stringResource(
@@ -204,10 +223,10 @@ private fun offers(state: ExerciseEditorState, s: ExerciseSuggestion): List<Offe
         }))
     }
     s.level?.takeIf { it != state.level }?.let { proposed ->
-        add(Offer(FillField.LEVEL, state.level == null, { stringResource(R.string.ai_fill_level, levelText(proposed)) }))
+        add(Offer(FillField.LEVEL, refining || state.level == null, { stringResource(R.string.ai_fill_level, levelText(proposed)) }))
     }
     if (s.equipment.isNotBlank() && s.equipment != state.equipment.trim()) {
-        add(Offer(FillField.EQUIPMENT, state.equipment.isBlank(), { stringResource(R.string.ai_fill_equipment, s.equipment) }))
+        add(Offer(FillField.EQUIPMENT, refining || state.equipment.isBlank(), { stringResource(R.string.ai_fill_equipment, s.equipment) }))
     }
     val musclesDiffer = s.primaryMuscles != state.muscles.primary || s.secondaryMuscles != state.muscles.secondary
     if (musclesDiffer && (s.primaryMuscles.isNotEmpty() || s.secondaryMuscles.isNotEmpty())) {
@@ -229,7 +248,7 @@ private fun offers(state: ExerciseEditorState, s: ExerciseSuggestion): List<Offe
         add(
             Offer(
                 FillField.INSTRUCTIONS,
-                currentSteps.isEmpty(),
+                refining || currentSteps.isEmpty(),
                 {
                     if (currentSteps.isEmpty()) {
                         pluralStringResource(R.plurals.ai_fill_instructions, s.instructions.size, s.instructions.size)
@@ -241,12 +260,25 @@ private fun offers(state: ExerciseEditorState, s: ExerciseSuggestion): List<Offe
             ),
         )
     }
-    val existingCues = state.cues.map { it.text.trim().lowercase() }.toSet()
+    val currentCues = state.cues.map { it.text.trim() }.filter { it.isNotEmpty() }
+    val existingCues = currentCues.map { it.lowercase() }.toSet()
     val newCues = s.cues.filter { it.lowercase() !in existingCues }
-    if (newCues.isNotEmpty()) {
+    if (refining) {
+        // The whole list, the cues it kept included, in place of the current one.
+        if (s.cues.isNotEmpty() && s.cues != currentCues) {
+            add(Offer(FillField.CUES, true, { pluralStringResource(R.plurals.ai_refine_cues, s.cues.size, s.cues.size) }, { s.cues.joinToString("\n") { "• $it" } }))
+        }
+    } else if (newCues.isNotEmpty()) {
         add(Offer(FillField.CUES, true, { pluralStringResource(R.plurals.ai_fill_cues, newCues.size, newCues.size) }, { newCues.joinToString("\n") { "• $it" } }))
     }
-    if (s.stages.isNotEmpty()) {
+    val currentStages = state.stages.filter { it.name.isNotBlank() || it.description.isNotBlank() }.map { it.name.trim() to it.description.trim() }
+    if (refining) {
+        if (s.stages.isNotEmpty() && s.stages.map { it.name to it.description } != currentStages) {
+            add(Offer(FillField.STAGES, true, { pluralStringResource(R.plurals.ai_refine_stages, s.stages.size, s.stages.size) }, {
+                s.stages.joinToString("\n") { "• " + it.name }
+            }))
+        }
+    } else if (s.stages.isNotEmpty()) {
         add(Offer(FillField.STAGES, state.stages.isEmpty(), { pluralStringResource(R.plurals.ai_fill_stages, s.stages.size, s.stages.size) }, {
             s.stages.joinToString("\n") { "• " + it.name }
         }))

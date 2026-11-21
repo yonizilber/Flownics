@@ -72,14 +72,22 @@ object FitnessPrompts {
             "confidence" to AiSchema.Str(enum = listOf("HIGH", "MEDIUM", "LOW"), description = "How sure you are about the muscles."),
             "level" to AiSchema.Integer(description = "Difficulty 1-5 on the level scale."),
             "caveats" to AiSchema.Str(description = "Ambiguity in the name, or where sources disagree. Empty when none."),
+            "changes" to AiSchema.Arr(
+                AiSchema.Str(),
+                "When refining: each change made to what the user had entered, with a short reason (one line each). Empty when filling in.",
+            ),
         ),
     )
 
-    fun exerciseFill(exercise: Exercise, userHint: String, language: String, webSearch: Boolean) = AiRequest(
+    /**
+     * Details for one exercise. [userText] is the user's own words: a description of the exercise
+     * (when filling in) or what they want changed (when [refine]-ing one already filled in, whose
+     * current entries are the starting point, not something to replace wholesale).
+     */
+    fun exerciseFill(exercise: Exercise, userText: String, language: String, webSearch: Boolean, refine: Boolean = false) = AiRequest(
         feature = AiFeature.EXERCISE_FILL,
         subject = exercise.name,
-        system = preamble(language) + "\n\n" + """
-            Task: fill in the details of one exercise for the user's library.
+        system = preamble(language) + "\n\n" + (if (refine) REFINE_TASK else "Task: fill in the details of one exercise for the user's library.") + "\n" + """
             The muscle lists matter most: the app uses them to show which muscles a workout trains, so be accurate rather than generous. A muscle belongs in primary only if it is a main mover.
             ${if (webSearch) "Search the web for reliable sources (exercise science references, EMG studies, reputable coaching or physiotherapy sites) before deciding the muscles. Prefer sources that explain why." else "Answer from your own knowledge."}
             Use only these muscle names: ${muscleNames.joinToString()}.
@@ -87,7 +95,7 @@ object FitnessPrompts {
             Instructions are the steps of doing it, in order. Cues are separate: what to keep in mind while doing it.
             If the exercise name is ambiguous, pick the most common meaning and say so in caveats.
         """.trimIndent(),
-        turns = listOf(AiTurn(fromUser = true, text = "<data>\n${describe(exercise)}${hintLine(userHint)}\n</data>")),
+        turns = listOf(AiTurn(fromUser = true, text = "<data>\n${describe(exercise)}${userTextLine(userText, refine)}\n</data>")),
         schema = exerciseFillSchema,
         webSearch = webSearch,
     )
@@ -418,6 +426,21 @@ object FitnessPrompts {
     ).joinToString(" @ ").ifEmpty { "no target" }
 
     private fun hintLine(hint: String) = if (hint.isBlank()) "" else "\nThe user adds: ${hint.trim()}"
+
+    /** The user's own words about the exercise: their knowledge of it, worth more than the name alone. */
+    private fun userTextLine(text: String, refine: Boolean) = when {
+        text.isBlank() -> ""
+        refine -> "\n\nWhat the user wants changed (their own words):\n${text.trim()}"
+        else -> "\n\nThe user's description of the exercise (their own words; it says what this exercise is, so follow it over a guess from the name):\n${text.trim()}"
+    }
+
+    private val REFINE_TASK = """
+        Task: refine one exercise already in the user's library. What the user entered is the starting point and their own knowledge of the exercise:
+        keep what is correct, and the user's wording where it is clear; correct what is wrong, make clear what is unclear, add what is missing.
+        Instructions, cues and stages: return each whole list as it should be after your changes (it replaces the current one in the app), keeping the user's items you agree with.
+        Other fields: return the value it should have (the current one when it is right).
+        List every change in changes, with its reason. If nothing needs changing, return the current values and an empty changes list.
+    """.trimIndent()
 
     private fun goalLine(goal: String) = if (goal.isBlank()) "" else "\nThe user's goal for this workout: ${goal.trim()}"
 }

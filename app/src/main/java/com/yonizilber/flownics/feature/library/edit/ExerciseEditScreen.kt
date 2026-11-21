@@ -124,6 +124,14 @@ fun ExerciseEditScreen(
         }
     }
 
+    // From "Refine with AI" on the exercise page: open the AI sheet once the exercise has loaded.
+    LaunchedEffect(state.loading) {
+        if (!state.loading && viewModel.openAiOnStart) {
+            viewModel.aiOpenedOnStart()
+            if (aiReady) showFill = true else showAiSetup = true
+        }
+    }
+
     val requestClose = { if (state.dirty) confirmDiscard = true else onClose() }
     BackHandler(onBack = requestClose)
 
@@ -183,7 +191,7 @@ fun ExerciseEditScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             AiActionButton(
-                text = stringResource(R.string.ai_fill_button),
+                text = stringResource(if (viewModel.refining) R.string.ai_refine_button else R.string.ai_fill_button),
                 enabled = state.name.isNotBlank(),
                 outlined = true,
                 onClick = { if (aiReady) showFill = true else showAiSetup = true },
@@ -295,10 +303,14 @@ fun ExerciseEditScreen(
     }
 
     if (showFill) {
+        val fillText by viewModel.fillText.collectAsStateWithLifecycle()
         AiFillSheet(
             state = state,
             fill = fill,
             model = viewModel.aiModel,
+            refining = viewModel.refining,
+            text = fillText,
+            onTextChange = viewModel::onFillTextChange,
             onAsk = viewModel::requestFill,
             onApply = { fields ->
                 viewModel.applyFill(fields)

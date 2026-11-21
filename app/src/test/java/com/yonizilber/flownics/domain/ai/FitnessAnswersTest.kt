@@ -37,6 +37,20 @@ class FitnessAnswersTest {
         assertEquals(3, s.stages.single().durationSeconds)
     }
 
+    @Test
+    fun refiningListsItsChanges() {
+        val s = FitnessAnswers.exerciseFill(
+            """
+            {"summary":"","category":"STRENGTH","measureMode":"REPS","unilateral":false,"equipment":"","primaryMuscles":[],"secondaryMuscles":[],
+             "instructions":[],"cues":[],"stages":[],"confidence":"MEDIUM","level":2,"caveats":"",
+             "changes":[" Step 2 split in two: it held two actions. ",""]}
+            """.trimIndent(),
+        )
+        assertEquals(listOf("Step 2 split in two: it held two actions."), s.changes)
+        // An older answer without the field still reads.
+        assertEquals(emptyList<String>(), FitnessAnswers.exerciseFill("""{"category":"STRENGTH","measureMode":"REPS"}""").changes)
+    }
+
     @Test(expected = AiException.BadResponse::class)
     fun aWrongShapeFailsLoudly() {
         FitnessAnswers.exerciseFill("not json")

@@ -124,6 +124,29 @@ class ExerciseEditViewModel @Inject constructor(
     val fill: StateFlow<AiCall<AiResult<ExerciseSuggestion>>> = _fill.asStateFlow()
     private var fillJob: Job? = null
 
+    /**
+     * What the user wrote for the AI: a description of the exercise, or what to change. Kept with
+     * the screen (and across the app being closed), so a failed call never loses it.
+     */
+    val fillText: StateFlow<String> = savedStateHandle.getStateFlow(KEY_FILL_TEXT, "")
+
+    fun onFillTextChange(value: String) {
+        savedStateHandle[KEY_FILL_TEXT] = value
+    }
+
+    /** Opened from "Refine with AI" on the exercise page: the AI sheet opens with the editor, once. */
+    val openAiOnStart: Boolean get() = savedStateHandle.get<Boolean>(Destination.ARG_OPEN_AI) == true && savedStateHandle.get<Boolean>(KEY_AI_OPENED) != true
+
+    fun aiOpenedOnStart() {
+        savedStateHandle[KEY_AI_OPENED] = true
+    }
+
+    /**
+     * An exercise already in the library is refined: what it has is the starting point, lists come
+     * back whole and replace the current ones. A new one is filled in.
+     */
+    val refining: Boolean get() = !_state.value.isNew
+
     // What the user took from an AI suggestion; written next to the exercise when it is saved.
     private var pendingNote: ExerciseAiNote? = null
 
@@ -159,7 +182,7 @@ class ExerciseEditViewModel @Inject constructor(
     private fun prefill(key: String): String = savedStateHandle.get<String>(key).orEmpty()
 
     /** Asks the AI to fill in this exercise from its name and whatever is already entered. */
-    fun requestFill(hint: String, webSearch: Boolean, language: String) {
+    fun requestFill(webSearch: Boolean, language: String) {
         val s = _state.value
         if (s.name.isBlank()) {
             _state.update { it.copy(showNameError = true) }
@@ -169,7 +192,7 @@ class ExerciseEditViewModel @Inject constructor(
         _fill.value = AiCall.Running
         fillJob = viewModelScope.launch {
             _fill.value = try {
-                AiCall.Done(ai.ask(FitnessPrompts.exerciseFill(s.toExercise(), hint, language, webSearch), FitnessAnswers::exerciseFill))
+                AiCall.Done(ai.ask(FitnessPrompts.exerciseFill(s.toExercise(), fillText.value, language, webSearch, refining), FitnessAnswers::exerciseFill))
             } catch (e: AiException) {
                 AiCall.Failed(e)
             }
@@ -202,7 +225,10 @@ class ExerciseEditViewModel @Inject constructor(
                 // Steps are a sequence, so they replace rather than mix with the user's own.
                 next = next.copy(instructions = suggestion.instructions.map { CueDraft(newKey(), it) })
             }
-            if (FillField.CUES in fields) {
+            if (FillField.CUES in fields && refining) {
+                // Refining: the list came back whole, the user's cues it kept included.
+                next = next.copy(cues = suggestion.cues.map { CueDraft(newKey(), it) })
+            } else if (FillField.CUES in fields) {
                 // Added after the user's own cues, never replacing them; an empty placeholder row goes.
                 val kept = next.cues.filter { it.text.isNotBlank() }
                 val known = kept.map { it.text.trim().lowercase() }.toSet()
@@ -210,7 +236,7 @@ class ExerciseEditViewModel @Inject constructor(
             }
             if (FillField.STAGES in fields) {
                 next = next.copy(
-                    stages = next.stages + suggestion.stages.map {
+                    stages = (if (refining) emptyList() else next.stages) + suggestion.stages.map {
                         StageDraft(newKey(), it.name, it.description, it.durationSeconds?.toString().orEmpty())
                     },
                 )
@@ -229,6 +255,8 @@ class ExerciseEditViewModel @Inject constructor(
             sources = result.sources,
         )
         _fill.value = AiCall.Idle
+        // Used: the next request starts from a clean page.
+        onFillTextChange("")
     }
 
     fun mediaFile(name: String): File = mediaStorage.file(name)
@@ -407,4 +435,9 @@ class ExerciseEditViewModel @Inject constructor(
         quickAdded = false,
         createdAtMillis = original?.createdAtMillis ?: 0,
     )
+
+    private companion object {
+        const val KEY_FILL_TEXT = "aiFillText"
+        const val KEY_AI_OPENED = "aiOpenedOnStart"
+    }
 }

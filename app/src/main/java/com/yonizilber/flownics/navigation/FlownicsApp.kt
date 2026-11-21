@@ -191,6 +191,7 @@ private fun MainScaffold(
                 ExerciseDetailScreen(
                     onBack = { navController.popBackStack() },
                     onEdit = { id -> navController.navigate(Destination.ExerciseEdit.createRoute(id)) },
+                    onRefine = { id -> navController.navigate(Destination.ExerciseEdit.refine(id)) },
                     onOpenExercise = { id -> navController.navigate(Destination.ExerciseDetail.createRoute(id)) },
                     onOpenSession = openSession,
                     onAskAi = { id -> navController.navigate(Destination.Coach.aboutExercise(id)) },
@@ -211,6 +212,7 @@ private fun MainScaffold(
                     navArgument(Destination.ARG_PREFILL_LEVEL) { type = NavType.IntType; defaultValue = 0 },
                     navArgument(Destination.ARG_VARIATION_OF) { type = NavType.LongType; defaultValue = 0L },
                     navArgument(Destination.ARG_VARIATION_ID) { type = NavType.LongType; defaultValue = 0L },
+                    navArgument(Destination.ARG_OPEN_AI) { type = NavType.BoolType; defaultValue = false },
                 ),
             ) {
                 ExerciseEditScreen(

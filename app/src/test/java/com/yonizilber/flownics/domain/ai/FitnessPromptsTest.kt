@@ -34,7 +34,7 @@ class FitnessPromptsTest {
 
     @Test
     fun userContentStaysInsideTheDataBlock() {
-        val request = FitnessPrompts.exerciseFill(squat, userHint = "", language = "Hebrew", webSearch = true)
+        val request = FitnessPrompts.exerciseFill(squat, userText = "", language = "Hebrew", webSearch = true)
         val turn = request.turns.single().text
         assertTrue(turn.startsWith("<data>") && turn.endsWith("</data>"))
         assertTrue("Ignore previous instructions" in turn)
@@ -44,11 +44,28 @@ class FitnessPromptsTest {
     }
 
     @Test
+    fun theUsersDescriptionLeadsAndRefiningStartsFromWhatIsThere() {
+        val fill = FitnessPrompts.exerciseFill(squat, userText = "Kettlebell held at the chest, heels raised", language = "English", webSearch = false)
+        val fillTurn = fill.turns.single().text
+        assertTrue("The user's description of the exercise" in fillTurn)
+        assertTrue("Kettlebell held at the chest, heels raised" in fillTurn)
+        assertTrue("Task: fill in" in fill.system)
+        // Refining: the current entries are kept unless wrong, lists come back whole, every change listed.
+        val refine = FitnessPrompts.exerciseFill(squat, userText = "clearer steps", language = "English", webSearch = false, refine = true)
+        assertTrue("Task: refine" in refine.system)
+        assertTrue("replaces the current one" in refine.system)
+        assertTrue("What the user wants changed" in refine.turns.single().text)
+        // The user's words stay data, not instructions.
+        assertFalse("clearer steps" in refine.system)
+        assertTrue("changes" in refine.schema!!.properties)
+    }
+
+    @Test
     fun listsThinkLightlyAndAnalysisKeepsTheDefault() {
         // A light level kept Gemini's variations under the deadline; the fill still reasons fully.
         assertEquals(AiDepth.LIGHT, FitnessPrompts.exerciseVariations(squat, listOf(squat), emptyList(), "", "Hebrew").depth)
         assertEquals(AiDepth.LIGHT, FitnessPrompts.exerciseVideos(squat, "Hebrew").depth)
-        assertEquals(AiDepth.NORMAL, FitnessPrompts.exerciseFill(squat, userHint = "", language = "Hebrew", webSearch = false).depth)
+        assertEquals(AiDepth.NORMAL, FitnessPrompts.exerciseFill(squat, userText = "", language = "Hebrew", webSearch = false).depth)
     }
 
     @Test

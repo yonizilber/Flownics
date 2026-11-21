@@ -86,6 +86,7 @@ import com.yonizilber.flownics.ui.component.labelRes
 fun ExerciseDetailScreen(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
+    onRefine: (Long) -> Unit,
     onOpenExercise: (Long) -> Unit,
     onOpenSession: (Long) -> Unit,
     onAskAi: (Long) -> Unit,
@@ -126,6 +127,14 @@ fun ExerciseDetailScreen(
                                 Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.action_more))
                             }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.ai_refine_button)) },
+                                    leadingIcon = { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        onRefine(exercise.id)
+                                    },
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.ai_menu_ask_exercise)) },
                                     leadingIcon = { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) },

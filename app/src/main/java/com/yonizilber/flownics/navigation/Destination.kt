@@ -27,9 +27,13 @@ sealed class Destination(val route: String) {
     data object ExerciseEdit : Destination(
         "exercise/edit/{$ARG_EXERCISE_ID}?$ARG_PREFILL_NAME={$ARG_PREFILL_NAME}&$ARG_PREFILL_NOTES={$ARG_PREFILL_NOTES}" +
             "&$ARG_PREFILL_EQUIPMENT={$ARG_PREFILL_EQUIPMENT}&$ARG_PREFILL_CATEGORY={$ARG_PREFILL_CATEGORY}" +
-            "&$ARG_PREFILL_LEVEL={$ARG_PREFILL_LEVEL}&$ARG_VARIATION_OF={$ARG_VARIATION_OF}&$ARG_VARIATION_ID={$ARG_VARIATION_ID}",
+            "&$ARG_PREFILL_LEVEL={$ARG_PREFILL_LEVEL}&$ARG_VARIATION_OF={$ARG_VARIATION_OF}&$ARG_VARIATION_ID={$ARG_VARIATION_ID}" +
+            "&$ARG_OPEN_AI={$ARG_OPEN_AI}",
     ) {
         fun createRoute(id: Long = 0) = "exercise/edit/$id"
+
+        /** The editor of [id] with the AI sheet open, to refine the exercise. */
+        fun refine(id: Long) = "exercise/edit/$id?$ARG_OPEN_AI=true"
 
         /** A new exercise made from a variation kept under [variationOf]. */
         fun fromVariation(
@@ -152,6 +156,7 @@ sealed class Destination(val route: String) {
         const val ARG_PREFILL_LEVEL = "level"
         const val ARG_VARIATION_OF = "variationOf"
         const val ARG_VARIATION_ID = "variationId"
+        const val ARG_OPEN_AI = "openAi"
         const val ARG_MUSCLE = "muscle"
         const val ARG_TAG = "tag"
     }

@@ -105,7 +105,7 @@
     <string name="ai_fill_button">מילוי בעזרת AI</string>
     <string name="ai_fill_title">פרטים מה-AI עבור „%1$s”</string>
     <string name="ai_fill_intro">ה-AI מציע סיווג, את השרירים שעובדים, דגשים ועוד, לפי השם ומה שכבר מילאת. אתה בוחר מה לקחת, ושום דבר לא נשמר עד שתשמור את התרגיל.</string>
-    <string name="ai_fill_hint">משהו להוסיף? (לא חובה, למשל „הגרסה בכבלים”)</string>
+    <string name="ai_fill_hint">תיאור התרגיל (לא חובה): איך עושים אותו, העמידה, בשביל מה הוא. ככל שתכתוב יותר, התוצאה תהיה מדויקת יותר.</string>
     <string name="ai_fill_search">חיפוש מקורות ברשת</string>
     <string name="ai_fill_search_hint">שרירים אמינים יותר, עם קישורים לבדיקה. איטי יותר ועולה קצת יותר.</string>
     <string name="ai_fill_ask">לשאול את ה-AI</string>
@@ -260,4 +260,22 @@
     <string name="ai_stage_writing">כותב את התשובה (%1$d תווים)…</string>
     <string name="ai_error_stalled">השירות הפסיק להגיב באמצע התשובה (דקה בלי כלום), אז האפליקציה הפסיקה לחכות. זו תקלה בצד הספק, ובדרך כלל ניסיון נוסף מצליח. הניסיון מופיע ביומן הפעילות.</string>
     <string name="ai_activity_detail">סיבה: %1$s</string>
+    <!-- Refining an exercise already filled in: its current details are the starting point. -->
+    <string name="ai_refine_button">שדרוג ודיוק בעזרת AI</string>
+    <string name="ai_refine_title">שדרוג „%1$s” בעזרת AI</string>
+    <string name="ai_refine_intro">ה-AI קורא את התרגיל כמו שהוא בטופס עכשיו, כולל שינויים שעוד לא נשמרו, משאיר את מה שנכון ומציע תיקונים ותוספות, כל אחד עם הסיבה. אתה בוחר מה לקחת, ושום דבר לא נשמר עד שתשמור את התרגיל.</string>
+    <string name="ai_refine_hint">מה לשנות? (לא חובה, למשל „שלבים ברורים יותר”, „לבדוק את השרירים”, „להוסיף נשימה”)</string>
+    <string name="ai_refine_ask">הצע שינויים</string>
+    <string name="ai_refine_changes">מה משתנה, ולמה</string>
+    <string name="ai_fill_kept">הטקסט שלך נשמר: אפשר לתקן אותו ולנסות שוב.</string>
+    <plurals name="ai_refine_cues">
+        <item quantity="one">להחליף את הדגשים בדגש הזה</item>
+        <item quantity="two">להחליף את הדגשים בשני אלה</item>
+        <item quantity="other">להחליף את הדגשים ב-%1$d אלה</item>
+    </plurals>
+    <plurals name="ai_refine_stages">
+        <item quantity="one">להחליף את השלבים בשלב הזה</item>
+        <item quantity="two">להחליף את השלבים בשני אלה</item>
+        <item quantity="other">להחליף את השלבים ב-%1$d אלה</item>
+    </plurals>
 </resources>

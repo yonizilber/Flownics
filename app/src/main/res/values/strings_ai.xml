@@ -105,7 +105,7 @@
     <string name="ai_fill_button">Fill in with AI</string>
     <string name="ai_fill_title">AI details for “%1$s”</string>
     <string name="ai_fill_intro">The AI suggests the category, the muscles it works, coaching cues and more, from the name and what you\'ve entered. You choose what to keep, and nothing is saved until you save the exercise.</string>
-    <string name="ai_fill_hint">Anything to add? (optional, e.g. “the cable version”)</string>
+    <string name="ai_fill_hint">Describe the exercise (optional): how it\'s done, the setup, what it\'s for. The more you tell, the closer the result.</string>
     <string name="ai_fill_search">Search the web for sources</string>
     <string name="ai_fill_search_hint">More reliable muscles, with links you can check. Slower and costs a little more.</string>
     <string name="ai_fill_ask">Ask the AI</string>
@@ -254,4 +254,20 @@
     <string name="ai_stage_writing">writing the answer (%1$d characters)…</string>
     <string name="ai_error_stalled">The service stopped responding in the middle of the answer (nothing for a minute), so the app stopped waiting. This is on the provider\'s side; trying again usually works. The attempt is in the activity log.</string>
     <string name="ai_activity_detail">Reason: %1$s</string>
+    <!-- Refining an exercise already filled in: its current details are the starting point. -->
+    <string name="ai_refine_button">Refine with AI</string>
+    <string name="ai_refine_title">Refine “%1$s” with AI</string>
+    <string name="ai_refine_intro">The AI reads the exercise as it is in the form now, your unsaved changes included, keeps what\'s right and suggests corrections and additions, each with its reason. You choose what to take; nothing is saved until you save the exercise.</string>
+    <string name="ai_refine_hint">What should change? (optional, e.g. “clearer steps”, “check the muscles”, “add the breathing”)</string>
+    <string name="ai_refine_ask">Suggest changes</string>
+    <string name="ai_refine_changes">What changes, and why</string>
+    <string name="ai_fill_kept">Your text is kept: fix it if you like and try again.</string>
+    <plurals name="ai_refine_cues">
+        <item quantity="one">Replace the cues with this %1$d</item>
+        <item quantity="other">Replace the cues with these %1$d</item>
+    </plurals>
+    <plurals name="ai_refine_stages">
+        <item quantity="one">Replace the stages with this %1$d</item>
+        <item quantity="other">Replace the stages with these %1$d</item>
+    </plurals>
 </resources>

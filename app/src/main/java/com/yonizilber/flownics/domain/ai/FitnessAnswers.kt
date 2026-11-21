@@ -40,6 +40,8 @@ data class ExerciseSuggestion(
     val caveats: String,
     /** Values outside the app's lists (an unknown muscle name, say). Shown, never silently dropped. */
     val unknownValues: List<String>,
+    /** When refining: what was changed and why, one line each. */
+    val changes: List<String> = emptyList(),
 )
 
 enum class VariationKind { EASIER, HARDER, ALTERNATIVE }
@@ -113,6 +115,7 @@ object FitnessAnswers {
             level = dto.level.asLevel(),
             caveats = dto.caveats.trim(),
             unknownValues = unknown,
+            changes = dto.changes.map { it.trim() }.filter { it.isNotEmpty() },
         )
     }
 
@@ -235,6 +238,7 @@ object FitnessAnswers {
         val confidence: String = "",
         val level: Int = 0,
         val caveats: String = "",
+        val changes: List<String> = emptyList(),
     )
 
     @Serializable
