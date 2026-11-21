@@ -88,6 +88,7 @@ class ActivityEditViewModel @Inject constructor(
             val existing = if (activityId > 0) repository.get(activityId) else null
             original = existing
             _state.value = existing?.toState() ?: ActivityEditorState(loading = false)
+            pristine = _state.value
             existing?.let { a ->
                 val s = runs.get(a) ?: return@let
                 val rows = runs.samples(a)?.let { com.yonizilber.flownics.domain.run.RunAnalysis.detail(it, 0, s.durationS, CHART_STEP) }.orEmpty()
@@ -96,8 +97,18 @@ class ActivityEditViewModel @Inject constructor(
         }
     }
 
-    /** The saved activity, for "add to calendar". */
+    /** The saved activity: what the screen shows to read, and "add to calendar". */
     val saved: Activity? get() = original
+
+    /** The form as it was loaded, to tell whether anything was changed and to go back to it. */
+    private var pristine: ActivityEditorState? = null
+
+    fun hasChanges(): Boolean = pristine?.let { _state.value.copy(errors = emptySet()) != it } ?: false
+
+    /** Back to the saved values, nothing kept from the edit. */
+    fun discardEdits() {
+        pristine?.let { _state.value = it }
+    }
 
     fun update(transform: (ActivityEditorState) -> ActivityEditorState) = _state.update { transform(it).copy(errors = emptySet()) }
 

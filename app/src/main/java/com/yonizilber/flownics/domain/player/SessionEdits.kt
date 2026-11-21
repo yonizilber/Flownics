@@ -43,14 +43,18 @@ object SessionEdits {
         return result.copy(steps = renumbered)
     }
 
-    /** A new exercise added during the workout: [sets] sets (both sides when one-sided and timed), each with [restSeconds]. */
+    /**
+     * A new exercise added during the workout: [sets] sets (both sides when one-sided and timed),
+     * each with [restSeconds]. Its rests are plain and stay out of the rest lane: the exercises
+     * done in rests don't move into them, so adding one never reshuffles what was planned.
+     */
     fun exerciseSteps(exercise: Exercise, sets: Int, target: SetTarget, restSeconds: Int, blockIndex: Int): List<WorkoutStep> {
         val timed = exercise.measureMode == MeasureMode.TIME && (target.seconds ?: 0) > 0
         val sides = if (exercise.unilateral && timed) listOf(Side.LEFT, Side.RIGHT) else listOf(null)
         return (1..sets.coerceAtLeast(1)).flatMap { set ->
             sides.map { side ->
                 WorkStep(blockIndex, 0, exercise.id, set, sets, 1, 1, target, side, if (timed) target.seconds else null)
-            } + listOfNotNull(if (restSeconds > 0) RestStep(blockIndex, restSeconds) else null)
+            } + listOfNotNull(if (restSeconds > 0) RestStep(blockIndex, restSeconds, slot = false) else null)
         }
     }
 

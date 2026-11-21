@@ -72,7 +72,7 @@ class RestLaneTest {
     @Test
     fun anEarlierOneCanBeDoneAgainAndOneFromTheEndBroughtForward() {
         // In the rest at 5, back to stretch 10 (done at 1).
-        val back = checkNotNull(RestLane.previousEntry(steps, 5))
+        val back = checkNotNull(RestLane.previousEntry(steps, 5, back = 0))
         assertEquals(10L, back.exerciseId)
         val again = checkNotNull(RestLane.pick(steps, 5, back, library, emptySet(), newBlock = 2))
         assertEquals(mapOf(1 to 10L, 5 to 10L, 7 to 11L), active(again.steps))
@@ -83,6 +83,37 @@ class RestLaneTest {
         val forward = checkNotNull(RestLane.pick(steps, 2, last, library, emptySet(), newBlock = 2))
         assertEquals(mapOf(1 to 10L, 5 to 14L, 7 to 11L), active(forward.steps))
         assertEquals(listOf(12L, 13L), endIds(forward.steps))
+    }
+
+    @Test
+    fun goingBackAgainWalksFurtherBackNeverRepeatingTheSameOne() {
+        // In the rest at 7 (stretch 12), 10 and 11 done before it.
+        val first = checkNotNull(RestLane.previousEntry(steps, 7, back = 0))
+        assertEquals(11L, first.exerciseId)
+        val once = checkNotNull(RestLane.pick(steps, 7, first, library, emptySet(), newBlock = 2))
+        assertEquals(11L, active(once.steps)[7])
+        // Back again from the same rest: the one before it, not 11 a second time.
+        val second = checkNotNull(RestLane.previousEntry(once.steps, 7, back = 1))
+        assertEquals(10L, second.exerciseId)
+        val twice = checkNotNull(RestLane.pick(once.steps, 7, second, library, emptySet(), newBlock = 2))
+        assertEquals(10L, active(twice.steps)[7])
+        // What comes next is the walk forward again: 11, then 12 (where it was), 13, 14. Nothing twice.
+        assertEquals(listOf(11L, 12L, 13L, 14L), endIds(twice.steps))
+        // Nothing before 10.
+        assertNull(RestLane.previousEntry(twice.steps, 7, back = 2))
+    }
+
+    @Test
+    fun anAddedExercisesRestsAreNotPartOfTheLane() {
+        // A row added after squat set 1's rest: its rests stay plain whatever the lane does.
+        val row = SessionEdits.exerciseSteps(library.getValue(2), sets = 2, target = SetTarget(reps = 8), restSeconds = 60, blockIndex = 2)
+        val added = SessionEdits.addAfterCurrent(steps, 0, finished = false, row).steps
+        assertTrue(added.filterIsInstance<RestStep>().filter { it.blockIndex == 2 }.none { it.slot })
+        val rowRests = added.indices.filter { (added[it] as? RestStep)?.blockIndex == 2 }
+        val again = checkNotNull(RestLane.again(added, 1, library, emptySet(), newBlock = 3))
+        assertTrue(rowRests.all { (again.steps[it] as RestStep).active.isEmpty() })
+        val jumped = checkNotNull(RestLane.moveSets(added, 1, 2, library, emptySet(), newBlock = 3))
+        assertTrue(rowRests.all { (jumped.steps[it] as RestStep).active.isEmpty() })
     }
 
     @Test

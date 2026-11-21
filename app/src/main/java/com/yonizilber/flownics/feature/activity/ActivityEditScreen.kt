@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.AlertDialog
@@ -81,6 +83,16 @@ fun ActivityEditScreen(onClose: () -> Unit, onSaved: () -> Unit, viewModel: Acti
     var pickTime by rememberSaveable { mutableStateOf(false) }
     var addRepeats by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    // A saved activity opens to read; the pencil turns the form on.
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    val saved = viewModel.saved
+    val viewing = !s.isNew && !editing && saved != null
+    // Leaving the form of a saved activity goes back to reading it, asking first if something changed.
+    val leaveForm = {
+        if (viewModel.hasChanges()) confirmDiscard = true else editing = false
+    }
+    BackHandler(enabled = editing && !s.isNew, onBack = leaveForm)
 
     LaunchedEffect(s.savedId, s.deleted) {
         if (s.savedId != null) onSaved()
@@ -90,11 +102,20 @@ fun ActivityEditScreen(onClose: () -> Unit, onSaved: () -> Unit, viewModel: Acti
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(if (s.isNew) R.string.activity_new else R.string.activity_edit)) },
+                title = {
+                    Text(stringResource(when {
+                        s.isNew -> R.string.activity_new
+                        viewing -> R.string.activity_edit
+                        else -> R.string.activity_editing
+                    }))
+                },
                 navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                    IconButton(onClick = { if (editing && !s.isNew) leaveForm() else onClose() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
                 actions = {
+                    if (viewing) {
+                        IconButton(onClick = { editing = true }) { Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.action_edit)) }
+                    }
                     viewModel.saved?.let { a ->
                         val title = a.title.ifBlank { stringResource(a.type.labelRes) }
                         IconButton(onClick = { CalendarEvents.done(context, title, a.notes, a.startedAtMillis, a.endedAtMillis) }) {
@@ -112,10 +133,14 @@ fun ActivityEditScreen(onClose: () -> Unit, onSaved: () -> Unit, viewModel: Acti
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             val zonesInfo by viewModel.zonesInfo.collectAsStateWithLifecycle()
-            viewModel.saved?.metrics?.let { m ->
-                RecordingCard(m)
-                structure?.let { (s, rows) -> RunStructureCard(s, rows) }
-                zonesInfo?.let { z -> ZonesBar(m.hrHistogram, z.zones, z.maxFromRecordings) }
+            if (viewing) {
+                ActivityDetails(saved!!)
+                saved.metrics?.let { m ->
+                    RecordingCard(m)
+                    structure?.let { (s, rows) -> RunStructureCard(s, rows) }
+                    zonesInfo?.let { z -> ZonesBar(m.hrHistogram, z.zones, z.maxFromRecordings) }
+                }
+                return@Column
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ActivityType.entries.forEach { type ->
@@ -233,6 +258,20 @@ fun ActivityEditScreen(onClose: () -> Unit, onSaved: () -> Unit, viewModel: Acti
         viewModel.addRepeats(n, wd, wk, rd, rk)
         addRepeats = false
     })
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text(stringResource(R.string.edit_discard_title)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDiscard = false
+                    viewModel.discardEdits()
+                    editing = false
+                }) { Text(stringResource(R.string.edit_discard_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.edit_keep_editing)) } },
+        )
+    }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },

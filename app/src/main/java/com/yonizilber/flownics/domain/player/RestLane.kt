@@ -92,9 +92,15 @@ object RestLane {
     fun isActiveSlot(steps: List<WorkoutStep>, index: Int): Boolean =
         (steps.getOrNull(index) as? RestStep)?.let { it.slot && it.active.isNotEmpty() } == true
 
-    /** The rest exercise done before the current one, to do it again now. */
-    fun previousEntry(steps: List<WorkoutStep>, index: Int): LaneEntry? =
-        entries(steps, index).lastOrNull { it.status == LaneStatus.DONE }
+    /**
+     * The rest exercise to go back to from the rest at [index]: the one done before it when [back]
+     * is 0, and one further back each time the user already went back from this rest (the one
+     * brought back moves on, so walking back never offers the same one twice).
+     */
+    fun previousEntry(steps: List<WorkoutStep>, index: Int, back: Int): LaneEntry? {
+        val done = entries(steps, index).filter { it.status == LaneStatus.DONE }
+        return done.getOrNull(done.lastIndex - back)
+    }
 
     /** Do it again in the next rest too; the later ones each move one rest on. */
     fun again(steps: List<WorkoutStep>, index: Int, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout? {

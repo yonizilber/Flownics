@@ -62,6 +62,8 @@ data class ActiveWorkout(
      * and "done" from the notification logs it too.
      */
     val drafts: Map<Int, SetTarget> = emptyMap(),
+    /** How many times the user went back in the rest lane from the current rest; 0 once the step changes. */
+    val laneBack: Int = 0,
 ) {
     /** The current timed step is past zero, waiting for the user. */
     fun overtimeMs(nowMs: Long): Long = step?.takeIf { WorkoutPlayer.holds(it, holdAll) }?.let { WorkoutPlayer.overtimeMs(player.phase, nowMs) } ?: 0
@@ -214,6 +216,16 @@ class PlayerController @Inject constructor(
     fun restNotNow() = laneEdit { w, logged, block -> RestLane.postpone(w.session.steps, w.player.index, library.value, logged, block) }
 
     fun restSkip() = laneEdit { w, logged, block -> RestLane.skip(w.session.steps, w.player.index, library.value, logged, block) }
+
+    /**
+     * Back in the rest lane: the rest exercise before the current one comes into this rest, and
+     * the current one waits for the next. Again from the same rest goes one further back.
+     */
+    fun restBack() {
+        val w = _state.value ?: return
+        val entry = RestLane.previousEntry(w.session.steps, w.player.index, w.laneBack) ?: return
+        if (restPick(entry)) _state.value?.let { _state.value = it.copy(laneBack = w.laneBack + 1) }
+    }
 
     /** [entry] in this rest (or the next one, during a set); the rest of the lane moves to make room. */
     fun restPick(entry: LaneEntry) = laneEdit { w, logged, block -> RestLane.pick(w.session.steps, w.player.index, entry, library.value, logged, block) }
@@ -368,7 +380,9 @@ class PlayerController @Inject constructor(
 
     private fun transition(change: (ActiveWorkout, Long) -> ActiveWorkout) {
         val before = _state.value ?: return
-        val after = change(before, now())
+        val changed = change(before, now())
+        // Going back in the rest lane counts from the rest it happened in.
+        val after = if (changed.player.index != before.player.index) changed.copy(laneBack = 0) else changed
         if (after == before) return
         _state.value = after
         if (after.player.index != before.player.index) {

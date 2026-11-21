@@ -43,6 +43,7 @@ class PlayerViewModel @Inject constructor(
     fun restNotNow() = controller.restNotNow()
     fun restSkip() = controller.restSkip()
     fun restPick(entry: LaneEntry) = controller.restPick(entry)
+    fun restBack() = controller.restBack()
     fun jumpTo(index: Int) = controller.jumpTo(index)
 
     /** Live heart rate, when a sensor is connected. */

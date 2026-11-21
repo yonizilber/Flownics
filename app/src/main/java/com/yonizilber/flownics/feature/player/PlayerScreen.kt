@@ -233,7 +233,7 @@ fun PlayerScreen(
                         onOpenExercise = onOpenExercise,
                         lane = if (step.slot && RestLane.exists(w.session.steps)) {
                             LaneControls(
-                                previous = RestLane.previousEntry(w.session.steps, w.player.index)?.let { e -> { viewModel.restPick(e) } },
+                                previous = RestLane.previousEntry(w.session.steps, w.player.index, w.laneBack)?.let { { viewModel.restBack() } },
                                 onSkip = viewModel::restSkip,
                                 onAgain = viewModel::restAgain,
                                 onNotNow = viewModel::restNotNow,

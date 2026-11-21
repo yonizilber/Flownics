@@ -19,6 +19,12 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.activity.compose.BackHandler
+import com.yonizilber.flownics.domain.model.PlannedStep
+import com.yonizilber.flownics.domain.model.PlannedWorkout
+import com.yonizilber.flownics.domain.model.PlanStatus
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.AlertDialog
@@ -98,15 +104,31 @@ fun PlanEditScreen(
     var addRepeats by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var workoutMenu by remember { mutableStateOf(false) }
+    // A saved plan opens to read; the pencil turns the form on.
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    val saved = viewModel.saved
+    val viewing = !s.isNew && !editing && saved != null
+    val leaveForm = {
+        if (viewModel.hasChanges()) confirmDiscard = true else editing = false
+    }
+    BackHandler(enabled = editing && !s.isNew, onBack = leaveForm)
 
     LaunchedEffect(s.closed) { if (s.closed) onClose() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(if (s.isNew) R.string.plan_new else R.string.plan_edit)) },
-                navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) } },
+                title = {
+                    Text(stringResource(when {
+                        s.isNew -> R.string.plan_new
+                        viewing -> R.string.plan_edit
+                        else -> R.string.plan_editing
+                    }))
+                },
+                navigationIcon = { IconButton(onClick = { if (editing && !s.isNew) leaveForm() else onClose() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) } },
                 actions = {
+                    if (viewing) IconButton(onClick = { editing = true }) { Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.action_edit)) }
                     if (!s.isNew) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.action_delete)) }
                 },
             )
@@ -117,8 +139,9 @@ fun PlanEditScreen(
             Modifier.padding(innerPadding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            outcome?.done?.let { done -> DoneCard(done, onOpenSession, onOpenActivity) }
-            outcome?.comparison?.takeIf { it.isNotEmpty() }?.let { rows ->
+            if (viewing) PlanDetails(saved!!, workouts.firstOrNull { it.id == saved.workoutId }?.name, onOpenWorkout)
+            if (viewing) outcome?.done?.let { done -> DoneCard(done, onOpenSession, onOpenActivity) }
+            if (viewing) outcome?.comparison?.takeIf { it.isNotEmpty() }?.let { rows ->
                 Text(stringResource(R.string.plan_vs_actual), style = MaterialTheme.typography.titleMedium)
                 rows.forEachIndexed { i, row ->
                     val planned = listOfNotNull(
@@ -145,6 +168,7 @@ fun PlanEditScreen(
                 }
             }
 
+            if (viewing) return@Column
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { pickDate = true }, modifier = Modifier.weight(1f)) {
                     Text(s.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), maxLines = 1)
@@ -265,6 +289,20 @@ fun PlanEditScreen(
         viewModel.addRepeats(n, work, rest)
         addRepeats = false
     })
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text(stringResource(R.string.edit_discard_title)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDiscard = false
+                    viewModel.discardEdits()
+                    editing = false
+                }) { Text(stringResource(R.string.edit_discard_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.edit_keep_editing)) } },
+        )
+    }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -273,6 +311,54 @@ fun PlanEditScreen(
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
+}
+
+/** The plan as saved, to read: what, when, the parts with their targets, the notes. */
+@Composable
+private fun PlanDetails(p: PlannedWorkout, workoutName: String?, onOpenWorkout: (Long) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val type = p.activityType ?: ActivityType.RUN
+        val name = if (p.kind == PlanKind.WORKOUT) p.title.ifBlank { workoutName ?: stringResource(R.string.plan_kind_workout) }
+        else p.title.ifBlank { stringResource(type.labelRes) }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(if (p.kind == PlanKind.WORKOUT) Icons.Outlined.FitnessCenter else type.icon, contentDescription = null, modifier = Modifier.size(28.dp))
+            Text(name, style = MaterialTheme.typography.headlineSmall)
+        }
+        Text(
+            listOfNotNull(
+                p.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)),
+                p.time?.format(DateTimeFormatter.ofPattern("HH:mm")),
+                p.durationMinutes?.let { stringResource(R.string.plan_view_minutes, it) },
+            ).joinToString(" · "),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (p.status == PlanStatus.SKIPPED) Text(stringResource(R.string.plan_view_skipped), color = MaterialTheme.colorScheme.error)
+        if (p.notes.isNotBlank()) Text(p.notes, style = MaterialTheme.typography.bodyMedium)
+        if (p.steps.isNotEmpty()) {
+            Text(stringResource(R.string.plan_steps), style = MaterialTheme.typography.titleSmall)
+            p.steps.forEachIndexed { i, step -> Text("${i + 1}. " + stepLine(step), style = MaterialTheme.typography.bodyMedium) }
+        }
+        if (p.kind == PlanKind.WORKOUT) p.workoutId?.let { id ->
+            OutlinedButton(onClick = { onOpenWorkout(id) }) {
+                Icon(Icons.Outlined.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(stringResource(R.string.plan_open_workout), modifier = Modifier.padding(start = 6.dp))
+            }
+        }
+    }
+}
+
+/** "Work: 3:00 · 4:25–4:35 /km · HR up to 165". */
+@Composable
+private fun stepLine(step: PlannedStep): String {
+    val parts = listOfNotNull(
+        step.durationSeconds?.let { ActivityFormat.formatDuration(it) },
+        step.distanceMeters?.let { stringResource(R.string.activity_km, ActivityFormat.formatKm(it)) },
+        CalendarSync.paceRange(step)?.let { stringResource(R.string.activity_pace, it) },
+        step.maxHeartRate?.let { stringResource(R.string.plan_view_hr_cap, it) },
+        step.note.takeIf { it.isNotBlank() },
+    )
+    return stringResource(step.kind.labelRes) + if (parts.isEmpty()) "" else ": " + parts.joinToString(" · ")
 }
 
 @Composable

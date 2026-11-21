@@ -44,4 +44,10 @@
     <string name="segment_recovery">התאוששות</string>
     <string name="segment_cooldown">שחרור</string>
     <string name="segment_steady">רציף</string>
+    <!-- Reading a saved activity; editing is behind the pencil. -->
+    <string name="activity_editing">עריכת פעילות</string>
+    <string name="activity_view_max_hr">דופק מקס׳ %1$d</string>
+    <string name="activity_view_climb">↑%1$d מ׳</string>
+    <string name="activity_view_rpe">הרגיש %1$d/10</string>
+    <string name="activity_view_parts">החלקים (%1$d)</string>
 </resources>

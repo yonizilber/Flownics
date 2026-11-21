@@ -43,4 +43,10 @@
     <string name="segment_recovery">Recovery</string>
     <string name="segment_cooldown">Cool-down</string>
     <string name="segment_steady">Steady</string>
+    <!-- Reading a saved activity; editing is behind the pencil. -->
+    <string name="activity_editing">Edit activity</string>
+    <string name="activity_view_max_hr">max HR %1$d</string>
+    <string name="activity_view_climb">↑%1$d m</string>
+    <string name="activity_view_rpe">felt %1$d/10</string>
+    <string name="activity_view_parts">The parts (%1$d)</string>
 </resources>

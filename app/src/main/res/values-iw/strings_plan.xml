@@ -77,4 +77,8 @@
     <string name="reminders_channel">תזכורות לאימונים</string>
     <string name="reminder_title">מתוכנן: %1$s</string>
     <string name="reminder_at">בשעה %1$s</string>
+    <string name="plan_editing">עריכת התכנון</string>
+    <string name="plan_view_minutes">%1$d דק׳</string>
+    <string name="plan_view_hr_cap">דופק עד %1$d</string>
+    <string name="plan_view_skipped">סומן כדילוג</string>
 </resources>

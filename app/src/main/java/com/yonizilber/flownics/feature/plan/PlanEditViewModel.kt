@@ -115,7 +115,20 @@ class PlanEditViewModel @Inject constructor(
                     skipped = p.status == PlanStatus.SKIPPED,
                 )
             } ?: PlanEditorState(loading = false, date = initialDay ?: LocalDate.now())
+            pristine = _state.value
         }
+    }
+
+    /** The saved plan, to read. */
+    val saved: PlannedWorkout? get() = original
+
+    /** The form as it was loaded, to tell whether anything was changed and to go back to it. */
+    private var pristine: PlanEditorState? = null
+
+    fun hasChanges(): Boolean = pristine?.let { _state.value.copy(errors = emptySet()) != it } ?: false
+
+    fun discardEdits() {
+        pristine?.let { _state.value = it }
     }
 
     fun update(transform: (PlanEditorState) -> PlanEditorState) = _state.update { transform(it).copy(errors = emptySet()) }

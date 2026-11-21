@@ -77,4 +77,8 @@
     <string name="reminders_channel">Workout reminders</string>
     <string name="reminder_title">Planned: %1$s</string>
     <string name="reminder_at">at %1$s</string>
+    <string name="plan_editing">Edit the plan</string>
+    <string name="plan_view_minutes">%1$d min</string>
+    <string name="plan_view_hr_cap">HR up to %1$d</string>
+    <string name="plan_view_skipped">Marked as skipped</string>
 </resources>
