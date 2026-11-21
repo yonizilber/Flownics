@@ -131,6 +131,20 @@ app/src/main/java/com/yonizilber/flownics/
 
 How it was built, phase by phase: [docs/HISTORY.md](docs/HISTORY.md).
 
+## Installing
+
+Flownics is not on Google Play. To try it on an Android phone (Android 8 or newer):
+
+1. Open the [Releases](https://github.com/yonizilber/Flownics/releases) page on the phone and
+   download the latest `.apk`.
+2. Open it. Android asks to allow your browser (or file manager) to install apps; allow it for
+   this once.
+3. Updates install the same way, over the app already there; your data stays.
+
+Everything you enter stays on your phone. The AI coach and helpers need your own Gemini or Claude
+API key (entered in the app, stored encrypted on the phone); the app works without one. Garmin
+sync is optional too. Me > Settings > Backup and sharing saves everything to a file, for a new phone.
+
 ## Building
 
 Open the project in Android Studio and run `app` (minSdk 26, targetSdk 36), or from the command

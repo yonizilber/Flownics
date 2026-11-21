@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,6 +7,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
 }
+
+// Release signing. The key and its passwords never enter the repository: they are read from
+// keystore.properties in the project folder (gitignored, see docs/RELEASING.md), which points to a
+// keystore kept elsewhere. Without that file a release build comes out unsigned
+// (app-release-unsigned.apk), which Android refuses to install: visible, never silently debug-signed.
+val keystoreProps = rootProject.file("keystore.properties")
+val keystore = Properties().apply { if (keystoreProps.exists()) keystoreProps.inputStream().use { load(it) } }
 
 android {
     namespace = "com.yonizilber.flownics"
@@ -24,8 +33,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystoreProps.exists()) {
+            create("release") {
+                storeFile = file(keystore.getProperty("storeFile") ?: error("keystore.properties: storeFile is missing"))
+                storePassword = keystore.getProperty("storePassword") ?: error("keystore.properties: storePassword is missing")
+                keyAlias = keystore.getProperty("keyAlias") ?: error("keystore.properties: keyAlias is missing")
+                keyPassword = keystore.getProperty("keyPassword") ?: error("keystore.properties: keyPassword is missing")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             // R8 shrinks and obfuscates the release APK. This is not a secret store (there are no
             // secrets in the APK by design: every user brings their own AI key), but it keeps the
             // shipped app small and harder to tamper with.
