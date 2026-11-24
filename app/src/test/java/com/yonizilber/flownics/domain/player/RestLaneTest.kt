@@ -164,13 +164,15 @@ class RestLaneTest {
         val compiled = WorkoutCompiler.compile(superset, library, mapOf(1L to superset, 2L to stretching))
         val rests = compiled.steps.filterIsInstance<RestStep>().filter { it.blockIndex == 0 }
         assertTrue(rests.filter { !it.slot }.all { it.activeExerciseId == null && it.durationSeconds == 15 })
-        assertEquals(listOf(10L, 11L), rests.filter { it.slot }.map { it.activeExerciseId })
+        // A rest after each round, the last one too.
+        assertEquals(listOf(10L, 11L, 12L), rests.filter { it.slot }.map { it.activeExerciseId })
         assertEquals(45, rests.first { it.slot }.active.first().target?.seconds)
         // Doing one again from the first round rest never touches the superset's short rests.
         val index = compiled.steps.indexOfFirst { it is RestStep && it.slot }
         val out = checkNotNull(RestLane.again(compiled.steps, index, library, emptySet(), newBlock = 2))
         assertTrue(out.steps.filterIsInstance<RestStep>().filter { !it.slot }.all { it.activeExerciseId == null })
-        assertEquals(listOf(11L, 12L, 13L, 14L), endIds(out.steps))
+        // Three round rests (the last round's too): 10 again pushes 12 out to the end, before 13 and 14.
+        assertEquals(listOf(12L, 13L, 14L), endIds(out.steps))
     }
 
     /** Strength with three rests to fill; the other workout is a superset of two stretches, three rounds. */
@@ -197,11 +199,11 @@ class RestLaneTest {
     fun aSupersetOfTheOtherWorkoutGoesIntoEachRestAsARound() {
         val steps = withSupersetFiller(together = true)
         val rests = steps.filterIsInstance<RestStep>().filter { it.slot }
-        // Three rests between four sets: a round of the pair in each.
-        assertEquals(listOf(listOf(10L, 11L), listOf(10L, 11L), listOf(10L, 11L)), rests.map { r -> r.active.map { it.exerciseId } })
+        // A rest after each of the four sets: a round of the pair in the first three, stretch 12 in the last.
+        assertEquals(listOf(listOf(10L, 11L), listOf(10L, 11L), listOf(10L, 11L), listOf(12L)), rests.map { r -> r.active.map { it.exerciseId } })
         assertEquals(30, rests.first().active[1].target?.seconds)
-        // Then stretch 12's two sets at the end, one by one.
-        assertEquals(listOf(12L, 12L), endIds(steps))
+        // Then stretch 12's second set at the end.
+        assertEquals(listOf(12L), endIds(steps))
         // The lane shows a round as one entry.
         assertEquals(listOf(10L, 11L), RestLane.entries(steps, 0).first().exerciseIds)
     }
@@ -209,7 +211,7 @@ class RestLaneTest {
     @Test
     fun oneExerciseARestWhenSupersetsAreNotKeptTogether() {
         val rests = withSupersetFiller(together = false).filterIsInstance<RestStep>().filter { it.slot }
-        assertEquals(listOf(10L, 11L, 10L), rests.map { it.activeExerciseId })
+        assertEquals(listOf(10L, 11L, 10L, 11L), rests.map { it.activeExerciseId })
         assertTrue(rests.all { it.active.size == 1 })
     }
 
@@ -217,8 +219,9 @@ class RestLaneTest {
     fun aRoundThatGoesToTheEndStaysARound() {
         val steps = withSupersetFiller(together = true)
         val first = steps.indexOfFirst { it is RestStep && it.slot }
-        val out = checkNotNull(RestLane.again(steps, first, library, emptySet(), newBlock = 2))
-        // One more round in the rests pushes the last round out: it is done at the end, both together, before stretch 12.
+        val once = checkNotNull(RestLane.again(steps, first, library, emptySet(), newBlock = 2))
+        val out = checkNotNull(RestLane.again(once.steps, first, library, emptySet(), newBlock = 2))
+        // Two more rounds in the rests push the last round out: it is done at the end, both together, before stretch 12.
         val end = out.steps.filterIsInstance<WorkStep>().filter { it.fromRests }
         assertEquals(listOf(10L, 11L, 12L, 12L), end.map { it.exerciseId })
         assertEquals(listOf(0, 1, 0, 0), end.map { it.restPart })
@@ -239,5 +242,59 @@ class RestLaneTest {
         val out = checkNotNull(RestLane.postpone(steps, first, library, emptySet(), newBlock = 2))
         val after = out.steps.filterIsInstance<RestStep>().filter { it.slot }.map { r -> r.active.map { it.exerciseId } }
         assertEquals(listOf(emptyList(), listOf(10L, 11L), listOf(12L)), after)
+    }
+
+    private val extra = stretch(15)
+    private val withExtra = library + (extra.id to extra)
+
+    @Test
+    fun aRestExerciseAddedWhenNoRestIsLeftComesFirstOfThoseAtTheEnd() {
+        // During the last set: no rest left, so it comes before 13 and 14, in their block.
+        val out = RestLane.addNext(steps, 8, listOf(RestPart(15, SetTarget(seconds = 30))), withExtra, emptySet(), newBlock = 2)
+        assertEquals(listOf(15L, 13L, 14L), endIds(out.steps))
+        assertTrue(out.steps.filterIsInstance<WorkStep>().filter { it.fromRests }.all { it.blockIndex == 1 })
+        assertEquals(false, out.newBlockUsed)
+        // While doing 13: after it, before 14.
+        val during = RestLane.addNext(steps, 9, listOf(RestPart(15, SetTarget(seconds = 30))), withExtra, setOf(9), newBlock = 2)
+        assertEquals(listOf(13L, 15L, 14L), endIds(during.steps))
+    }
+
+    @Test
+    fun aRestExerciseAddedInARestIsDoneNowAndTheOthersMoveOn() {
+        val out = RestLane.addNext(steps, 1, listOf(RestPart(15, SetTarget(seconds = 30))), withExtra, emptySet(), newBlock = 2)
+        assertEquals(mapOf(1 to 15L, 5 to 10L, 7 to 11L), active(out.steps))
+        assertEquals(listOf(12L, 13L, 14L), endIds(out.steps))
+    }
+
+    @Test
+    fun aRestExerciseAddedAfterTheLastOneAtTheEndJoinsThatBlockAfterARest() {
+        // Doing 14, the last of all: the new one follows it, in the same block, with its rest before it.
+        val out = RestLane.addNext(steps, 11, listOf(RestPart(15, SetTarget(seconds = 30))), withExtra, setOf(9, 11), newBlock = 2)
+        assertEquals(listOf(13L, 14L, 15L), endIds(out.steps))
+        assertEquals(RestStep(1, 10, slot = false), out.steps[12])
+        assertEquals(1, out.steps.last().blockIndex)
+        assertEquals(false, out.newBlockUsed)
+    }
+
+    @Test
+    fun anExerciseAddedToTheMainWorkoutTakesTheRestExercisesStillToCome() {
+        // Doing 13 at the end: two sets of squats, as the main workout, after 13 and its rest.
+        val added = SessionEdits.exerciseSteps(squat, sets = 2, target = SetTarget(reps = 8), restSeconds = 60, blockIndex = 2, inLane = true)
+        val edit = SessionEdits.addAfterCurrent(steps, 9, finished = false, added)
+        assertEquals(11, edit.insertedAt)
+        val out = checkNotNull(RestLane.reflow(edit.steps, edit.insertedAt, library, setOf(9), newBlock = 3))
+        // 14 moves into the first squat rest; the second has nothing left and, being last, goes.
+        assertEquals(14L, (out.steps[12] as RestStep).activeExerciseId)
+        assertEquals(listOf(13L), endIds(out.steps))
+        assertEquals(squat.id, (out.steps.last() as WorkStep).exerciseId)
+    }
+
+    @Test
+    fun anExerciseAddedNextLeavesTheRestExercisesAlone() {
+        val added = SessionEdits.exerciseSteps(squat, sets = 2, target = SetTarget(reps = 8), restSeconds = 60, blockIndex = 2)
+        val edit = SessionEdits.addAfterCurrent(steps, 9, finished = false, added)
+        assertTrue(added.filterIsInstance<RestStep>().none { it.slot })
+        assertEquals(listOf(13L, 14L), endIds(edit.steps))
+        assertEquals(listOf(10L, 11L, 12L), active(edit.steps).values.toList())
     }
 }

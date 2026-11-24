@@ -151,6 +151,27 @@ object RestLane {
         return layout(passed, slots(steps, to), q, library, logged, tailFrom, newBlock)
     }
 
+    /**
+     * New exercises for the rests, [added] one per rest: in this rest when the current step is a
+     * rest between sets, else from the next one, the others each moving on (the last ones to the
+     * end). When no rest is left, they come first of those at the end.
+     */
+    fun addNext(steps: List<WorkoutStep>, index: Int, added: List<RestPart>, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout {
+        val inRest = (steps.getOrNull(index) as? RestStep)?.slot == true
+        val from = if (inRest) index else index + 1
+        return layout(steps, slots(steps, from), added.map { Item(listOf(it), -1) } + queue(steps, from, logged), library, logged, index, newBlock)
+    }
+
+    /**
+     * The rest exercises still to come laid again over the rests from step [from] on, after rests
+     * were added there (an exercise added to the main workout): they move into the new rests in
+     * order, and fewer are left for the end.
+     */
+    fun reflow(steps: List<WorkoutStep>, from: Int, library: Map<Long, Exercise>, logged: Set<Int>, newBlock: Int): Layout? {
+        if (!exists(steps)) return null
+        return layout(steps, slots(steps, from), queue(steps, from, logged), library, logged, from - 1, newBlock)
+    }
+
     /** Steps after a change to the lane; logs at [shiftFrom] and after move by [shiftBy]; [newBlockUsed] when the end got a new block. */
     data class Layout(val steps: List<WorkoutStep>, val shiftFrom: Int, val shiftBy: Int, val newBlockUsed: Boolean)
 
@@ -217,8 +238,11 @@ object RestLane {
         }
         val overflow = queue.drop(positions.size)
         val tail = tail(steps, tailAfter, logged)
-        val block = tail?.blockIndex ?: newBlock
+        // With none left to do there, an end block the workout finishes with still takes them (no second one).
+        val endBlock = (steps.lastOrNull { it is WorkStep } as? WorkStep)?.takeIf { it.fromRests }?.blockIndex
+        val block = tail?.blockIndex ?: endBlock ?: newBlock
         val restBetween = tail?.units?.firstNotNullOfOrNull { u -> (u.lastOrNull() as? RestStep)?.durationSeconds }
+            ?: steps.firstOrNull { it is RestStep && !it.slot && it.blockIndex == block }?.durationSeconds
         val newTail = overflow.flatMap { item ->
             val unit = item.unit ?: unitFor(item, library, restBetween)
             unit.map { s ->
@@ -231,10 +255,16 @@ object RestLane {
         val start = tail?.start ?: steps.size
         val end = tail?.end ?: steps.size
         var region = newTail
+        // After the last of the end block (whose own rest went, as nothing came after it), its rest again.
+        if (tail == null && endBlock != null && region.isNotEmpty() && restBetween != null && steps.lastOrNull() is WorkStep) {
+            region = listOf(RestStep(block, restBetween, slot = false)) + region
+        }
         // Nothing to rest for after the very last set.
         if (end == steps.size && region.lastOrNull() is RestStep) region = region.dropLast(1)
-        val result = out.take(start) + region + out.drop(end)
-        return Layout(result, shiftFrom = end, shiftBy = region.size - (end - start), newBlockUsed = tail == null && region.isNotEmpty())
+        var result = out.take(start) + region + out.drop(end)
+        // A rest left plain at the very end (its exercise moved up) has nothing to rest for.
+        if (result.lastIndex > tailAfter && (result.lastOrNull() as? RestStep)?.active?.isEmpty() == true) result = result.dropLast(1)
+        return Layout(result, shiftFrom = end, shiftBy = region.size - (end - start), newBlockUsed = tail == null && endBlock == null && region.isNotEmpty())
     }
 
     /**

@@ -133,6 +133,13 @@
     <string name="player_add_weight">kg</string>
     <string name="player_add_rest">Rest s</string>
     <string name="player_add_other">Another exercise</string>
+    <string name="player_add_place">Where it goes</string>
+    <string name="player_add_place_next">Next</string>
+    <string name="player_add_place_main">Main workout</string>
+    <string name="player_add_place_rests">In the rests</string>
+    <string name="player_add_place_next_hint">Its sets come right after what you are doing now, with plain rests. The rest exercises stay where they are.</string>
+    <string name="player_add_place_main_hint">Its sets come next as part of the main workout: the rest exercises still to come move into its rests, and fewer are left for the end.</string>
+    <string name="player_add_place_rests_hint">A rest exercise: one set in each of the next rests, or first of those left for the end when no rest is left.</string>
     <string name="player_add_confirm">Add after this step</string>
     <string name="player_add_and_go">Add and go on</string>
     <string name="player_added_block">Added during the workout</string>

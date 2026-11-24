@@ -58,6 +58,8 @@ class RestFillerTest {
         // 4 sets → 3 rests (none after the last). The hamstring stretch has 2 sets there, but as a
         // filler each exercise comes once.
         assertEquals(listOf(10L, 11L, 12L), rests(c))
+        // Nothing left for the rest after the last set: a plain rest there goes.
+        assertTrue(c.steps.last() is WorkStep)
         assertEquals(3, c.fillerUsed)
         assertEquals(3, c.fillerTotal)
         assertEquals(null, c.extraBlockTitle)
@@ -67,8 +69,10 @@ class RestFillerTest {
     fun withRepeatSetsAnExerciseFollowsItsSets() {
         val t = strength(leftovers = false).let { it.copy(restFiller = it.restFiller!!.copy(repeatSets = true)) }
         val c = WorkoutCompiler.compile(t, library, listOf(stretching).associateBy { it.id })
-        // The hamstring stretch has 2 sets there: two rests in a row, then the hip flexor.
-        assertEquals(listOf(10L, 10L, 11L), rests(c))
+        // The hamstring stretch has 2 sets there: two rests in a row, then the hip flexor, and the
+        // pigeon in the rest after the last set (an active rest stays, even at the very end).
+        assertEquals(listOf(10L, 10L, 11L, 12L), rests(c))
+        assertTrue(c.steps.last() is RestStep)
         assertEquals(4, c.fillerTotal)
     }
 
@@ -76,11 +80,13 @@ class RestFillerTest {
     fun whatDoesntFitIsDoneAtTheEnd() {
         val short = strength(leftovers = true).let { it.copy(blocks = listOf(it.blocks[0].copy(items = it.blocks[0].items.take(1)))) }
         val c = WorkoutCompiler.compile(short, library, listOf(stretching).associateBy { it.id })
-        // 2 squat sets → 1 rest → the hamstring; hip and pigeon at the end, each once (with the hip's own rest between them).
-        assertEquals(listOf(10L), c.steps.filterIsInstance<RestStep>().filter { it.blockIndex == 0 }.map { it.activeExerciseId })
+        // 2 squat sets, each with its rest, the last one too: the hamstring, then the hip flexor
+        // after the last set; the pigeon, left over, at the end.
+        assertEquals(listOf(10L, 11L), c.steps.filterIsInstance<RestStep>().filter { it.blockIndex == 0 }.map { it.activeExerciseId })
         assertEquals("Stretching", c.extraBlockTitle)
         val tail = c.steps.filterIsInstance<WorkStep>().filter { it.blockIndex == 1 }
-        assertEquals(listOf(11L, 12L), tail.map { it.exerciseId })
+        assertEquals(listOf(12L), tail.map { it.exerciseId })
+        assertEquals(2, c.fillerUsed)
         assertTrue(c.steps.last() is WorkStep)
     }
 
@@ -140,9 +146,9 @@ class RestFillerTest {
         )
         val c = WorkoutCompiler.compile(superset, library, listOf(stretching).associateBy { it.id })
         // Squat → 15 s → row → 90 s, three times. The 15 s rests stay plain (even with the squat's
-        // own active rest, which is reported); the two rests between rounds take two different stretches.
+        // own active rest, which is reported); the rests after rounds, the last one too, take different stretches.
         val restSeconds = c.steps.filterIsInstance<RestStep>().map { it.durationSeconds to it.activeExerciseId }
-        assertEquals(listOf(15 to null, 90 to 10L, 15 to null, 90 to 11L, 15 to null), restSeconds)
+        assertEquals(listOf(15 to null, 90 to 10L, 15 to null, 90 to 11L, 15 to null, 90 to 12L), restSeconds)
         assertTrue(c.warnings.any { it is CompileWarning.ActiveRestInsideRound })
     }
 

@@ -110,8 +110,9 @@ class WorkoutCompilerTest {
     fun specificActiveRestFillsEveryRest() {
         val item = WorkoutItem(squat.id, sets = 2, restSeconds = 60, activeRest = ActiveRest.Specific(quadStretch.id))
         val result = WorkoutCompiler.compile(template(WorkoutBlock(items = listOf(item))), library)
-        val rest = result.steps.filterIsInstance<RestStep>().single()
-        assertEquals(quadStretch.id, rest.activeExerciseId)
+        // After both sets, the last one too: an active rest stays even when nothing follows.
+        assertEquals(listOf(quadStretch.id, quadStretch.id), result.steps.filterIsInstance<RestStep>().map { it.activeExerciseId })
+        assertTrue(result.steps.last() is RestStep)
     }
 
     @Test
@@ -129,8 +130,8 @@ class WorkoutCompilerTest {
         val item = WorkoutItem(squat.id, sets = 4, restSeconds = 90, activeRest = ActiveRest.Pool(focus = PoolFocus.ANY))
         val result = WorkoutCompiler.compile(template(WorkoutBlock(items = listOf(item))), library)
         val active = result.steps.filterIsInstance<RestStep>().map { it.activeExerciseId }
-        // Alphabetical: Cat cow, Chest opener, Quad stretch.
-        assertEquals(listOf(catCow.id, chestOpener.id, quadStretch.id), active)
+        // Alphabetical: Cat cow, Chest opener, Quad stretch, then round again (a rest after each of the 4 sets).
+        assertEquals(listOf(catCow.id, chestOpener.id, quadStretch.id, catCow.id), active)
     }
 
     @Test
@@ -139,7 +140,7 @@ class WorkoutCompilerTest {
         val lib = library + (calfRaise.id to calfRaise)
         val item = WorkoutItem(calfRaise.id, sets = 2, restSeconds = 90, activeRest = ActiveRest.Pool())
         val result = WorkoutCompiler.compile(template(WorkoutBlock(items = listOf(item))), lib)
-        assertEquals(catCow.id, result.steps.filterIsInstance<RestStep>().single().activeExerciseId)
+        assertEquals(catCow.id, result.steps.filterIsInstance<RestStep>().first().activeExerciseId)
         assertEquals(emptyList<CompileWarning>(), result.warnings)
     }
 

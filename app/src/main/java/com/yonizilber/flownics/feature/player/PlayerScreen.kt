@@ -186,7 +186,7 @@ fun PlayerScreen(
                 modifier = Modifier.padding(innerPadding),
             )
             if (adding) {
-                AddExerciseSheet(library, defaults.sets, defaults.restBetweenSets, stringResource(R.string.player_add_and_go), onDismiss = { adding = false }) {
+                AddExerciseSheet(library, defaults.sets, defaults.restBetweenSets, stringResource(R.string.player_add_and_go), places = RestLane.exists(w.session.steps), onDismiss = { adding = false }) {
                     adding = false
                     viewModel.addExercise(it)
                 }
@@ -261,7 +261,7 @@ fun PlayerScreen(
     }
 
     if (adding && workout?.player?.phase !is Phase.Finished) {
-        AddExerciseSheet(library, defaults.sets, defaults.restBetweenSets, stringResource(R.string.player_add_confirm), onDismiss = { adding = false }) {
+        AddExerciseSheet(library, defaults.sets, defaults.restBetweenSets, stringResource(R.string.player_add_confirm), places = workout?.session?.steps?.let(RestLane::exists) == true, onDismiss = { adding = false }) {
             adding = false
             viewModel.addExercise(it)
         }

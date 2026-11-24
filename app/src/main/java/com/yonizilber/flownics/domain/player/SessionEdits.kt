@@ -8,6 +8,14 @@ import com.yonizilber.flownics.domain.workout.Side
 import com.yonizilber.flownics.domain.workout.WorkStep
 import com.yonizilber.flownics.domain.workout.WorkoutStep
 
+/**
+ * Where an exercise added during a workout with a rest lane goes: [NEXT] right after what is done
+ * now, its rests plain; [MAIN] there too, as part of the main workout, so the exercises still to
+ * come in the rests move into its rests; [RESTS] into the rest lane, done in the next rests (or
+ * first of those left for the end).
+ */
+enum class AddPlace { NEXT, MAIN, RESTS }
+
 /** Steps after an edit, and where the steps from [insertedAt] on moved by [shift] (for the logs). */
 data class EditResult(val steps: List<WorkoutStep>, val insertedAt: Int, val shift: Int)
 
@@ -45,28 +53,43 @@ object SessionEdits {
 
     /**
      * A new exercise added during the workout: [sets] sets (both sides when one-sided and timed),
-     * each with [restSeconds]. Its rests are plain and stay out of the rest lane: the exercises
-     * done in rests don't move into them, so adding one never reshuffles what was planned.
+     * each with [restSeconds]. By default its rests are plain and stay out of the rest lane, so
+     * adding one never reshuffles what was planned; with [inLane] they are rests of the main
+     * workout, where the exercises done in rests go ([AddPlace.MAIN]).
      */
-    fun exerciseSteps(exercise: Exercise, sets: Int, target: SetTarget, restSeconds: Int, blockIndex: Int): List<WorkoutStep> {
+    fun exerciseSteps(exercise: Exercise, sets: Int, target: SetTarget, restSeconds: Int, blockIndex: Int, inLane: Boolean = false): List<WorkoutStep> {
         val timed = exercise.measureMode == MeasureMode.TIME && (target.seconds ?: 0) > 0
         val sides = if (exercise.unilateral && timed) listOf(Side.LEFT, Side.RIGHT) else listOf(null)
         return (1..sets.coerceAtLeast(1)).flatMap { set ->
             sides.map { side ->
                 WorkStep(blockIndex, 0, exercise.id, set, sets, 1, 1, target, side, if (timed) target.seconds else null)
-            } + listOfNotNull(if (restSeconds > 0) RestStep(blockIndex, restSeconds, slot = false) else null)
+            } + listOfNotNull(if (restSeconds > 0) RestStep(blockIndex, restSeconds, slot = inLane) else null)
         }
     }
 
-    /** [added] goes after the current step and its rest, or at the end when the workout was over. */
+    /**
+     * [added] goes after what is being done now, or at the end when the workout was over. What is
+     * done now is never split: a set with its rest, both sides of a one-sided hold, a round of
+     * rest exercises at the end with the rests between them.
+     */
     fun addAfterCurrent(steps: List<WorkoutStep>, index: Int, finished: Boolean, added: List<WorkoutStep>): EditResult {
-        val at = when {
-            finished || index >= steps.size -> steps.size
-            steps.getOrNull(index + 1) is RestStep && steps[index] is WorkStep -> index + 2
-            else -> index + 1
+        if (finished || index >= steps.size) return insert(steps, steps.size, added)
+        var end = index
+        fun next() = steps.getOrNull(end + 1)
+        val current = steps[index]
+        val inRestUnit = (current as? WorkStep)?.fromRests == true ||
+            (current is RestStep && (next() as? WorkStep)?.let { it.fromRests && !startsRestUnit(it) } == true)
+        if (inRestUnit) {
+            while (next() != null && !startsRestUnit(next()) && (next() as? WorkStep)?.fromRests != false) end++
+        } else if (current is WorkStep) {
+            while ((next() as? WorkStep)?.side == Side.RIGHT) end++
+            if (next() is RestStep) end++
         }
-        return insert(steps, at, added)
+        return insert(steps, end + 1, added)
     }
+
+    /** The first step of a rest exercise (or a round of them) done at the end. */
+    private fun startsRestUnit(s: WorkoutStep?): Boolean = s is WorkStep && s.fromRests && s.side != Side.RIGHT && s.restPart == 0
 
     private fun insert(steps: List<WorkoutStep>, at: Int, added: List<WorkoutStep>): EditResult {
         val clamped = at.coerceIn(0, steps.size)

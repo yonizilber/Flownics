@@ -36,7 +36,7 @@ class PlayerViewModel @Inject constructor(
     fun addExercise(a: AddedExercise) {
         viewModelScope.launch {
             val id = a.newName?.let { controller.createQuick(it, a.newMode, a.newGeneral) } ?: a.exerciseId
-            controller.addExercise(id, a.sets, a.target, a.restSeconds)
+            controller.addExercise(id, a.sets, a.target, a.restSeconds, a.place)
         }
     }
     fun restAgain() = controller.restAgain()

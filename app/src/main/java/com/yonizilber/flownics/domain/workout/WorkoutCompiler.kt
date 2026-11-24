@@ -155,9 +155,6 @@ object WorkoutCompiler {
         /** The rest-filler workout's sets still to come, each with the rest that followed it there. */
         private val filler = ArrayDeque<List<WorkoutStep>>()
 
-        /** The filler set the latest rest took, while that rest is still the last step. */
-        private var lastFillerUnit: List<WorkoutStep>? = null
-
         private var confirmActiveRest = false
 
         fun run(template: WorkoutTemplate, workouts: Map<Long, WorkoutTemplate> = emptyMap()): CompiledWorkout {
@@ -227,10 +224,11 @@ object WorkoutCompiler {
                     }
                 }
             }
-            // Nothing to rest for after the very last set; a stretch it took goes back in line.
-            if (steps.lastOrNull() is RestStep) {
-                steps.removeAt(steps.lastIndex)
-                lastFillerUnit?.let { filler.addFirst(it) }
+            // After the very last set, a plain rest has nothing to rest for and goes; an active one
+            // stays: the last set deserves its recovery as much as the others (a stretch, the next
+            // exercise of the combined workout), and what is left of it follows.
+            (steps.lastOrNull() as? RestStep)?.let { last ->
+                if (last.active.isEmpty()) steps.removeAt(steps.lastIndex)
             }
             val fillerUsed = fillerTotal - filler.size
             var extraTitle: String? = null
@@ -253,8 +251,8 @@ object WorkoutCompiler {
                 }
                 filler.clear()
             }
-            // Nothing to rest for after the very last set.
-            if (steps.lastOrNull() is RestStep) steps.removeAt(steps.lastIndex)
+            // The end block's own last rest is plain: nothing comes after it.
+            if ((steps.lastOrNull() as? RestStep)?.active?.isEmpty() == true) steps.removeAt(steps.lastIndex)
             return CompiledWorkout(
                 steps = steps.toList(),
                 warnings = warnings.toList(),
@@ -305,7 +303,6 @@ object WorkoutCompiler {
             target: SetTarget,
             confirmEnd: Boolean,
         ) {
-            lastFillerUnit = null
             val exercise = library.getValue(exerciseId)
             val timed = exercise.measureMode == MeasureMode.TIME && (target.seconds ?: 0) > 0
             val sides = if (exercise.unilateral && timed) listOf(Side.LEFT, Side.RIGHT) else listOf(null)
@@ -341,9 +338,8 @@ object WorkoutCompiler {
             }
             // With a rest-filler workout, its next exercise fills the rest, in place of any active
             // rest set here: combining the workouts is the choice that counts.
-            lastFillerUnit = null
             val parts = if (fill && filler.isNotEmpty()) {
-                partsOf(filler.removeFirst().also { lastFillerUnit = it })
+                partsOf(filler.removeFirst())
             } else {
                 listOfNotNull(resolve(activeRest, blockIndex, itemIndex, workedMuscles)?.let { RestPart(it) })
             }

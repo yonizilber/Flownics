@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.yonizilber.flownics.domain.model.MeasureMode
 import com.yonizilber.flownics.domain.model.SetTarget
+import com.yonizilber.flownics.domain.player.AddPlace
 import com.yonizilber.flownics.feature.workouts.edit.ExercisePickerList
 
 /**
@@ -49,11 +50,13 @@ data class AddedExercise(
     val newName: String? = null,
     val newMode: MeasureMode = MeasureMode.REPS,
     val newGeneral: Boolean = false,
+    val place: AddPlace = AddPlace.NEXT,
 )
 
 /**
  * Adding an exercise that wasn't planned, during the workout (or to start a free one): pick it,
- * then sets, reps or time, and rest. Starts from the app's defaults.
+ * then sets, reps or time, and rest. Starts from the app's defaults. With [places] (a workout with
+ * exercises in its rests), also where it goes: next, into the main workout, or into the rests.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +65,7 @@ fun AddExerciseSheet(
     defaultSets: Int,
     defaultRest: Int,
     confirmText: String,
+    places: Boolean = false,
     onDismiss: () -> Unit,
     onAdd: (AddedExercise) -> Unit,
 ) {
@@ -75,6 +79,7 @@ fun AddExerciseSheet(
     var amount by rememberSaveable { mutableStateOf("") }
     var weight by rememberSaveable { mutableStateOf("") }
     var rest by rememberSaveable { mutableStateOf(defaultRest.toString()) }
+    var place by rememberSaveable { mutableStateOf(AddPlace.NEXT) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         val exercise = chosen?.let(library::get)
             ?: if (fresh) Exercise(name = typedName.trim(), category = ExerciseCategory.STRENGTH, measureMode = if (typedGeneral) MeasureMode.TIME else typedMode, general = typedGeneral) else null
@@ -111,11 +116,13 @@ fun AddExerciseSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            if (places) PlaceChoice(place) { place = it }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Number(sets, { sets = it }, R.string.player_add_sets, Modifier.weight(1f))
                 Number(amount, { amount = it }, if (exercise.general) R.string.player_add_minutes_open else if (timed) R.string.player_add_seconds else R.string.player_add_reps, Modifier.weight(1f))
                 if (exercise.measureMode == MeasureMode.REPS_WEIGHT) Number(weight, { weight = it }, R.string.player_add_weight, Modifier.weight(1f), decimal = true)
-                Number(rest, { rest = it }, R.string.player_add_rest, Modifier.weight(1f))
+                // In the rests, the rest is the one it is done in.
+                if (place != AddPlace.RESTS) Number(rest, { rest = it }, R.string.player_add_rest, Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { chosen = null; fresh = false }) { Text(stringResource(R.string.player_add_other)) }
@@ -141,6 +148,7 @@ fun AddExerciseSheet(
                                 newName = exercise.name.takeIf { newOne },
                                 newMode = exercise.measureMode,
                                 newGeneral = exercise.general,
+                                place = if (places) place else AddPlace.NEXT,
                             ),
                         )
                     },
@@ -148,6 +156,33 @@ fun AddExerciseSheet(
                 ) { Text(confirmText) }
             }
         }
+    }
+}
+
+/** Where the added exercise goes, with what that means under the choice. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlaceChoice(place: AddPlace, onPlace: (AddPlace) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.player_add_place), style = MaterialTheme.typography.titleSmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(
+                AddPlace.NEXT to R.string.player_add_place_next,
+                AddPlace.MAIN to R.string.player_add_place_main,
+                AddPlace.RESTS to R.string.player_add_place_rests,
+            ).forEach { (p, label) -> FilterChip(selected = place == p, onClick = { onPlace(p) }, label = { Text(stringResource(label)) }) }
+        }
+        Text(
+            stringResource(
+                when (place) {
+                    AddPlace.NEXT -> R.string.player_add_place_next_hint
+                    AddPlace.MAIN -> R.string.player_add_place_main_hint
+                    AddPlace.RESTS -> R.string.player_add_place_rests_hint
+                },
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

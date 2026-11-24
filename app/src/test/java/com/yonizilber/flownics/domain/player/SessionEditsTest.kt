@@ -68,4 +68,18 @@ class SessionEditsTest {
         // After the end: at the end.
         assertEquals(3, SessionEdits.addAfterCurrent(steps, 3, finished = true, added).insertedAt)
     }
+
+    @Test
+    fun anAddedExerciseNeverSplitsWhatIsDoneNow() {
+        val plank = Exercise(id = 5, name = "Plank", category = ExerciseCategory.CORE, measureMode = MeasureMode.TIME)
+        val added = SessionEdits.exerciseSteps(plank, sets = 1, target = SetTarget(seconds = 45), restSeconds = 0, blockIndex = 1)
+        // A one-sided hold: on the left side, it goes after the right side and the rest.
+        val sides = listOf<WorkoutStep>(work(1, seconds = 30, side = Side.LEFT), work(1, seconds = 30, side = Side.RIGHT), rest(), work(2))
+        assertEquals(3, SessionEdits.addAfterCurrent(sides, 0, finished = false, added).insertedAt)
+        // A round of two rest exercises at the end, with the short rest between them: after the round.
+        fun end(ex: Long, part: Int) = WorkStep(2, 0, ex, 1, 1, 1, 1, SetTarget(seconds = 30), null, 30, fromRests = true, restPart = part)
+        val round = listOf<WorkoutStep>(work(1), end(10, 0), RestStep(2, 10, slot = false), end(11, 1), RestStep(2, 10, slot = false), end(12, 0))
+        assertEquals(5, SessionEdits.addAfterCurrent(round, 1, finished = false, added).insertedAt)
+        assertEquals(5, SessionEdits.addAfterCurrent(round, 2, finished = false, added).insertedAt)
+    }
 }

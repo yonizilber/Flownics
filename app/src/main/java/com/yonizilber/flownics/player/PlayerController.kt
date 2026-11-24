@@ -3,6 +3,8 @@ package com.yonizilber.flownics.player
 import com.yonizilber.flownics.domain.workout.RestStep
 import com.yonizilber.flownics.R
 import com.yonizilber.flownics.domain.player.SessionEdits
+import com.yonizilber.flownics.domain.player.AddPlace
+import com.yonizilber.flownics.domain.workout.RestPart
 import com.yonizilber.flownics.domain.player.LaneEntry
 import com.yonizilber.flownics.domain.player.RestLane
 import com.yonizilber.flownics.data.garmin.RecordingLinker
@@ -32,6 +34,7 @@ import com.yonizilber.flownics.domain.workout.WorkoutStep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -114,6 +117,21 @@ class PlayerController @Inject constructor(
     private var overtimeCued: Int? = null
 
     private fun now() = SystemClock.elapsedRealtime()
+
+    /**
+     * The workout's writes to the database, one after the other in the order they were made:
+     * moving the logs for one edit and then for another doesn't leave the same rows in the other
+     * order, and a log must be saved before an edit moves it.
+     */
+    private val writes = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+
+    init {
+        scope.launch { for (write in writes) write() }
+    }
+
+    private fun write(block: suspend () -> Unit) {
+        writes.trySend(block).getOrThrow()
+    }
 
     /**
      * Brings back a workout left in progress when the process died. It comes back paused at the
@@ -268,17 +286,37 @@ class PlayerController @Inject constructor(
         return edit.insertedAt
     }
 
-    /** An exercise that wasn't in the plan: after the current step, or (when it was over) as the next thing to do. */
-    fun addExercise(exerciseId: Long, sets: Int, target: SetTarget, restSeconds: Int) {
+    /**
+     * An exercise that wasn't in the plan, [place]d (see [AddPlace]): after what is done now, or
+     * (when the workout was over) as the next thing to do.
+     */
+    fun addExercise(exerciseId: Long, sets: Int, target: SetTarget, restSeconds: Int, place: AddPlace = AddPlace.NEXT) {
         val w = _state.value ?: return
         val exercise = library.value[exerciseId] ?: return
-        val (titles, block) = addedBlock(w.session.blockTitles)
         val finished = w.player.phase is Phase.Finished
-        val edit = SessionEdits.addAfterCurrent(w.session.steps, w.player.index, finished, SessionEdits.exerciseSteps(exercise, sets, target, restSeconds, block))
-        apply(w, edit.steps, edit.insertedAt, edit.shift, titles)
-        if (finished) {
-            // The workout goes on: straight into what was just added.
-            transition { a, now -> a.copy(player = WorkoutPlayer.jumpTo(a.session.steps, edit.insertedAt, now)) }
+        val firstNew: Int
+        if (place == AddPlace.RESTS) {
+            // One set per rest, as every exercise of the lane.
+            val parts = List(sets.coerceAtLeast(1)) { RestPart(exercise.id, target) }
+            val at = if (finished) w.session.steps.lastIndex else w.player.index
+            laneEdit { a, logged, block -> RestLane.addNext(a.session.steps, at, parts, library.value, logged, block) }
+            firstNew = w.session.steps.size
+        } else {
+            val (titles, block) = addedBlock(w.session.blockTitles)
+            val added = SessionEdits.exerciseSteps(exercise, sets, target, restSeconds, block, inLane = place == AddPlace.MAIN)
+            val edit = SessionEdits.addAfterCurrent(w.session.steps, w.player.index, finished, added)
+            apply(w, edit.steps, edit.insertedAt, edit.shift, titles)
+            firstNew = edit.insertedAt
+            if (place == AddPlace.MAIN) {
+                // Its rests are the main workout's: the rest exercises still to come move into them.
+                laneEdit { a, logged, b -> RestLane.reflow(a.session.steps, edit.insertedAt, library.value, logged, b) }
+            }
+        }
+        val steps = _state.value?.session?.steps.orEmpty()
+        if (finished && firstNew < steps.size) {
+            // The workout goes on: straight into what was just added (its first set, not a rest before it).
+            val target = (firstNew until steps.size).firstOrNull { steps[it] is WorkStep } ?: firstNew
+            transition { a, now -> a.copy(player = WorkoutPlayer.jumpTo(a.session.steps, target, now)) }
             ensureService()
         }
     }
@@ -342,7 +380,7 @@ class PlayerController @Inject constructor(
         val drafts = w.drafts.mapKeys { (i, _) -> if (i >= shiftFrom) i + shiftBy else i }
         val index = if (w.player.index >= shiftFrom) w.player.index + shiftBy else w.player.index
         _state.value = w.copy(session = session, logs = logs, drafts = drafts, player = WorkoutPlayer.reindex(w.player, index))
-        scope.launch { sessions.updatePlan(session, shiftFrom, shiftBy) }
+        write { sessions.updatePlan(session, shiftFrom, shiftBy) }
         ensureTicker()
     }
 
@@ -386,7 +424,7 @@ class PlayerController @Inject constructor(
         if (after == before) return
         _state.value = after
         if (after.player.index != before.player.index) {
-            scope.launch { sessions.updateIndex(after.session.id, after.player.index) }
+            write { sessions.updateIndex(after.session.id, after.player.index) }
         }
         val phase = after.player.phase
         val newStep = after.player.index != before.player.index ||
@@ -473,7 +511,7 @@ class PlayerController @Inject constructor(
             completedAtMillis = System.currentTimeMillis(),
             startedAtMillis = startedAtWall(w, index),
         )
-        scope.launch { sessions.saveLog(entry) }
+        write { sessions.saveLog(entry) }
         // Logged: the log now holds the value, so going back shows what was saved.
         return w.copy(logs = w.logs + (index to entry), drafts = w.drafts - index)
     }

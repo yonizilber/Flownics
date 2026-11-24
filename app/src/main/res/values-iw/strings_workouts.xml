@@ -125,6 +125,13 @@
     <string name="player_add_weight">ק״ג</string>
     <string name="player_add_rest">מנוחה שנ׳</string>
     <string name="player_add_other">תרגיל אחר</string>
+    <string name="player_add_place">לאן להוסיף</string>
+    <string name="player_add_place_next">הבא בתור</string>
+    <string name="player_add_place_main">לאימון הראשי</string>
+    <string name="player_add_place_rests">לזמני המנוחה</string>
+    <string name="player_add_place_next_hint">הסטים שלו באים מיד אחרי מה שאתה עושה עכשיו, עם מנוחה רגילה. תרגילי המנוחה נשארים במקומם.</string>
+    <string name="player_add_place_main_hint">הסטים שלו באים עכשיו כחלק מהאימון הראשי: תרגילי המנוחה שעוד לא נעשו עוברים למנוחות שלו, ופחות נשאר לסוף.</string>
+    <string name="player_add_place_rests_hint">תרגיל מנוחה: סט אחד בכל אחת מהמנוחות הבאות, או ראשון מאלה שנשארו לסוף כשלא נשארו מנוחות.</string>
     <string name="player_add_confirm">הוספה אחרי השלב הזה</string>
     <string name="player_add_and_go">הוספה והמשך</string>
     <string name="player_added_block">נוסף במהלך האימון</string>
