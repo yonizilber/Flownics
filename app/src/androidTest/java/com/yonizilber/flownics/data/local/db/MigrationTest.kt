@@ -132,6 +132,21 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate19To20AddsWeighInsThatKeepAScaleReadingOnce() {
+        helper.createDatabase(TEST_DB, 19).close()
+        helper.runMigrationsAndValidate(TEST_DB, 20, true, MIGRATION_19_20).use { db ->
+            db.execSQL("INSERT INTO body_weights (atMillis, kg, source, externalKey) VALUES (1, 72.35, 'SCALE', 'mi:a:1')")
+            db.execSQL("INSERT OR IGNORE INTO body_weights (atMillis, kg, source, externalKey) VALUES (1, 72.35, 'SCALE', 'mi:a:1')")
+            db.execSQL("INSERT INTO body_weights (atMillis, kg, source, externalKey) VALUES (2, 72.0, 'MANUAL', NULL)")
+            db.execSQL("INSERT INTO body_weights (atMillis, kg, source, externalKey) VALUES (3, 71.9, 'MANUAL', NULL)")
+            db.query("SELECT COUNT(*) FROM body_weights").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(3, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
     fun allMigrationsOpenTheLatestSchema() {
         helper.createDatabase(TEST_DB, 1).close()
         Room.databaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, FlownicsDatabase::class.java, TEST_DB)

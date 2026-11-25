@@ -16,9 +16,11 @@ enum class Metric(val source: Source) {
     VO2MAX(Source.GARMIN),
     /** Edwards TRIMP per day, worked out by Flownics from the heart rate of recordings. */
     LOAD(Source.FLOWNICS),
+    /** Kilograms, the last weigh-in of each day: from the scale or typed in. */
+    WEIGHT(Source.USER),
     ;
 
-    enum class Source { GARMIN, FLOWNICS }
+    enum class Source { GARMIN, FLOWNICS, USER }
 }
 
 /**
@@ -40,7 +42,7 @@ data class Trend(
 object BodyTrends {
 
     /** Every metric from [from] to [to]; [load] is TRIMP by day (0 on a day with no recording). */
-    fun of(days: List<WellnessDay>, load: Map<LocalDate, Int>, from: LocalDate, to: LocalDate): List<Trend> {
+    fun of(days: List<WellnessDay>, load: Map<LocalDate, Int>, from: LocalDate, to: LocalDate, weight: Map<LocalDate, Double> = emptyMap()): List<Trend> {
         val inRange = days.filter { it.date in from..to }.sortedBy { it.date }
         fun series(value: (WellnessDay) -> Number?) = inRange.mapNotNull { d -> value(d)?.toDouble()?.let { d.date to it } }
         val latestHrv = inRange.lastOrNull { it.hrvBaselineLow != null && it.hrvBaselineHigh != null }
@@ -57,6 +59,7 @@ object BodyTrends {
                 Metric.VO2MAX -> series { it.vo2Max }
                 // A day without a recording is a day of no load: 0 is a real value here.
                 Metric.LOAD -> generateSequence(from) { it.plusDays(1) }.takeWhile { it <= to }.map { it to (load[it] ?: 0).toDouble() }.toList()
+                Metric.WEIGHT -> weight.filterKeys { it in from..to }.toSortedMap().map { (d, kg) -> d to kg }
             }
             Trend(
                 metric = m,

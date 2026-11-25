@@ -84,6 +84,15 @@ interface TransferDao {
     @Query("DELETE FROM planned_workouts")
     suspend fun deletePlans()
 
+    @Query("SELECT * FROM body_weights ORDER BY atMillis")
+    suspend fun weights(): List<com.yonizilber.flownics.data.local.db.entity.WeightEntity>
+
+    @Insert
+    suspend fun insertWeights(entities: List<com.yonizilber.flownics.data.local.db.entity.WeightEntity>)
+
+    @Query("DELETE FROM body_weights")
+    suspend fun deleteWeights()
+
     @Query("DELETE FROM activities")
     suspend fun deleteActivities()
 

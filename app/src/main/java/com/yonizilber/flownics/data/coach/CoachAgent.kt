@@ -44,6 +44,7 @@ class CoachAgent @Inject constructor(
     private val plans: PlanRepository,
     private val zones: Zones,
     private val wellness: com.yonizilber.flownics.data.garmin.WellnessSync,
+    private val weights: com.yonizilber.flownics.data.repository.WeightRepository,
 ) {
     /** Answers the conversation's last message, which must be the user's. */
     suspend fun reply(conversationId: Long, topic: CoachTopic?, language: String) {
@@ -96,6 +97,7 @@ class CoachAgent @Inject constructor(
         // The last three days of sleep and recovery, when there are any; the tool has more.
         val recent = wellness.days(today.minusDays(2), today)
         val recovery = if (recent.isEmpty()) "" else "\n" + com.yonizilber.flownics.domain.wellness.WellnessFormat.table(recent, zone)
+        val weight = com.yonizilber.flownics.domain.body.Weights.summary(weights.all(), System.currentTimeMillis(), zone)?.let { "\n" + it }.orEmpty()
         return CoachFormat.status(
             nowMillis = System.currentTimeMillis(),
             zone = zone,
@@ -116,7 +118,7 @@ class CoachAgent @Inject constructor(
                     (1..5).joinToString(", ") { "Z$it ${z.zones.bounds[it - 1]}-${z.zones.bounds[it]}" } +
                     if (z.maxFromRecordings) " (max HR ${z.zones.max} is the highest recorded, not one the user gave)" else " (from the user's max HR ${z.zones.max})"
             },
-        ) + recovery
+        ) + recovery + weight
     }
 
     /**

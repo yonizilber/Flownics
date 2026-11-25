@@ -99,6 +99,7 @@ class DataTransfer @Inject constructor(
             coachProfile = coach.profile.value.let { CoachProfileDto(it.goals, it.limitations, it.equipment, it.schedule, it.maxHeartRate, it.restingHeartRate) },
             plans = dao.plans().map { it.toDto(json) },
             tagInfos = dao.tagInfos().map { TagInfoDto(it.name, it.description) },
+            weights = dao.weights().map { WeightDto(it.atMillis, it.kg, it.source, it.externalKey) },
         )
         write(out, BundleKind.BACKUP, data, includeMedia = true)
     }
@@ -302,6 +303,7 @@ class DataTransfer @Inject constructor(
                 // Calendar links stay: the next sync updates each event to what its item is now,
                 // and deletes the events of items the backup doesn't have.
                 dao.deletePlans()
+                dao.deleteWeights()
                 dao.deleteTagInfos()
                 dao.insertTagInfos(data.tagInfos.filter { Tags.key(it.name).isNotEmpty() }.distinctBy { Tags.key(it.name) }.map { TagInfoEntity(Tags.key(it.name), it.name.trim(), it.description) })
                 dao.insertExercises(exercises)
@@ -318,6 +320,7 @@ class DataTransfer @Inject constructor(
                 )
                 dao.insertCoachNotes(data.coachNotes.map { CoachNoteEntity(it.id, it.text, it.createdAtMillis) })
                 dao.insertPlans(data.plans.map { it.toEntity(json) })
+                dao.insertWeights(data.weights.map { com.yonizilber.flownics.data.local.db.entity.WeightEntity(atMillis = it.atMillis, kg = it.kg, source = it.source, externalKey = it.externalKey) })
             }
             // A backup from before the coach existed has no profile: the current one stays.
             data.coachProfile?.let { coach.saveProfile(CoachProfile(it.goals, it.limitations, it.equipment, it.schedule, it.maxHeartRate, it.restingHeartRate)) }

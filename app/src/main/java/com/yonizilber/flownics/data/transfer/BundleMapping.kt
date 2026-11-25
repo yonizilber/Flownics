@@ -288,6 +288,11 @@ object BundleMerge {
         if (data.activities.map { it.id }.let { it.size != it.toSet().size }) fail("an activity appears twice")
         data.activities.forEach { a -> check("activity on ${a.startedAtMillis}") { a.toEntity(json).toDomain(json) } }
         data.plans.forEach { p -> check("plan on ${p.date}") { p.toEntity(json).toDomain(json) } }
+        data.weights.forEach { w ->
+            if (w.kg !in com.yonizilber.flownics.domain.body.Weights.RANGE) fail("a weigh-in of ${w.kg} kg")
+            check("weigh-in on ${w.atMillis}") { com.yonizilber.flownics.domain.body.WeightSource.valueOf(w.source) }
+        }
+        if (data.weights.mapNotNull { it.externalKey }.let { it.size != it.toSet().size }) fail("a scale weigh-in appears twice")
         if (data.coachConversations.map { it.id }.let { it.size != it.toSet().size }) fail("a coach conversation appears twice")
         data.coachConversations.flatMap { it.messages }.forEach { m -> check("coach message") { CoachEntryKind.valueOf(m.kind) } }
         data.workouts.forEach { w ->

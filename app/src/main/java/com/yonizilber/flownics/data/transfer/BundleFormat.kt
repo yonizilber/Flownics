@@ -51,7 +51,13 @@ data class BundleData(
     val plans: List<PlanDto> = emptyList(),
     // Added with DB v18: what the tags of these exercises are for (shared too: it explains them).
     val tagInfos: List<TagInfoDto> = emptyList(),
+    // Backups only, added with DB v20.
+    val weights: List<WeightDto> = emptyList(),
 )
+
+/** A weigh-in; [source] is SCALE or MANUAL, [externalKey] the scale reading's identity. */
+@Serializable
+data class WeightDto(val atMillis: Long, val kg: Double, val source: String, val externalKey: String? = null)
 
 @Serializable
 data class PlanDto(

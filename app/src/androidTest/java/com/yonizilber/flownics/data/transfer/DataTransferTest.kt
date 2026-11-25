@@ -40,7 +40,7 @@ class DataTransferTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(context, FlownicsDatabase::class.java).build()
         media = MediaStorage(context)
-        transfer = DataTransfer(context, db, db.transferDao(), media, json, CoachStore(context, db.coachDao(), json))
+        transfer = DataTransfer(context, db, db.transferDao(), media, json, CoachStore(context, db.coachDao(), json, com.yonizilber.flownics.data.local.media.AiPhotos(context)))
     }
 
     @After

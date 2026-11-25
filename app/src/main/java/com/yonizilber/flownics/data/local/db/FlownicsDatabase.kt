@@ -1,5 +1,7 @@
 package com.yonizilber.flownics.data.local.db
 
+import com.yonizilber.flownics.data.local.db.dao.WeightDao
+import com.yonizilber.flownics.data.local.db.entity.WeightEntity
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
@@ -52,8 +54,9 @@ import com.yonizilber.flownics.data.local.db.entity.WorkoutTemplateEntity
         WellnessDayEntity::class,
         RunStructureEntity::class,
         TagInfoEntity::class,
+        WeightEntity::class,
     ],
-    version = 19,
+    version = 20,
     exportSchema = true,
 )
 abstract class FlownicsDatabase : RoomDatabase() {
@@ -78,6 +81,8 @@ abstract class FlownicsDatabase : RoomDatabase() {
     abstract fun wellnessDao(): WellnessDao
 
     abstract fun runStructureDao(): RunStructureDao
+
+    abstract fun weightDao(): WeightDao
 }
 
 // v1 → v2: workout templates. The SQL must match app/schemas/…/2.json exactly; the migration test
@@ -371,9 +376,20 @@ val MIGRATION_18_19 = object : Migration(18, 19) {
     }
 }
 
+/** Weigh-ins: from the Xiaomi scale or typed in. */
+val MIGRATION_19_20 = object : Migration(19, 20) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `body_weights` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `atMillis` INTEGER NOT NULL, " +
+                "`kg` REAL NOT NULL, `source` TEXT NOT NULL, `externalKey` TEXT)",
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_body_weights_externalKey` ON `body_weights` (`externalKey`)")
+    }
+}
+
 // Every schema change gets a real Migration here. See DatabaseModule.
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
     MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18,
-    MIGRATION_18_19,
+    MIGRATION_18_19, MIGRATION_19_20,
 )

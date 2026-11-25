@@ -102,9 +102,7 @@ fun MeScreen(
             if (s.zonesKnown) TrendCard(byMetric.getValue(Metric.LOAD), s.from, s.to)
             else Text(stringResource(R.string.me_load_no_zones), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Section(stringResource(R.string.me_section_body))
-            OutlinedCard(Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.me_body_not_yet), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(14.dp))
-            }
+            BodySection(s, byMetric.getValue(Metric.WEIGHT), viewModel)
         }
     }
 }
@@ -125,16 +123,17 @@ private val Metric.titleRes: Int get() = when (this) {
     Metric.STEPS -> R.string.me_steps
     Metric.VO2MAX -> R.string.me_vo2
     Metric.LOAD -> R.string.me_load
+    Metric.WEIGHT -> R.string.me_weight
 }
 
 private fun Metric.format(v: Double): String = when (this) {
     Metric.SLEEP_HOURS -> "%d:%02d".format(Locale.ROOT, v.toInt(), ((v - v.toInt()) * 60).toInt())
-    Metric.RESPIRATION, Metric.VO2MAX -> "%.1f".format(Locale.ROOT, v)
+    Metric.RESPIRATION, Metric.VO2MAX, Metric.WEIGHT -> "%.1f".format(Locale.ROOT, v)
     else -> "%,d".format(Locale.ROOT, Math.round(v))
 }
 
 @Composable
-private fun TrendCard(trend: Trend, from: LocalDate, to: LocalDate) {
+internal fun TrendCard(trend: Trend, from: LocalDate, to: LocalDate) {
     val m = trend.metric
     val dates = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
     ElevatedCard(Modifier.fillMaxWidth()) {
@@ -168,7 +167,11 @@ private fun TrendCard(trend: Trend, from: LocalDate, to: LocalDate) {
             }
             Text(
                 stringResource(
-                    if (m == Metric.LOAD) R.string.me_caption_load else R.string.me_caption,
+                    when (m) {
+                        Metric.LOAD -> R.string.me_caption_load
+                        Metric.WEIGHT -> R.string.me_caption_weight
+                        else -> R.string.me_caption
+                    },
                     trend.points.size,
                 ) + if (trend.usualLow != null) " " + stringResource(R.string.me_caption_band) else "",
                 style = MaterialTheme.typography.bodySmall,
