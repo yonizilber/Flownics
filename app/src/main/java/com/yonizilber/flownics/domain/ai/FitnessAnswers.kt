@@ -119,6 +119,21 @@ object FitnessAnswers {
         )
     }
 
+    /** One description per photo sent, in order; a missing or empty one fails (the coach would be blind to it). */
+    fun photoDescriptions(text: String, count: Int): List<String> {
+        val descriptions = decode<PhotosDto>(text).photos.map { it.description.trim() }
+        if (descriptions.size != count || descriptions.any { it.isEmpty() }) {
+            throw AiException.BadResponse("Expected $count photo descriptions, got ${descriptions.count { it.isNotEmpty() }}")
+        }
+        return descriptions
+    }
+
+    @Serializable
+    private data class PhotosDto(val photos: List<PhotoDto> = emptyList())
+
+    @Serializable
+    private data class PhotoDto(val description: String = "")
+
     fun variations(text: String): ExerciseVariations {
         val dto = decode<VariationsDto>(text)
         return ExerciseVariations(

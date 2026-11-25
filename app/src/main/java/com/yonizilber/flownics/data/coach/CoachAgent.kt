@@ -8,6 +8,7 @@ import com.yonizilber.flownics.domain.ai.AiTurn
 import com.yonizilber.flownics.domain.coach.CoachEntry
 import com.yonizilber.flownics.domain.coach.CoachFormat
 import com.yonizilber.flownics.domain.coach.CoachTopic
+import com.yonizilber.flownics.domain.coach.forCoach
 import com.yonizilber.flownics.data.repository.ActivityRepository
 import com.yonizilber.flownics.data.repository.PlanRepository
 import com.yonizilber.flownics.data.garmin.Zones
@@ -50,12 +51,13 @@ class CoachAgent @Inject constructor(
         val entries = store.entries(conversationId)
         val lastUser = entries.indexOfLast { it is CoachEntry.User }
         check(lastUser >= 0) { "No message to answer" }
-        val question = (entries[lastUser] as CoachEntry.User).text
+        val asked = entries[lastUser] as CoachEntry.User
+        val question = asked.text.ifBlank { asked.photos.firstOrNull()?.description?.take(60).orEmpty() }
 
         val request = AgentRequest(
             system = CoachPrompt.system(language),
             history = history(entries.subList(0, lastUser)),
-            userText = "<status>\n${status(zone)}\n</status>\n" + topicLine(topic) + "\n" + question,
+            userText = "<status>\n${status(zone)}\n</status>\n" + topicLine(topic) + "\n" + asked.forCoach(),
             tools = tools.specs,
         )
         val session = ai.startAgentTurn(request)
@@ -126,7 +128,7 @@ class CoachAgent @Inject constructor(
         val turns = mutableListOf<AiTurn>()
         entries.forEach { e ->
             when (e) {
-                is CoachEntry.User -> turns += AiTurn(true, e.text)
+                is CoachEntry.User -> turns += AiTurn(true, e.forCoach())
                 is CoachEntry.Assistant -> turns += AiTurn(false, e.text)
                 is CoachEntry.Proposal -> {
                     val name = e.args["name"]?.toString()?.trim('"').orEmpty()
@@ -198,6 +200,7 @@ object CoachPrompt {
         - Ask for focused date ranges. The status already has the last two weeks and the saved workouts.
         - Dates in tools are YYYY-MM-DD in the user's time zone. "Today" is in the status.
         - Answer what was asked, concisely. If a question is unclear, ask one short question back.
+        - Photos the user sends reach you as descriptions ("[Photo 1 the user sent, …]"), written when they were sent; you never see the picture itself. Rely on what the description says, and if it lacks something you need (an angle, a number), say what and ask the user.
 
         Changing things:
         - You can't change the user's data yourself. You propose, the user decides on a card: propose_workout for a workout (exercise ids from the library), propose_exercise_change to improve an exercise (add the cues you explained, fix its muscles, put it in a family of styles) or add a new one, propose_activity to log a run or other activity they tell you about. Never say something was saved unless the conversation shows the user accepted it.

@@ -40,6 +40,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import com.yonizilber.flownics.domain.ai.AiDepth
+import com.yonizilber.flownics.domain.ai.AiImage
+import com.anthropic.models.messages.Base64ImageSource
 import com.yonizilber.flownics.domain.ai.AiException
 import com.yonizilber.flownics.domain.ai.AiModel
 import com.yonizilber.flownics.domain.ai.AiProgress
@@ -55,6 +57,20 @@ import java.time.Duration
 import java.util.concurrent.CompletionException
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private fun imageBlock(image: AiImage): ContentBlockParam = ContentBlockParam.ofImage(
+    Base64ImageSource.builder()
+        .data(image.base64)
+        .mediaType(
+            when (image.mimeType) {
+                "image/png" -> Base64ImageSource.MediaType.IMAGE_PNG
+                "image/webp" -> Base64ImageSource.MediaType.IMAGE_WEBP
+                "image/jpeg" -> Base64ImageSource.MediaType.IMAGE_JPEG
+                else -> throw AiException.BadResponse("Unsupported image type ${image.mimeType}")
+            },
+        )
+        .build(),
+)
 
 /** Claude through Anthropic's official Java SDK (its async client, so a closed screen cancels the call). */
 @Singleton
@@ -228,7 +244,13 @@ class ClaudeAiClient @Inject constructor() : AiClient {
             .maxTokens(request.maxOutputTokens.toLong())
             .system(system)
             .outputConfig(output.build())
-        request.turns.forEach { turn -> if (turn.fromUser) builder.addUserMessage(turn.text) else builder.addAssistantMessage(turn.text) }
+        request.turns.forEach { turn ->
+            when {
+                !turn.fromUser -> builder.addAssistantMessage(turn.text)
+                turn.images.isEmpty() -> builder.addUserMessage(turn.text)
+                else -> builder.addUserMessageOfContentBlockParams(turn.images.map(::imageBlock) + ContentBlockParam.ofText(turn.text))
+            }
+        }
         paused.forEach(builder::addMessage)
 
         if (request.webSearch) {

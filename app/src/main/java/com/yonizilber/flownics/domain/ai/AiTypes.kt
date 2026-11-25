@@ -47,7 +47,7 @@ enum class AiModel(
 }
 
 /** What a call was for: shown next to its cost in the usage list. */
-enum class AiFeature { KEY_TEST, EXERCISE_FILL, EXERCISE_VARIATIONS, EXERCISE_VIDEOS, WORKOUT_REVIEW, WORKOUT_VARIATIONS, WORKOUT_DRAFT, CHAT, COACH }
+enum class AiFeature { KEY_TEST, EXERCISE_FILL, EXERCISE_VARIATIONS, EXERCISE_VIDEOS, WORKOUT_REVIEW, WORKOUT_VARIATIONS, WORKOUT_DRAFT, CHAT, COACH, PHOTO }
 
 /**
  * How a call ended, for the activity log. Only [OK] and [FAILED] with a billed usage have a known
@@ -55,7 +55,16 @@ enum class AiFeature { KEY_TEST, EXERCISE_FILL, EXERCISE_VARIATIONS, EXERCISE_VI
  */
 enum class AiOutcome { OK, FAILED, TIMED_OUT, CANCELLED }
 
-data class AiTurn(val fromUser: Boolean, val text: String)
+/**
+ * One message. A user message may carry [images]; they go before its text. Photos are sent once,
+ * where they are asked about: a conversation carries them on as text (see the coach), never again.
+ */
+data class AiTurn(val fromUser: Boolean, val text: String, val images: List<AiImage> = emptyList())
+
+/** A picture for the model: already shrunk and re-encoded on the phone (no location or other metadata). */
+class AiImage(val mimeType: String, val base64: String) {
+    override fun toString() = "AiImage($mimeType, ${base64.length} chars)"
+}
 
 data class AiRequest(
     val feature: AiFeature,

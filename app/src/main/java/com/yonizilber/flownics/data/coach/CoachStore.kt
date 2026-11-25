@@ -7,6 +7,7 @@ import com.yonizilber.flownics.data.local.db.entity.CoachMessageEntity
 import com.yonizilber.flownics.data.local.db.entity.CoachNoteEntity
 import com.yonizilber.flownics.domain.coach.CoachConversation
 import com.yonizilber.flownics.domain.coach.CoachEntry
+import com.yonizilber.flownics.domain.coach.CoachPhoto
 import com.yonizilber.flownics.domain.coach.CoachEntryKind
 import com.yonizilber.flownics.domain.coach.CoachNote
 import com.yonizilber.flownics.domain.coach.CoachProfile
@@ -30,6 +31,7 @@ class CoachStore @Inject constructor(
     @ApplicationContext context: Context,
     private val dao: CoachDao,
     private val json: Json,
+    private val photos: com.yonizilber.flownics.data.local.media.AiPhotos,
 ) {
     private val prefs = context.getSharedPreferences(PROFILE_PREFS, Context.MODE_PRIVATE)
     private val _profile = MutableStateFlow(
@@ -66,7 +68,12 @@ class CoachStore @Inject constructor(
 
     suspend fun newConversation(now: Long): Long = dao.insertConversation(CoachConversationEntity(title = "", createdAtMillis = now, updatedAtMillis = now))
 
-    suspend fun deleteConversation(id: Long) = dao.deleteConversation(id)
+    /** The conversation and the photos sent in it. */
+    suspend fun deleteConversation(id: Long) {
+        val names = entries(id).filterIsInstance<CoachEntry.User>().flatMap { u -> u.photos.map { it.name } }
+        dao.deleteConversation(id)
+        photos.deleteCoachPhotos(names)
+    }
 
     suspend fun touch(conversationId: Long, title: String, now: Long) = dao.touchConversation(conversationId, title.take(TITLE_MAX), now)
 
@@ -74,7 +81,8 @@ class CoachStore @Inject constructor(
 
     suspend fun entries(conversationId: Long): List<CoachEntry> = dao.messages(conversationId).mapNotNull { it.toEntry() }
 
-    suspend fun addUser(conversationId: Long, text: String, now: Long) = insert(conversationId, CoachEntryKind.USER, text, now, "{}")
+    suspend fun addUser(conversationId: Long, text: String, now: Long, sent: List<CoachPhoto> = emptyList()) =
+        insert(conversationId, CoachEntryKind.USER, text, now, if (sent.isEmpty()) "{}" else json.encodeToString(UserData.serializer(), UserData(sent.map { PhotoData(it.name, it.description) })))
 
     suspend fun addAssistant(conversationId: Long, text: String, modelId: String, costUsd: Double, now: Long) =
         insert(conversationId, CoachEntryKind.ASSISTANT, text, now, json.encodeToString(AssistantData.serializer(), AssistantData(modelId, costUsd)))
@@ -138,7 +146,7 @@ class CoachStore @Inject constructor(
     // the conversation; it stays in the database untouched.
     private fun CoachMessageEntity.toEntry(): CoachEntry? = runCatching {
         when (CoachEntryKind.valueOf(kind)) {
-            CoachEntryKind.USER -> CoachEntry.User(id, atMillis, text)
+            CoachEntryKind.USER -> CoachEntry.User(id, atMillis, text, json.decodeFromString(UserData.serializer(), dataJson).photos.map { CoachPhoto(it.name, it.description) })
             CoachEntryKind.ASSISTANT -> json.decodeFromString(AssistantData.serializer(), dataJson).let {
                 CoachEntry.Assistant(id, atMillis, text, it.modelId, it.costUsd)
             }
@@ -163,6 +171,12 @@ class CoachStore @Inject constructor(
             }
         }
     }.getOrNull()
+
+    @Serializable
+    private data class UserData(val photos: List<PhotoData> = emptyList())
+
+    @Serializable
+    private data class PhotoData(val name: String, val description: String)
 
     @Serializable
     private data class AssistantData(val modelId: String, val costUsd: Double)

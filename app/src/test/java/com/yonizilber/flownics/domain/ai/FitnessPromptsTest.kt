@@ -127,4 +127,20 @@ class FitnessPromptsTest {
         assertFalse("private" in text)
         assertTrue("QUADS 1.0" in text)
     }
+
+    @Test
+    fun photosGoWithTheirRequestOnly() {
+        val photo = AiImage("image/jpeg", "AAAA")
+        val r = FitnessPrompts.photosForCoach(listOf(photo, photo), "how is my form?", "English")
+        assertEquals(AiFeature.PHOTO, r.feature)
+        assertEquals(2, r.turns.single().images.size)
+        assertTrue(r.turns.single().text.contains("how is my form?"))
+        // Exercise fill: the photos ride with the user's message, and the prompt says what they are.
+        val fill = FitnessPrompts.exerciseFill(com.yonizilber.flownics.domain.model.Exercise(name = "Row", category = com.yonizilber.flownics.domain.model.ExerciseCategory.STRENGTH), "", "English", webSearch = false, images = listOf(photo))
+        assertEquals(1, fill.turns.single().images.size)
+        assertTrue(fill.system.contains("attached photos"))
+        val plain = FitnessPrompts.exerciseFill(com.yonizilber.flownics.domain.model.Exercise(name = "Row", category = com.yonizilber.flownics.domain.model.ExerciseCategory.STRENGTH), "", "English", webSearch = false)
+        assertTrue(plain.turns.single().images.isEmpty())
+        assertTrue(!plain.system.contains("attached photos"))
+    }
 }

@@ -1,5 +1,6 @@
 package com.yonizilber.flownics.domain.ai
 
+import org.junit.Assert.assertThrows
 import com.yonizilber.flownics.domain.model.BlockStructure
 import com.yonizilber.flownics.domain.model.Exercise
 import com.yonizilber.flownics.domain.model.ExerciseCategory
@@ -122,5 +123,14 @@ class FitnessAnswersTest {
         assertEquals(listOf("Band face pull", "Face pull with external rotation"), v.variations.map { it.name })
         assertEquals(listOf(2, null), v.variations.map { it.level })
         assertNull(v.variations[1].category)
+    }
+
+    @Test
+    fun photoDescriptionsComeOnePerPhotoOrFail() {
+        val two = """{"photos":[{"description":"Squat, knees caving in"},{"description":"Watch: 12:04 for 3 km"}]}"""
+        assertEquals(listOf("Squat, knees caving in", "Watch: 12:04 for 3 km"), FitnessAnswers.photoDescriptions(two, 2))
+        // One short, or one empty: the coach would be blind to a photo, so it fails.
+        assertThrows(AiException.BadResponse::class.java) { FitnessAnswers.photoDescriptions(two, 3) }
+        assertThrows(AiException.BadResponse::class.java) { FitnessAnswers.photoDescriptions("""{"photos":[{"description":" "}]}""", 1) }
     }
 }

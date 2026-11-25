@@ -304,6 +304,8 @@ fun ExerciseEditScreen(
 
     if (showFill) {
         val fillText by viewModel.fillText.collectAsStateWithLifecycle()
+        val fillPhotos by viewModel.fillPhotos.collectAsStateWithLifecycle()
+        val photoError by viewModel.photoError.collectAsStateWithLifecycle()
         AiFillSheet(
             state = state,
             fill = fill,
@@ -311,6 +313,10 @@ fun ExerciseEditScreen(
             refining = viewModel.refining,
             text = fillText,
             onTextChange = viewModel::onFillTextChange,
+            photos = fillPhotos,
+            photoError = photoError,
+            onPhotosPicked = viewModel::onFillPhotosPicked,
+            onRemovePhoto = viewModel::removeFillPhoto,
             onAsk = viewModel::requestFill,
             onApply = { fields ->
                 viewModel.applyFill(fields)

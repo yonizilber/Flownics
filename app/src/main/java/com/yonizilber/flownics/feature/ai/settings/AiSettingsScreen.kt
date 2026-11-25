@@ -344,5 +344,6 @@ fun featureLabelRes(feature: String): Int = when (runCatching { AiFeature.valueO
     AiFeature.WORKOUT_DRAFT -> R.string.ai_feature_workout_draft
     AiFeature.CHAT -> R.string.ai_feature_chat
     AiFeature.COACH -> R.string.ai_feature_coach
+    AiFeature.PHOTO -> R.string.ai_feature_photo
     null -> R.string.ai_feature_other
 }

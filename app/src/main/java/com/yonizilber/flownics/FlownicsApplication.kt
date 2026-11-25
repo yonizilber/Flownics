@@ -40,6 +40,9 @@ class FlownicsApplication : Application() {
     @ApplicationScope
     lateinit var scope: CoroutineScope
 
+    @Inject
+    lateinit var aiPhotos: com.yonizilber.flownics.data.local.media.AiPhotos
+
     override fun onCreate() {
         super.onCreate()
         // Keeps the chosen calendar in step with the plan; does nothing until the user turns it on.
@@ -54,5 +57,7 @@ class FlownicsApplication : Application() {
             runStructures.backfill(activities.observeAll().first() + activities.observeAttached().first().values)
         }
         GarminSyncWorker.schedule(this, garmin.settings.value.hasKey)
+        // Photos picked for the AI and never sent, from a day ago or more.
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) { aiPhotos.clearPending() }
     }
 }

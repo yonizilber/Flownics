@@ -60,6 +60,7 @@
     <string name="ai_feature_workout_draft">אימונים חדשים</string>
     <string name="ai_feature_chat">שאלות</string>
     <string name="ai_feature_coach">מאמן</string>
+    <string name="ai_feature_photo">תמונה למאמן</string>
     <string name="ai_feature_exercise_videos">חיפושי סרטונים</string>
     <string name="ai_feature_other">אחר</string>
     <string name="ai_activity_open">כל הקריאות ל-AI והעלות שלהן</string>
@@ -278,4 +279,12 @@
         <item quantity="two">להחליף את השלבים בשני אלה</item>
         <item quantity="other">להחליף את השלבים ב-%1$d אלה</item>
     </plurals>
+    <string name="ai_photo_add">הוספת תמונה</string>
+    <string name="ai_photo_attached">תמונה מצורפת</string>
+    <string name="ai_photo_remove">הסרת התמונה</string>
+    <string name="ai_photo_unreadable">לא הצלחתי לקרוא תמונה, ולכן היא לא נוספה.</string>
+    <string name="ai_photo_privacy">התמונות נשלחות לספק ה-AI שלך יחד עם הבקשה, מוקטנות ובלי המיקום ושאר פרטי המצלמה.</string>
+    <string name="coach_photo_missing">התמונה לא נמצאת בטלפון הזה</string>
+    <string name="coach_photo_seen_show">מה המאמן יודע על התמונה</string>
+    <string name="coach_photo_seen_hide">הסתרת התיאור</string>
 </resources>

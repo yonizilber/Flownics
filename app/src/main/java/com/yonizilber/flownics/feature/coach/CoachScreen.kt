@@ -1,5 +1,16 @@
 package com.yonizilber.flownics.feature.coach
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
+import com.yonizilber.flownics.data.local.media.AiPhotos
+import com.yonizilber.flownics.feature.ai.AiPhotoStrip
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import java.io.File
 import com.yonizilber.flownics.ui.component.formatDuration
 import com.yonizilber.flownics.feature.journal.planTitle
 import com.yonizilber.flownics.calendar.CalendarSync
@@ -127,6 +138,13 @@ fun CoachScreen(
         viewModel.send(text, res.aiLanguage())
         input = ""
     }
+    // Photos that couldn't be described: nothing was sent, and the text comes back to edit or send again.
+    LaunchedEffect(state.unsent) {
+        state.unsent?.let { text ->
+            if (input.isBlank()) input = text
+            viewModel.unsentTaken()
+        }
+    }
 
     LaunchedEffect(entries.size, state.sending, state.failure) {
         val count = 1 + entries.size + (if (state.sending || state.failure != null) 1 else 0)
@@ -176,7 +194,7 @@ fun CoachScreen(
                 }
                 items(entries, key = { it.id }) { entry ->
                     when (entry) {
-                        is CoachEntry.User -> Bubble(entry.text, fromUser = true)
+                        is CoachEntry.User -> if (entry.photos.isEmpty()) Bubble(entry.text, fromUser = true) else PhotoBubble(entry, viewModel::photoFile)
                         is CoachEntry.Assistant -> Bubble(entry.text, fromUser = false, model = AiModel.byId(entry.modelId), costUsd = entry.costUsd)
                         is CoachEntry.Step -> StepLine(entry, library, workoutNames)
                         is CoachEntry.Proposal -> when (entry.kind) {
@@ -225,7 +243,11 @@ fun CoachScreen(
                 state.failure?.let { failure ->
                     item(key = "failure") {
                         when (failure) {
-                            is CoachFailure.Ai -> AiErrorCard(failure.error, onRetry = { viewModel.retry(res.aiLanguage()) }, onOpenSettings = onOpenAiSettings)
+                            is CoachFailure.Ai -> AiErrorCard(
+                                failure.error,
+                                onRetry = { if (state.failedBeforeSending) send(input) else viewModel.retry(res.aiLanguage()) },
+                                onOpenSettings = onOpenAiSettings,
+                            )
                             CoachFailure.OutOfSteps -> OutOfStepsCard(onRetry = { viewModel.retry(res.aiLanguage()) }, onDismiss = viewModel::dismissFailure)
                         }
                     }
@@ -240,7 +262,17 @@ fun CoachScreen(
                             trailingIcon = { Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.coach_topic_clear), modifier = Modifier.size(16.dp)) },
                         )
                     }
+                    if (state.draftPhotos.isNotEmpty() || state.photoError) {
+                        AiPhotoStrip(state.draftPhotos, state.photoError, viewModel::onPhotosPicked, viewModel::removePhoto, showAdd = false)
+                    }
+                    val pickPhotos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(AiPhotos.MAX_PER_REQUEST)) { uris ->
+                        if (uris.isNotEmpty()) viewModel.onPhotosPicked(uris)
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                            enabled = !state.sending && state.draftPhotos.size < AiPhotos.MAX_PER_REQUEST,
+                        ) { Icon(Icons.Outlined.AddPhotoAlternate, contentDescription = stringResource(R.string.ai_photo_add)) }
                         OutlinedTextField(
                             value = input,
                             onValueChange = { input = it },
@@ -248,7 +280,7 @@ fun CoachScreen(
                             maxLines = 5,
                             modifier = Modifier.weight(1f),
                         )
-                        IconButton(onClick = { send(input) }, enabled = input.isNotBlank() && !state.sending) {
+                        IconButton(onClick = { send(input) }, enabled = (input.isNotBlank() || state.draftPhotos.isNotEmpty()) && !state.sending) {
                             Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = stringResource(R.string.coach_send))
                         }
                     }
@@ -309,6 +341,55 @@ private fun Bubble(text: String, fromUser: Boolean, model: AiModel? = null, cost
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SelectionContainer { Text(text, style = MaterialTheme.typography.bodyMedium) }
                 model?.let { AiAnswerFooter(it, costUsd, emptyList()) }
+            }
+        }
+    }
+}
+
+/**
+ * The user's message with photos: the photos, the text, and (on demand) what the coach was told
+ * about each photo, which is all it ever sees of them.
+ */
+@Composable
+private fun PhotoBubble(entry: CoachEntry.User, file: (String) -> File) {
+    var open by rememberSaveable(entry.id) { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            modifier = Modifier.widthIn(max = 360.dp),
+        ) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    entry.photos.forEach { p ->
+                        val f = remember(p.name) { runCatching { file(p.name) }.getOrNull()?.takeIf { it.isFile } }
+                        if (f != null) {
+                            AsyncImage(
+                                model = f,
+                                contentDescription = stringResource(R.string.ai_photo_attached),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(96.dp).clip(RoundedCornerShape(8.dp)),
+                            )
+                        } else {
+                            // Restored from a backup on another phone: the description is kept, the photo isn't.
+                            Text(stringResource(R.string.coach_photo_missing), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                if (entry.text.isNotBlank()) SelectionContainer { Text(entry.text, style = MaterialTheme.typography.bodyMedium) }
+                TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) {
+                    Text(stringResource(if (open) R.string.coach_photo_seen_hide else R.string.coach_photo_seen_show), style = MaterialTheme.typography.labelMedium)
+                }
+                if (open) {
+                    entry.photos.forEachIndexed { i, p ->
+                        SelectionContainer {
+                            Text(
+                                (if (entry.photos.size > 1) "${i + 1}. " else "") + p.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

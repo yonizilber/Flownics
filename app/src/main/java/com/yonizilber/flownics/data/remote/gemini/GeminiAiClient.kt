@@ -48,7 +48,9 @@ class GeminiAiClient @Inject constructor(
     override suspend fun complete(request: AiRequest, model: AiModel, apiKey: String, onProgress: (AiProgress) -> Unit): AiReply {
         val body = GeminiRequest(
             contents = request.turns.map { turn ->
-                GeminiContent(role = if (turn.fromUser) "user" else "model", parts = listOf(GeminiPart(text = turn.text)))
+                // Pictures first, then the words about them.
+                val images = turn.images.map { GeminiPart(inlineData = GeminiInlineData(it.mimeType, it.base64)) }
+                GeminiContent(role = if (turn.fromUser) "user" else "model", parts = images + GeminiPart(text = turn.text))
             },
             systemInstruction = GeminiContent(parts = listOf(GeminiPart(text = request.system))),
             generationConfig = GeminiGenerationConfig(

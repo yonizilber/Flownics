@@ -64,6 +64,10 @@ fun AiFillSheet(
     refining: Boolean,
     text: String,
     onTextChange: (String) -> Unit,
+    photos: List<String>,
+    photoError: Boolean,
+    onPhotosPicked: (List<android.net.Uri>) -> Unit,
+    onRemovePhoto: (String) -> Unit,
     onAsk: (webSearch: Boolean, language: String) -> Unit,
     onApply: (Set<FillField>) -> Unit,
     onCancel: () -> Unit,
@@ -91,6 +95,7 @@ fun AiFillSheet(
                     minLines = 4,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                com.yonizilber.flownics.feature.ai.AiPhotoStrip(photos, photoError, onPhotosPicked, onRemovePhoto)
             }
             when (fill) {
                 AiCall.Idle -> {

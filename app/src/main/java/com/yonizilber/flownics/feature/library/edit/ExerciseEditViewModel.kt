@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.yonizilber.flownics.data.ai.AiService
 import com.yonizilber.flownics.data.ai.ExerciseAiNote
 import com.yonizilber.flownics.data.local.media.MediaStorage
+import com.yonizilber.flownics.data.local.media.AiPhotos
 import com.yonizilber.flownics.data.local.media.MediaTooLargeException
 import com.yonizilber.flownics.domain.ai.AiException
 import com.yonizilber.flownics.domain.ai.AiResult
@@ -94,6 +95,7 @@ class ExerciseEditViewModel @Inject constructor(
     private val repository: ExerciseRepository,
     private val mediaStorage: MediaStorage,
     private val ai: AiService,
+    private val photos: AiPhotos,
     private val variations: VariationRepository,
 ) : ViewModel() {
 
@@ -132,6 +134,35 @@ class ExerciseEditViewModel @Inject constructor(
 
     fun onFillTextChange(value: String) {
         savedStateHandle[KEY_FILL_TEXT] = value
+    }
+
+    /** Photos for the AI (the exercise in a book, a screenshot, someone doing it), already shrunk on the phone. */
+    val fillPhotos: StateFlow<List<String>> = savedStateHandle.getStateFlow(KEY_FILL_PHOTOS, arrayListOf<String>())
+
+    private val _photoError = MutableStateFlow(false)
+
+    /** The last picked photo couldn't be read; shown until the next pick. */
+    val photoError: StateFlow<Boolean> = _photoError.asStateFlow()
+
+    fun onFillPhotosPicked(uris: List<Uri>) {
+        viewModelScope.launch {
+            _photoError.value = false
+            val room = AiPhotos.MAX_PER_REQUEST - fillPhotos.value.size
+            val added = uris.take(room).mapNotNull { uri ->
+                try {
+                    photos.prepare(uri).path
+                } catch (e: IOException) {
+                    _photoError.value = true
+                    null
+                }
+            }
+            savedStateHandle[KEY_FILL_PHOTOS] = ArrayList(fillPhotos.value + added)
+        }
+    }
+
+    fun removeFillPhoto(path: String) {
+        photos.discardPending(listOf(File(path)))
+        savedStateHandle[KEY_FILL_PHOTOS] = ArrayList(fillPhotos.value - path)
     }
 
     /** Opened from "Refine with AI" on the exercise page: the AI sheet opens with the editor, once. */
@@ -192,9 +223,13 @@ class ExerciseEditViewModel @Inject constructor(
         _fill.value = AiCall.Running
         fillJob = viewModelScope.launch {
             _fill.value = try {
-                AiCall.Done(ai.ask(FitnessPrompts.exerciseFill(s.toExercise(), fillText.value, language, webSearch, refining), FitnessAnswers::exerciseFill))
+                val images = fillPhotos.value.map { photos.load(File(it)) }
+                AiCall.Done(ai.ask(FitnessPrompts.exerciseFill(s.toExercise(), fillText.value, language, webSearch, refining, images), FitnessAnswers::exerciseFill))
             } catch (e: AiException) {
                 AiCall.Failed(e)
+            } catch (e: IOException) {
+                // A picked photo is gone (the app was closed for long): said, not skipped.
+                AiCall.Failed(AiException.BadResponse(e.message ?: "A photo could not be read", e))
             }
         }
     }
@@ -257,6 +292,8 @@ class ExerciseEditViewModel @Inject constructor(
         _fill.value = AiCall.Idle
         // Used: the next request starts from a clean page.
         onFillTextChange("")
+        photos.discardPending(fillPhotos.value.map(::File))
+        savedStateHandle[KEY_FILL_PHOTOS] = arrayListOf<String>()
     }
 
     fun mediaFile(name: String): File = mediaStorage.file(name)
@@ -382,6 +419,7 @@ class ExerciseEditViewModel @Inject constructor(
 
     override fun onCleared() {
         if (!saved) mediaStorage.deleteNow(importedThisSession)
+        photos.discardPending(fillPhotos.value.map(::File))
         super.onCleared()
     }
 
@@ -438,6 +476,7 @@ class ExerciseEditViewModel @Inject constructor(
 
     private companion object {
         const val KEY_FILL_TEXT = "aiFillText"
+        const val KEY_FILL_PHOTOS = "aiFillPhotos"
         const val KEY_AI_OPENED = "aiOpenedOnStart"
     }
 }

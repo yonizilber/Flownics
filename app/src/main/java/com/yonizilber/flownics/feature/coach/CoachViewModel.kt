@@ -1,5 +1,11 @@
 package com.yonizilber.flownics.feature.coach
 
+import android.net.Uri
+import com.yonizilber.flownics.data.local.media.AiPhotos
+import com.yonizilber.flownics.domain.ai.FitnessPrompts
+import com.yonizilber.flownics.domain.coach.CoachPhoto
+import java.io.File
+import java.io.IOException
 import com.yonizilber.flownics.domain.model.PlannedWorkout
 import com.yonizilber.flownics.domain.coach.PlanChange
 import com.yonizilber.flownics.data.repository.PlanRepository
@@ -60,6 +66,13 @@ data class CoachUiState(
     val failure: CoachFailure? = null,
     /** A proposal that couldn't be saved (e.g. its exercises were deleted since). */
     val proposalError: Long? = null,
+    /** Photos picked for the next message (shrunk copies on the phone). */
+    val draftPhotos: List<String> = emptyList(),
+    val photoError: Boolean = false,
+    /** The photos couldn't be described, so nothing was sent: this text goes back into the input (once). */
+    val unsent: String? = null,
+    /** With [failure]: nothing was sent, so trying again means sending the input again. */
+    val failedBeforeSending: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -74,6 +87,7 @@ class CoachViewModel @Inject constructor(
     private val sessions: SessionRepository,
     private val activities: ActivityRepository,
     private val plans: PlanRepository,
+    private val photos: AiPhotos,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CoachUiState())
@@ -121,23 +135,70 @@ class CoachViewModel @Inject constructor(
     fun send(text: String, language: String) {
         val message = text.trim()
         val s = _state.value
-        if (message.isEmpty() || s.sending) return
+        if ((message.isEmpty() && s.draftPhotos.isEmpty()) || s.sending) return
         job = viewModelScope.launch {
+            // Photos first become text, once: the coach reads the descriptions from then on.
+            val sent = if (s.draftPhotos.isEmpty()) {
+                emptyList()
+            } else {
+                _state.update { it.copy(sending = true, failure = null, unsent = null, failedBeforeSending = false) }
+                try {
+                    val images = s.draftPhotos.map { photos.load(File(it)) }
+                    val descriptions = ai.ask(FitnessPrompts.photosForCoach(images, message, language)) { FitnessAnswers.photoDescriptions(it, images.size) }.value
+                    s.draftPhotos.zip(descriptions) { path, d -> CoachPhoto(photos.keepForCoach(File(path)), d) }
+                } catch (e: AiException) {
+                    _state.update { it.copy(sending = false, failure = CoachFailure.Ai(e), unsent = message, failedBeforeSending = true) }
+                    return@launch
+                } catch (e: IOException) {
+                    _state.update { it.copy(sending = false, failure = CoachFailure.Ai(AiException.BadResponse(e.message ?: "A photo could not be read", e)), unsent = message, failedBeforeSending = true) }
+                    return@launch
+                }
+            }
             val now = System.currentTimeMillis()
             val id = s.conversationId ?: store.newConversation(now)
-            store.addUser(id, message, now)
-            store.touch(id, store.conversation(id)?.title?.ifBlank { message } ?: message, now)
-            _state.update { it.copy(conversationId = id, failure = null) }
+            store.addUser(id, message, now, sent)
+            val title = message.ifBlank { sent.firstOrNull()?.description.orEmpty() }
+            store.touch(id, store.conversation(id)?.title?.ifBlank { title } ?: title, now)
+            _state.update { it.copy(conversationId = id, failure = null, draftPhotos = emptyList(), unsent = null, failedBeforeSending = false) }
             answer(id, s.topic, language)
         }
     }
 
-    /** Asks again for the last unanswered message. */
+    /** Asks again for the last unanswered message (not after a failure before sending: the input is sent again). */
     fun retry(language: String) {
         val s = _state.value
+        if (s.sending || s.failedBeforeSending) return
         val id = s.conversationId ?: return
-        if (s.sending) return
         job = viewModelScope.launch { answer(id, s.topic, language) }
+    }
+
+    /** The input took back the text that couldn't be sent. */
+    fun unsentTaken() = _state.update { it.copy(unsent = null) }
+
+    fun onPhotosPicked(uris: List<Uri>) = viewModelScope.launch {
+        _state.update { it.copy(photoError = false) }
+        val room = AiPhotos.MAX_PER_REQUEST - _state.value.draftPhotos.size
+        val added = uris.take(room).mapNotNull { uri ->
+            try {
+                photos.prepare(uri).path
+            } catch (e: IOException) {
+                _state.update { it.copy(photoError = true) }
+                null
+            }
+        }
+        _state.update { it.copy(draftPhotos = it.draftPhotos + added) }
+    }
+
+    fun removePhoto(path: String) {
+        photos.discardPending(listOf(File(path)))
+        _state.update { it.copy(draftPhotos = it.draftPhotos - path) }
+    }
+
+    fun photoFile(name: String): File = photos.coachFile(name)
+
+    override fun onCleared() {
+        photos.discardPending(_state.value.draftPhotos.map(::File))
+        super.onCleared()
     }
 
     private suspend fun answer(conversationId: Long, topic: CoachTopic?, language: String) {
@@ -161,9 +222,20 @@ class CoachViewModel @Inject constructor(
      */
     fun cancel(): String? {
         job?.cancel()
-        val last = entries.value.lastOrNull() as? CoachEntry.User ?: return null
+        val s = _state.value
+        val last = entries.value.lastOrNull() as? CoachEntry.User
+        // Still describing the photos: nothing was saved; the photos stay picked.
+        if (s.draftPhotos.isNotEmpty() || last == null) {
+            _state.update { it.copy(sending = false, failure = null) }
+            return null
+        }
         _state.update { it.copy(sending = false, failure = null) }
-        viewModelScope.launch { store.deleteEntry(last.id) }
+        viewModelScope.launch {
+            store.deleteEntry(last.id)
+            // Its photos go back to the input with the text.
+            val back = last.photos.mapNotNull { p -> runCatching { photos.backToPending(p.name).path }.getOrNull() }
+            _state.update { it.copy(draftPhotos = back + it.draftPhotos) }
+        }
         return last.text
     }
 

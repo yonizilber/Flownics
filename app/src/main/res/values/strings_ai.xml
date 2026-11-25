@@ -60,6 +60,7 @@
     <string name="ai_feature_workout_draft">New workouts</string>
     <string name="ai_feature_chat">Questions</string>
     <string name="ai_feature_coach">Coach</string>
+    <string name="ai_feature_photo">Photo for the coach</string>
     <string name="ai_feature_exercise_videos">Video searches</string>
     <string name="ai_feature_other">Other</string>
     <string name="ai_activity_open">All AI calls and their cost</string>
@@ -270,4 +271,12 @@
         <item quantity="one">Replace the stages with this %1$d</item>
         <item quantity="other">Replace the stages with these %1$d</item>
     </plurals>
+    <string name="ai_photo_add">Add a photo</string>
+    <string name="ai_photo_attached">Attached photo</string>
+    <string name="ai_photo_remove">Remove the photo</string>
+    <string name="ai_photo_unreadable">A photo couldn\'t be read, so it wasn\'t added.</string>
+    <string name="ai_photo_privacy">The photos go to your AI provider with the request, shrunk and without their location or other camera details.</string>
+    <string name="coach_photo_missing">Photo not on this phone</string>
+    <string name="coach_photo_seen_show">What the coach was told about the photo</string>
+    <string name="coach_photo_seen_hide">Hide the description</string>
 </resources>

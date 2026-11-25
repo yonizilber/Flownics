@@ -56,7 +56,12 @@ data class GeminiPart(
     // Set on reasoning summaries, which are not part of the answer.
     val thought: Boolean? = null,
     val functionCall: GeminiFunctionCall? = null,
+    val inlineData: GeminiInlineData? = null,
 )
+
+/** An image sent inline, as base64. */
+@Serializable
+data class GeminiInlineData(val mimeType: String, val data: String)
 
 @Serializable
 data class GeminiFunctionCall(val name: String, val args: JsonObject? = null, val id: String? = null)

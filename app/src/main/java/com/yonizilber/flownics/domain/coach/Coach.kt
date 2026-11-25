@@ -14,7 +14,8 @@ sealed interface CoachEntry {
     val id: Long
     val atMillis: Long
 
-    data class User(override val id: Long, override val atMillis: Long, val text: String) : CoachEntry
+    /** [photos]: what the user sent with it, each with the description the coach reads instead of the picture. */
+    data class User(override val id: Long, override val atMillis: Long, val text: String, val photos: List<CoachPhoto> = emptyList()) : CoachEntry
 
     data class Assistant(
         override val id: Long,
@@ -49,6 +50,18 @@ sealed interface CoachEntry {
     /** The coach saved (or removed) a note in its memory. [undone] once the user took it back. */
     data class Note(override val id: Long, override val atMillis: Long, val noteId: Long, val text: String, val removed: Boolean, val undone: Boolean) : CoachEntry
 }
+
+/**
+ * A photo the user sent the coach: [name] of its shrunk copy on the phone (gone after a restore on
+ * another phone; backups keep only the text), and [description], written once when it was sent.
+ * The coach only ever reads the description, so a photo is paid for once, not with every message.
+ */
+data class CoachPhoto(val name: String, val description: String)
+
+/** The user's message as the coach reads it: the text, then each photo's description. */
+fun CoachEntry.User.forCoach(): String = (listOf(text) + photos.mapIndexed { i, p ->
+    "[Photo ${i + 1} the user sent, as described when it was sent: ${p.description}]"
+}).filter { it.isNotBlank() }.joinToString("\n")
 
 /** What the user tells the coach about themselves, in their own words. Every field may be blank. */
 data class CoachProfile(
